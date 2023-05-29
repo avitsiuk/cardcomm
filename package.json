@@ -1,6 +1,6 @@
 {
-  "name": "smartcard",
-  "version": "1.0.46",
+  "name": "@developer2/smartcard",
+  "version": "1.0.47",
   "author": "tomkp <tom@tomkp.com>",
   "keywords": [
     "pcsc",
@@ -20,22 +20,29 @@
     "url": "https://github.com/tomkp/smartcard/issues"
   },
   "homepage": "https://github.com/tomkp/smartcard",
-  "main": "lib/index.js",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/types/index.d.ts",
+  "files": [
+    "lib",
+    "LICENSE",
+    "README.MD"
+  ],
   "scripts": {
-    "compile": "babel -d lib/ src/",
-    "compile:watch": "babel -w -d lib/ src/",
-    "release:patch": "npm run compile && npm version patch && git push && yarn publish",
+    "build-cjs": "tsc -p tsconfig.cjs.json",
+    "build-esm": "tsc -p tsconfig.esm.json",
+    "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
     "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\""
   },
   "dependencies": {
-    "@pokusew/pcsclite": "^0.6.0",
     "hexify": "^1.0.4",
+    "pcsclite": "^1.0.1",
     "pino": "^6.11.1"
   },
   "devDependencies": {
-    "@babel/cli": "^7.12.16",
-    "@babel/core": "^7.12.16",
-    "@babel/preset-env": "^7.12.16",
-    "prettier": "^2.2.1"
+    "concurrently": "^8.0.1",
+    "prettier": "^2.2.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
   }
 }
