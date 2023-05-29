@@ -1,48 +1,46 @@
 {
-  "name": "@developer2/smartcard",
-  "version": "1.0.47",
-  "author": "tomkp <tom@tomkp.com>",
-  "keywords": [
-    "pcsc",
-    "smartcard",
-    "smart-card",
-    "iso7816",
-    "iso-7816",
-    "emv",
-    "es6"
-  ],
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tomkp/smartcard.git"
-  },
-  "bugs": {
-    "url": "https://github.com/tomkp/smartcard/issues"
-  },
-  "homepage": "https://github.com/tomkp/smartcard",
-  "main": "lib/cjs/index.js",
-  "module": "lib/esm/index.js",
-  "types": "lib/types/index.d.ts",
-  "files": [
-    "lib",
-    "LICENSE",
-    "README.MD"
-  ],
-  "scripts": {
-    "build-cjs": "tsc -p tsconfig.cjs.json",
-    "build-esm": "tsc -p tsconfig.esm.json",
-    "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
-    "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\""
-  },
-  "dependencies": {
-    "hexify": "^1.0.4",
-    "pcsclite": "^1.0.1",
-    "pino": "^6.11.1"
-  },
-  "devDependencies": {
-    "concurrently": "^8.0.1",
-    "prettier": "^2.2.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^5.0.4"
-  }
+    "name": "@developer2/smartcard",
+    "version": "1.0.49",
+    "author": "tomkp <tom@tomkp.com>",
+    "keywords": [
+        "pcsc",
+        "smartcard",
+        "smart-card",
+        "iso7816",
+        "iso-7816",
+        "emv",
+        "es6"
+    ],
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tomkp/smartcard.git"
+    },
+    "bugs": {
+        "url": "https://github.com/tomkp/smartcard/issues"
+    },
+    "homepage": "https://github.com/tomkp/smartcard",
+    "main": "lib/cjs/index.js",
+    "module": "lib/esm/index.js",
+    "types": "lib/types/index.d.ts",
+    "files": [
+        "lib",
+        "LICENSE",
+        "README.MD"
+    ],
+    "scripts": {
+        "build-cjs": "tsc -p tsconfig.cjs.json",
+        "build-esm": "tsc -p tsconfig.esm.json",
+        "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
+        "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\""
+    },
+    "dependencies": {
+        "pcsclite": "1.0.1"
+    },
+    "devDependencies": {
+        "concurrently": "^8.0.1",
+        "prettier": "^2.2.1",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.0.4"
+    }
 }
