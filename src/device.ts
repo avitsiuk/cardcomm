@@ -1,7 +1,7 @@
 import Card from './card';
 import { EventEmitter } from 'events';
 import { CardReader, Status } from './typesPcsclite';
-import { IDevice, TDeviceEventName } from './types';
+import { IDevice, TDeviceEventName } from './typesInternal';
 
 export class Device implements IDevice {
     _eventEmitter = new EventEmitter();

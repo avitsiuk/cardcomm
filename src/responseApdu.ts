@@ -54,13 +54,14 @@ export class ResponseApdu {
         return this._hex.substring(this._hex.length - 4);
     }
 
-    meaning(): string {
+    meaning() {
         const statusCode = this.getStatusCode();
-        Object.keys(statusCodes).forEach((prop) => {
-            if (statusCode.match(prop)) {
-                return statusCodes[prop];
+        const codes = Object.keys(statusCodes);
+        for (let i = 0; i < codes.length; i = i+1) {
+            if(new RegExp(codes[i]).exec(statusCode)) {
+                return statusCodes[codes[i]];
             }
-        });
+        }
         return 'Unknown';
     }
 

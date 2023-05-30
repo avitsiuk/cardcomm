@@ -3,7 +3,7 @@ import pcsclite from 'pcsclite';
 import { CardReader, PCSCLite } from './typesPcsclite';
 import { EventEmitter } from 'events';
 import Device from './device';
-import { IDevices, TDevicesEventName } from './types';
+import { IDevices, TDevicesEventName } from './typesInternal';
 
 
 class Devices implements IDevices {

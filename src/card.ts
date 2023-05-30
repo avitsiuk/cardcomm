@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
-import { ICard, IDevice, TCardEventName } from './types';
+import { ICard, IDevice, TCardEventName } from './typesInternal';
 
 // type TCardEventName = 'command-issued' | 'response-received';
 

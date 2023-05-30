@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { toHexString } from './utils';
-import { IIso7816Application, TIso7816AppEventName } from './types';
+import { IIso7816Application, TIso7816AppEventName } from './typesInternal';
 import CommandApdu from './commandApdu';
 import ResponseApdu from './responseApdu';
 import Card from './card';
