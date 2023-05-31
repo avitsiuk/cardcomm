@@ -32,7 +32,8 @@
         "build-cjs": "tsc -p tsconfig.cjs.json",
         "build-esm": "tsc -p tsconfig.esm.json",
         "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
-        "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\""
+        "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\"",
+        "demo": "npx ts-node ./demo/demo.ts"
     },
     "dependencies": {
         "pcsclite": "1.0.1"
