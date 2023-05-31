@@ -3,8 +3,6 @@ import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
 import { ICard, IDevice, TCardEventName } from './typesInternal';
 
-// type TCardEventName = 'command-issued' | 'response-received';
-
 class Card implements ICard {
     _eventEmitter = new EventEmitter();
     device: IDevice;
