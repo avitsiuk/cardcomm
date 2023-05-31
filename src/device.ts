@@ -1,7 +1,7 @@
-import Card from './card';
 import { EventEmitter } from 'events';
 import { CardReader, Status } from './typesPcsclite';
 import { IDevice, TDeviceEventName } from './typesInternal';
+import Card from './card';
 
 export class Device implements IDevice {
     _eventEmitter = new EventEmitter();
@@ -33,7 +33,7 @@ export class Device implements IDevice {
                 if (err) {
                     this._eventEmitter.emit('error', err);
                 } else {
-                    this.card = new Card(this, status.atr!, protocol);
+                    this.card = new Card(this, status.atr ? status.atr : Buffer.from([]) , protocol);
                     this._eventEmitter.emit('card-inserted', { device: this, card: this.card });
                 }
             });
@@ -78,7 +78,7 @@ export class Device implements IDevice {
     on(eventName: 'error', eventHandler: (error: any) => void): Device;
     on(eventName: 'card-inserted', eventHandler: (event: {device: Device, card: Card}) => void): Device;
     on(eventName: 'card-removed', eventHandler: (event: {name: string, card: Card}) => void): Device;
-    on(eventName: TDeviceEventName, eventHandler: (event: any) => any): Device {
+    on(eventName: TDeviceEventName, eventHandler: (event: any) => void): Device {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
@@ -86,7 +86,7 @@ export class Device implements IDevice {
     once(eventName: 'error', eventHandler: (error: any) => void): Device;
     once(eventName: 'card-inserted', eventHandler: (event: {device: Device, card: Card}) => void): Device;
     once(eventName: 'card-removed', eventHandler: (event: {name: string, card: Card}) => void): Device;
-    once(eventName: TDeviceEventName, eventHandler: (event: any) => any): Device {
+    once(eventName: TDeviceEventName, eventHandler: (event: any) => void): Device {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }

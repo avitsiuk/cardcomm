@@ -24,7 +24,7 @@ class Card implements ICard {
     }
 
     issueCommand(
-        commandApdu: Buffer | number[] | string | CommandApdu,
+        commandApdu: string | number[] | Buffer | CommandApdu,
         callback?: (err: any, response: Buffer) => void,
     ): void | Promise<Buffer> {
         let buffer: Buffer;
@@ -73,7 +73,7 @@ class Card implements ICard {
 
     on(eventName: 'response-received', eventHandler: (event: { card: Card, command: CommandApdu, response: ResponseApdu }) => void): Card;
 
-    on(eventName: TCardEventName, eventHandler: (event: any) => any): Card {
+    on(eventName: TCardEventName, eventHandler: (event: any) => void): Card {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
@@ -82,7 +82,7 @@ class Card implements ICard {
 
     once(eventName: 'response-received', eventHandler: (event: { card: Card, command: CommandApdu, response: ResponseApdu }) => void): Card;
 
-    once(eventName: TCardEventName, eventHandler: (event: any) => any): Card {
+    once(eventName: TCardEventName, eventHandler: (event: any) => void): Card {
         this._eventEmitter.once(eventName, eventHandler);
         return this;
     }

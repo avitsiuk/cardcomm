@@ -1,9 +1,8 @@
-import pcsclite from 'pcsclite';
-
-import { CardReader, PCSCLite } from './typesPcsclite';
 import { EventEmitter } from 'events';
-import Device from './device';
+import pcsclite from 'pcsclite';
+import { CardReader, PCSCLite } from './typesPcsclite';
 import { IDevices, TDevicesEventName } from './typesInternal';
+import Device from './device';
 
 
 class Devices implements IDevices {
@@ -35,13 +34,13 @@ class Devices implements IDevices {
 
     onActivated(): Promise<{ device: Device, devices: IDevices }> {
         return new Promise((resolve, reject) => {
-            this.on('device-activated', (event) => resolve(event));
+            this.once('device-activated', (event) => resolve(event));
         });
     }
 
     onDeactivated(): Promise<{ device: Device, devices: IDevices }> {
         return new Promise((resolve, reject) => {
-            this.on('device-deactivated', (event) => resolve(event));
+            this.once('device-deactivated', (event) => resolve(event));
         });
     }
 
@@ -62,14 +61,14 @@ class Devices implements IDevices {
 
     on(eventName: 'device-activated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
     on(eventName: 'device-deactivated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    on(eventName: TDevicesEventName, eventHandler: (event: any) => any): Devices {
+    on(eventName: TDevicesEventName, eventHandler: (event: any) => void): Devices {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
 
     once(eventName: 'device-activated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
     once(eventName: 'device-deactivated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    once(eventName: TDevicesEventName, eventHandler: (event: any) => any): Devices {
+    once(eventName: TDevicesEventName, eventHandler: (event: any) => void): Devices {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }

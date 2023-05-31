@@ -1,19 +1,18 @@
-'use strict';
-
-import Iso7816Application from './iso7816Application';
+// import * as Utils from './utils'
 import CommandApdu from './commandApdu';
+// import statusDecode from './statusDecode';
 import ResponseApdu from './responseApdu';
-import Devices from './devices';
-import Device from './device';
+// import * as TypesInternal from './typesInternal';
 import Card from './card';
-import statusDecode from './statusDecode';
+// import Iso7816Application from './iso7816Application';
+import Device from './device';
+import Devices from './devices';
 
 export {
-    statusDecode,
-    Iso7816Application,
     CommandApdu,
     ResponseApdu,
-    Devices,
-    Device,
     Card,
+    // Iso7816Application,
+    Device,
+    Devices,
 };
