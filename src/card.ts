@@ -49,36 +49,36 @@ class Card implements ICard {
             cmd = command;
         };
 
-        // this._eventEmitter.emit('command-issued', { card: this, command });
+        this._eventEmitter.emit('command-issued', { card: this, command });
 
-        // const resLen = 258;  //Response APDU max size(256 for data + 2 for status)
-        // if (callback) {
-        //     this._device.transmit(cmd.toBuffer(), resLen, this._protocol, (err, respBuffer) => {
-        //         const response = new ResponseApdu().fromBuffer(respBuffer);
-        //         this._eventEmitter.emit('response-received', {
-        //             card: this,
-        //             command: cmd,
-        //             response,
-        //         });
-        //         callback(err, response);
-        //     });
-        // } else {
-        //     return new Promise((resolve, reject) => {
-        //         this._device.transmit(cmd.toBuffer(), resLen, this._protocol, (err, respBuffer) => {
-        //             const response = new ResponseApdu().fromBuffer(respBuffer);
-        //             this._eventEmitter.emit('response-received', {
-        //                 card: this,
-        //                 command: cmd,
-        //                 response,
-        //             });
-        //             if (err) {
-        //                 reject(err);
-        //             } else {
-        //                 resolve(response);
-        //             }
-        //         });
-        //     });
-        // }
+        const resLen = 258;  //Response APDU max size(256 for data + 2 for status)
+        if (callback) {
+            this._device.transmit(cmd.toBuffer(), resLen, this._protocol, (err, respBuffer) => {
+                const response = new ResponseApdu().fromBuffer(respBuffer);
+                this._eventEmitter.emit('response-received', {
+                    card: this,
+                    command: cmd,
+                    response,
+                });
+                callback(err, response);
+            });
+        } else {
+            return new Promise((resolve, reject) => {
+                this._device.transmit(cmd.toBuffer(), resLen, this._protocol, (err, respBuffer) => {
+                    const response = new ResponseApdu().fromBuffer(respBuffer);
+                    this._eventEmitter.emit('response-received', {
+                        card: this,
+                        command: cmd,
+                        response,
+                    });
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(response);
+                    }
+                });
+            });
+        }
     }
 
     on(eventName: 'command-issued', eventHandler: (event: {card: Card, command: CommandApdu}) => void): Card;
