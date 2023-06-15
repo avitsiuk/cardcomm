@@ -9,7 +9,9 @@ import Device from './device';
 import Devices from './devices';
 
 export {
+    Utils,
     CommandApdu,
+    statusDecode,
     ResponseApdu,
     Card,
     // Iso7816Application,
