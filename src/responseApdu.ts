@@ -1,54 +1,74 @@
+import { bufferToArray, hexToArray, arrayToHex } from './utils';
 import statusDecode from './statusDecode';
 
 export class ResponseApdu {
-    private _data: Buffer;
-    private _hex: string;
+    private _byteArray: number[] = [];
+    private _status: number[] = [];
+    private _data: number[] = [];
 
-    constructor(buffer: Buffer) {
-        this._data = buffer;
-        this._hex = buffer.toString('hex');
+    constructor() {
     }
 
-    getDataOnly() {
-        return this._hex.substring(0, this._hex.length - 4);
+    fromArray(array: number[]) {
+        this._byteArray = array;
+        if(array.length >= 2) {
+            this._data = this._byteArray.slice(0, -2);
+            this._status = this._byteArray.slice(-2);
+        } else {
+            this._status = this._byteArray;
+        }
+        return this;
     }
 
-    getStatusCode() {
-        return this._hex.substring(this._hex.length - 4);
+    fromBuffer(buffer: Buffer): this {
+        return this.fromArray(bufferToArray(buffer));
     }
 
-    meaning() {
-        return statusDecode(this.getStatusCode());
+    fromString(str: string): this {
+        return this.fromArray(hexToArray(str));
     }
 
-    isOk() {
-        return this.getStatusCode() === '9000';
+    toArray(): number[] {
+        return this._byteArray;
     }
 
-    hasMoreBytesAvailable() {
-        return this._hex.substring(this._hex.length - 4, this._hex.length - 2) === '61';
+    toBuffer(): Buffer {
+        return Buffer.from(this.toArray());
     }
 
-    numberOfBytesAvailable() {
-        let hexLength = this._hex.substring(this._hex.length - 2);
-        return parseInt(hexLength, 16);
+    toString(): string {
+        return arrayToHex(this.toArray());
     }
 
-    isWrongLength() {
-        return this._hex.substring(this._hex.length - 4, this._hex.length - 2) === '6c';
+    get length() {
+        return this._byteArray.length;
     }
 
-    correctLength() {
-        let hexLength = this._hex.substring(this._hex.length - 2);
-        return parseInt(hexLength, 16);
-    }
-
-    buffer() {
+    get data(): number[] {
         return this._data;
     }
 
-    toString() {
-        return this._hex;
+    get status(): number[] {
+        return this._status;
+    }
+
+    meaning() {
+        return statusDecode(this.status);
+    }
+
+    isOk() {
+        if (this.length >= 2) {
+            if (this.status[0] === 0x90 && this.status[1] === 0x00) return true;
+            if (this.status[0] === 0x61) return true;
+        }
+        return false;
+    }
+
+    availableResponseBytes(): number {
+        if (this.length >= 2) {
+            if (this.status[0] === 0x61 || this.status[0] === 0x6c) return this.status[1];
+        }
+        return 0;
     }
 }
 

@@ -6,17 +6,18 @@ import { ResponseApdu } from './responseApdu';
 export type TCardEventName = 'command-issued' | 'response-received';
 
 export interface ICard {
-    _eventEmitter: EventEmitter;
-    device: IDevice;
-    protocol: number;
-    atr: string;
+    atr: number[];
+    atrHex: string;
 
-    getAtr: () => string;
     toString: () => string;
+
+    issueCommand(commandApdu: Buffer | number[] | string | CommandApdu, callback: (err: any, response: ResponseApdu) => void): Promise<ResponseApdu>;
+    issueCommand(commandApdu: Buffer | number[] | string | CommandApdu, callback: (err: any, response: ResponseApdu) => void): void;
     issueCommand(
         commandApdu: Buffer | number[] | string | CommandApdu,
-        callback?: (err: any, response: Buffer) => void,
-    ): void | Promise<Buffer>;
+        callback?: (err: any, response: ResponseApdu) => void,
+    ): void | Promise<ResponseApdu>;
+
     on(eventName: 'command-issued', eventHandler: (event: {card: ICard, command: CommandApdu}) => void): ICard;
     on(eventName: 'response-received', eventHandler: (event: { card: ICard, command: CommandApdu, response: ResponseApdu }) => void): ICard;
     once(eventName: 'command-issued', eventHandler: (event: {card: ICard, command: CommandApdu}) => void): ICard;
@@ -61,18 +62,18 @@ export interface IDevices {
     once(eventName: 'device-deactivated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
 }
 
-export type TIso7816AppEventName = 'application-selected';
+// export type TIso7816AppEventName = 'application-selected';
 
-export interface IIso7816Application {
-    _eventEmitter: EventEmitter;
-    card: ICard
+// export interface IIso7816Application {
+//     _eventEmitter: EventEmitter;
+//     card: ICard
 
-    issueCommand: (commandApdu: CommandApdu) => Promise<ResponseApdu>;
-    selectFile: (bytes: number[], p1: number, p2: number) => Promise<ResponseApdu>;
-    getResponse: (length: number) => Promise<ResponseApdu>;
-    readRecord: (sfi: number, record: number) => Promise<ResponseApdu>;
-    getData: (p1: number, p2: number) => Promise<ResponseApdu>;
+//     issueCommand: (commandApdu: CommandApdu) => Promise<ResponseApdu>;
+//     selectFile: (bytes: number[], p1: number, p2: number) => Promise<ResponseApdu>;
+//     getResponse: (length: number) => Promise<ResponseApdu>;
+//     readRecord: (sfi: number, record: number) => Promise<ResponseApdu>;
+//     getData: (p1: number, p2: number) => Promise<ResponseApdu>;
 
-    on(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
-    once(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
-}
+//     on(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
+//     once(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
+// }

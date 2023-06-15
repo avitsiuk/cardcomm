@@ -14,30 +14,34 @@ export type AnyOrNothing = any | undefined | null;
 
 export interface CardReader extends EventEmitter {
     // Share Mode
-    SCARD_SHARE_SHARED: number;
-    SCARD_SHARE_EXCLUSIVE: number;
-    SCARD_SHARE_DIRECT: number;
+    SCARD_SHARE_EXCLUSIVE: number; //1;
+    SCARD_SHARE_SHARED: number; //2;
+    SCARD_SHARE_DIRECT: number; //3;
+
     // Protocol
-    SCARD_PROTOCOL_T0: number;
-    SCARD_PROTOCOL_T1: number;
-    SCARD_PROTOCOL_RAW: number;
+    SCARD_PROTOCOL_T0: number; //1;
+    SCARD_PROTOCOL_T1: number; //2;
+    SCARD_PROTOCOL_RAW: number; //4;
+
     //  State
-    SCARD_STATE_UNAWARE: number;
-    SCARD_STATE_IGNORE: number;
-    SCARD_STATE_CHANGED: number;
-    SCARD_STATE_UNKNOWN: number;
-    SCARD_STATE_UNAVAILABLE: number;
-    SCARD_STATE_EMPTY: number;
-    SCARD_STATE_PRESENT: number;
-    SCARD_STATE_ATRMATCH: number;
-    SCARD_STATE_EXCLUSIVE: number;
-    SCARD_STATE_INUSE: number;
-    SCARD_STATE_MUTE: number;
+    SCARD_STATE_UNAWARE: number; //0;
+    SCARD_STATE_IGNORE: number; //1;
+    SCARD_STATE_CHANGED: number; //2;
+    SCARD_STATE_UNKNOWN: number; //4;
+    SCARD_STATE_UNAVAILABLE: number; //8;
+    SCARD_STATE_EMPTY: number; //16;
+    SCARD_STATE_PRESENT: number; //32;
+    SCARD_STATE_ATRMATCH: number; //64;
+    SCARD_STATE_EXCLUSIVE: number; //128;
+    SCARD_STATE_INUSE: number; //256;
+    SCARD_STATE_MUTE: number; //512;
+
     // Disconnect disposition
-    SCARD_LEAVE_CARD: number;
-    SCARD_RESET_CARD: number;
-    SCARD_UNPOWER_CARD: number;
-    SCARD_EJECT_CARD: number;
+    SCARD_LEAVE_CARD: number; //0;
+    SCARD_RESET_CARD: number; //1;
+    SCARD_UNPOWER_CARD: number; //2;
+    SCARD_EJECT_CARD: number; //3;
+
     name: string;
     state: number;
     connected: boolean;

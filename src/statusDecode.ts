@@ -1,3 +1,5 @@
+import { arrayToHex } from "./utils";
+
 const NORM_PROC = 'Normal processing';
 const WARN_PROC = 'Warning processing';
 const EXEC_ERR = 'Execution error';
@@ -5,12 +7,8 @@ const CHCK_ERR = 'Checking error';
 const NVM_U = 'State of non-volatile memory is unchanged';
 const NVM_C = 'State of non-volatile memory may have changed';
 
-function hexToNum(hex: string): number {
-    return Buffer.from(hex, 'hex').readUInt8(0);
-}
-
 function unkSw2(sw2: number): string {
-    return `Unknown SW2: 0x${Buffer.from([sw2]).toString('hex').padStart(2, '0')}`;
+    return `Unknown SW2: [0x${arrayToHex([sw2], false)}]`;
 }
 
 const meanings: {[key: string]: (sw2: number) => string} = {
@@ -272,15 +270,15 @@ const meanings: {[key: string]: (sw2: number) => string} = {
     },
 };
 
-export function statusDecode(statusCode: string): string {
-    if (statusCode.length !== 4) {
-        throw new Error(`Wrong status code length; Expected: 4; Received: ${statusCode.length}; Value: ${statusCode}`);
-    }
-    let meaning = 'Unknown';
-    const regExpList = Object.keys(meanings);
-    for (let i = 0; i < regExpList.length; i = i+1) {
-        if(new RegExp(regExpList[i]).exec(statusCode)) {
-            meaning = meanings[regExpList[i]](hexToNum(statusCode.substring(2)));
+export function statusDecode(status: number[]): string {
+    let meaning = `Unknown value: [${status}]`;
+    if (status.length === 2) {
+        const statusHex = arrayToHex(status, false);
+        const regExpList = Object.keys(meanings);
+        for (let i = 0; i < regExpList.length; i = i+1) {
+            if(new RegExp(regExpList[i]).exec(statusHex)) {
+                meaning = meanings[regExpList[i]](status[1]);
+            }
         }
     }
     return meaning;
