@@ -111,12 +111,23 @@ export class CommandApdu {
         return this._byteArray[3];
     }
 
-    // setData(data: number[]) {
-    //     const lc = data.length;
-        
-    //     const header = this._byteArray.slice(0, 4);
-    //     const le = if(this._byteArray.length > 4)
-    // }
+    setData(data: number[]) {
+        const lc = data.length;
+        const header = this._byteArray.slice(0, 4);
+        let le: number;
+        if(this._byteArray.length > 4) {
+            le = this._byteArray[this._byteArray.length - 1]
+        } else {
+            le = 0;
+        }
+        this._byteArray = header;
+        if (lc > 0) {
+            this._byteArray.push(lc);
+            this._byteArray.push(...data);
+        }
+        this._byteArray.push(le);
+        return this;
+    }
 
     // =========================================================================
 

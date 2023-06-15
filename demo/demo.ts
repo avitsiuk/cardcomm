@@ -68,8 +68,11 @@ devices.on('device-activated', (event => {
             console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
         });
 
-        await card.issueCommand('00A4040000');
-        await card.issueCommand('00A404000611223344550000');
+        // const cmd = new CommandApdu().fromString('00A404000311223300').setData([]);
+        // await card.issueCommand(cmd);
+
+        // await card.issueCommand('00A4040000');
+        // await card.issueCommand('00A404000611223344550000');
         // ("80ca006600"
 
         // await card.issueCommand('00a404000611223344550000');
