@@ -6,12 +6,13 @@ import {
     Devices,
     CommandApdu,
     ResponseApdu,
+    Utils,
 } from '../src/index';
 import { arrayToHex } from '../src/utils';
 
 
 
-const devices = new Devices();
+const pcscDevices = new Devices();
 
 const devTypes = {
     nfc: 'NFC',
@@ -19,7 +20,7 @@ const devTypes = {
 }
 
 console.log('============================================================');
-devices.on('device-activated', (event => {
+pcscDevices.on('device-activated', (event => {
 
     const device = event.device;
     let devType = 'Unknown';
@@ -49,27 +50,34 @@ devices.on('device-activated', (event => {
             return;
         }
 
-        let card = event.card;
+        let card = event.card.setAutoGetResponse();
         console.log();
         console.log(`[${devType}]: Inserted ${devType === devTypes.nfc ? 'ATS' : 'ATR'}:[${card.atrHex}]`);
 
         card.on('command-issued', ({ card, command }) => {
             console.log(`[${devType}]: CMD: [${command}]`);
-            // const isProp = command.isProprietary();
-            // console.log(`    isProp: [${isProp}]`);
-            // if (!isProp) {
-            //     console.log(`    type  : [${command.getType()}]`);
-            //     console.log(`    isLast: [${command.isLast()}]`);
-            //     console.log(`    lChan : [${command.getLogicalChannel()}]`);
-            // }
         });
 
         card.on('response-received', ({ card, command, response }) => {
             console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
         });
 
-        // const cmd = new CommandApdu().fromString('00A404000311223300').setData([]);
-        // await card.issueCommand(cmd);
+        // let cmd = new CommandApdu('00a4040000'); //.setData(Utils.hexToArray('112233445500'));
+        // console.log(`CMD:  [${cmd}]`);
+        // console.log(`Lc:   [${cmd.getLc().toString(16).padStart(2, '0')}](${cmd.getLc()})`);
+        // console.log(`Data: [${Utils.arrayToHex(cmd.getData())}]`);
+        // console.log(`le: [${cmd.getLe().toString(16)}](${cmd.getLe()})`);
+        await card.issueCommand(
+            new CommandApdu().setIns(0xA4).setP1(0x04).setData(Utils.hexToArray('112233445500')),
+        );
+        console.log('=======');
+        card.issueCommand(new CommandApdu('80ff000000'), (err, res) => {
+            console.log(`Final response: [${res.toString()}]`);
+        });
+        // console.log('');
+        // console.log(res.toString());
+
+
 
         // await card.issueCommand('00A4040000');
         // await card.issueCommand('00A404000611223344550000');
