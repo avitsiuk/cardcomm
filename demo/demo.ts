@@ -58,9 +58,9 @@ devices.on('device-activated', (event => {
             // const isProp = command.isProprietary();
             // console.log(`    isProp: [${isProp}]`);
             // if (!isProp) {
-            //     console.log(`    type  : [${cmd.getType()}]`);
-            //     console.log(`    isLast: [${cmd.isLast()}]`);
-            //     console.log(`    lChan : [${cmd.getLogicalChannel()}]`);
+            //     console.log(`    type  : [${command.getType()}]`);
+            //     console.log(`    isLast: [${command.isLast()}]`);
+            //     console.log(`    lChan : [${command.getLogicalChannel()}]`);
             // }
         });
 
@@ -68,7 +68,8 @@ devices.on('device-activated', (event => {
             console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
         });
 
-        card.issueCommand('00A404000611223344550000');
+        await card.issueCommand('00A4040000');
+        await card.issueCommand('00A404000611223344550000');
         // ("80ca006600"
 
         // await card.issueCommand('00a404000611223344550000');

@@ -1,6 +1,6 @@
-// import * as Utils from './utils'
+import * as Utils from './utils'
 import CommandApdu from './commandApdu';
-// import statusDecode from './statusDecode';
+import statusDecode from './statusDecode';
 import ResponseApdu from './responseApdu';
 // import * as TypesInternal from './typesInternal';
 import Card from './card';

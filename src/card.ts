@@ -49,7 +49,7 @@ class Card implements ICard {
             cmd = command;
         };
 
-        this._eventEmitter.emit('command-issued', { card: this, command });
+        this._eventEmitter.emit('command-issued', { card: this, command: cmd });
 
         const resLen = 258;  //Response APDU max size(256 for data + 2 for status)
         if (callback) {
