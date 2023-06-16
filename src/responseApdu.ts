@@ -6,7 +6,20 @@ export class ResponseApdu {
     private _status: number[] = [];
     private _data: number[] = [];
 
-    constructor() {
+    constructor(resp?: string | number[] | Buffer | ResponseApdu) {
+        this._byteArray = [];
+
+        if (typeof resp !== 'undefined') {
+            if (typeof resp === 'string') {
+                this.fromString(resp);
+            } else if (Array.isArray(resp)) {
+                this.fromArray(resp);
+            } else if (Buffer.isBuffer(resp)) {
+                this.fromBuffer(resp);
+            } else {
+                if (resp.length > 0) this.fromArray(resp.toArray());
+            }
+        }
     }
 
     fromArray(array: number[]) {

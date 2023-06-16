@@ -3,9 +3,23 @@ import { bufferToArray, hexToArray, arrayToHex } from './utils';
 type TCommandType = ''
 
 export class CommandApdu {
-    private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00];
+    private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00, 0x00];
 
-    constructor() {
+    constructor(command?: string | number[] | Buffer | CommandApdu) {
+        this._byteArray = [0x00, 0x00, 0x00, 0x00, 0x00];
+
+        if (typeof command !== 'undefined') {
+            if (typeof command === 'string') {
+                this.fromString(command);
+            } else if (Array.isArray(command)) {
+                this.fromArray(command);
+            } else if (Buffer.isBuffer(command)) {
+                this.fromBuffer(command);
+            } else {
+                if (command.length > 0) this.fromArray(command.toArray());
+            }
+        }
+
         // if (obj.buffer) {
         //     if (obj.buffer.length < 4) {
         //         throw new Error(`Command APDU must be at least 4 bytes long. Received: ${obj.buffer.length}`);
@@ -45,9 +59,13 @@ export class CommandApdu {
         // }
     }
 
+    get length(): number {
+        return this._byteArray.length;
+    }
+
     fromArray(array: number[]) {
-        if(array.length < 4) {
-            throw new Error(`Command array too short(min 4 bytes): [${array}]`);
+        if(array.length < 5) {
+            throw new Error(`Command array too short(min 5 bytes): [${array}]`);
         }
         this._byteArray = array;
         return this;
@@ -75,52 +93,55 @@ export class CommandApdu {
 
     // raw header bytes
 
-    setClaByte(cla: number): this {
+    setCla(cla: number): this {
         this._byteArray[0] = cla;
         return this;
     }
 
-    getClaByte(): number {
+    getCla(): number {
         return this._byteArray[0];
     }
 
-    setInsByte(ins: number): this {
+    setIns(ins: number): this {
         this._byteArray[1] = ins;
         return this;
     }
 
-    getInsByte(): number {
+    getIns(): number {
         return this._byteArray[1];
     }
 
-    setP1Byte(p1: number): this {
+    setP1(p1: number): this {
         this._byteArray[2] = p1;
         return this;
     }
 
-    getP1Byte(): number {
+    getP1(): number {
         return this._byteArray[2];
     }
 
-    setP2Byte(p2: number): this {
+    setP2(p2: number): this {
         this._byteArray[3] = p2;
         return this;
     }
 
-    getP2Byte(): number {
+    getP2(): number {
         return this._byteArray[3];
     }
 
-    setData(data: number[]) {
-        const lc = data.length;
+    setData(data: number[]): this {
+        if (data.length > 255) {
+            throw new Error(`Data too long; Max: 255 bytes; Received: ${data.length} bytes`);
+        }
         const header = this._byteArray.slice(0, 4);
         let le: number;
         if(this._byteArray.length > 4) {
-            le = this._byteArray[this._byteArray.length - 1]
+            le = this._byteArray[this._byteArray.length - 1];
         } else {
             le = 0;
         }
         this._byteArray = header;
+        const lc = data.length;
         if (lc > 0) {
             this._byteArray.push(lc);
             this._byteArray.push(...data);
@@ -128,6 +149,42 @@ export class CommandApdu {
         this._byteArray.push(le);
         return this;
     }
+
+    getData(): number[] {
+        let data = new Array<number>(0);
+        if (this._byteArray.length > 5) {
+            const dataWithLc = this._byteArray.slice(4, -1);
+            if (dataWithLc.length > 1) data = dataWithLc.slice(1);
+        }
+        return data;
+    }
+
+    getLc(): number {
+        let lc = 0;
+        if (this._byteArray.length > 5) lc = this._byteArray[4];
+        return lc;
+    }
+
+    setLe(le: number): this{
+        if (this._byteArray.length > 4) {
+            this._byteArray[this.length - 1] = le;
+        } else {
+            this._byteArray.push(le);
+        }
+        return this;
+    }
+
+    getLe(): number{
+        let le = 0;
+        if (this._byteArray.length > 4) {
+            le = this._byteArray[this.length - 1];
+        } else {
+            this._byteArray.push(0);
+        }
+        return le;
+    }
+
+
 
     // =========================================================================
 
