@@ -1,7 +1,7 @@
 import { bufferToArray, hexToArray, arrayToHex } from './utils';
 import statusDecode from './statusDecode';
 
-export class ResponseApdu {
+export default class ResponseApdu {
     private _byteArray: number[] = [];
     private _status: number[] = [];
     private _data: number[] = [];
@@ -61,6 +61,10 @@ export class ResponseApdu {
         return this._data;
     }
 
+    get dataLength(): number {
+        return this._data.length;
+    }
+
     get status(): number[] {
         return this._status;
     }
@@ -72,7 +76,6 @@ export class ResponseApdu {
     isOk() {
         if (this.length >= 2) {
             if (this.status[0] === 0x90 && this.status[1] === 0x00) return true;
-            if (this.status[0] === 0x61) return true;
         }
         return false;
     }
@@ -85,4 +88,8 @@ export class ResponseApdu {
     }
 }
 
-export default ResponseApdu;
+export function assertOk(resp: ResponseApdu): void {
+    if (!resp.isOk()) {
+        throw new Error(`Error response: [${resp.toString()}]`)
+    }
+}

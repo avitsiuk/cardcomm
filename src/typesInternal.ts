@@ -61,19 +61,3 @@ export interface IDevices {
     once(eventName: 'device-activated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
     once(eventName: 'device-deactivated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
 }
-
-// export type TIso7816AppEventName = 'application-selected';
-
-// export interface IIso7816Application {
-//     _eventEmitter: EventEmitter;
-//     card: ICard
-
-//     issueCommand: (commandApdu: CommandApdu) => Promise<ResponseApdu>;
-//     selectFile: (bytes: number[], p1: number, p2: number) => Promise<ResponseApdu>;
-//     getResponse: (length: number) => Promise<ResponseApdu>;
-//     readRecord: (sfi: number, record: number) => Promise<ResponseApdu>;
-//     getData: (p1: number, p2: number) => Promise<ResponseApdu>;
-
-//     on(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
-//     once(eventName: 'application-selected', eventHandler: (event: { application: string }) => void): IIso7816Application;
-// }

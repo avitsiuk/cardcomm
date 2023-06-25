@@ -8,7 +8,7 @@ const NVM_U = 'State of non-volatile memory is unchanged';
 const NVM_C = 'State of non-volatile memory may have changed';
 
 function unkSw2(sw2: number): string {
-    return `Unknown SW2: [0x${arrayToHex([sw2], false)}]`;
+    return `Unknown SW2: [0x${sw2.toString(16).padStart(2, '0')}]`;
 }
 
 const meanings: {[key: string]: (sw2: number) => string} = {
@@ -271,7 +271,7 @@ const meanings: {[key: string]: (sw2: number) => string} = {
 };
 
 export function statusDecode(status: number[]): string {
-    let meaning = `Unknown value: [${status}]`;
+    let meaning = `Unknown value: [${arrayToHex(status)}]`;
     if (status.length === 2) {
         const statusHex = arrayToHex(status, false);
         const regExpList = Object.keys(meanings);
