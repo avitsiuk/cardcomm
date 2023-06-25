@@ -3,10 +3,10 @@ import { bufferToArray, hexToArray, arrayToHex } from './utils';
 type TCommandType = ''
 
 export class CommandApdu {
-    private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00, 0x00];
+    private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00];
 
     constructor(command?: string | number[] | Buffer | CommandApdu) {
-        this._byteArray = [0x00, 0x00, 0x00, 0x00, 0x00];
+        this._byteArray = [0x00, 0x00, 0x00, 0x00];
 
         if (typeof command !== 'undefined') {
             if (typeof command === 'string') {
@@ -64,7 +64,7 @@ export class CommandApdu {
     }
 
     fromArray(array: number[]) {
-        if(array.length < 5) {
+        if(array.length < 4) {
             throw new Error(`Command array too short(min 5 bytes): [${array}]`);
         }
         this._byteArray = array;
@@ -165,7 +165,7 @@ export class CommandApdu {
         return lc;
     }
 
-    setLe(le: number): this{
+    setLe(le: number = 0): this{
         if (this._byteArray.length > 4) {
             this._byteArray[this.length - 1] = le;
         } else {
@@ -178,8 +178,6 @@ export class CommandApdu {
         let le = 0;
         if (this._byteArray.length > 4) {
             le = this._byteArray[this.length - 1];
-        } else {
-            this._byteArray.push(0);
         }
         return le;
     }
@@ -214,7 +212,7 @@ export class CommandApdu {
     setType(type: 4 | 16): this {
         switch (type) {
             case 4:
-                this._byteArray[0] &= 0x1F;
+                this._byteArray[0] &= 0x9F;
                 break;
             case 16:
                 this._byteArray[0] |= 0x40;
@@ -225,10 +223,10 @@ export class CommandApdu {
         return this;
     }
 
-    getType() {
-        if ((this._byteArray[0] & 0xE0) === 0) {
+    getType(): 4 | 16 {
+        if ((this._byteArray[0] & 0x60) === 0) { // 0XX0 0000
             return 4;
-        } else if ((this._byteArray[0] & 0xC0) === 0x40) {
+        } else if ((this._byteArray[0] & 0x40) > 0) { // 0X00 0000
             return 16;
         } else {
             throw new Error('Unknown type');
@@ -247,7 +245,6 @@ export class CommandApdu {
         return this;
     }
 
-    /** marks command as not the last command of a chain */
     isLast(): boolean {
         if ((this._byteArray[0] & 0x10) === 0) {
             return true;
@@ -278,7 +275,8 @@ export class CommandApdu {
         return this;
     }
 
-    /** Returns command logical channel. 0-3 for `Type4`, 4-19 for `Type16` commands */
+    /** Returns command logical channel.  
+     * 0-3 for `Type4`, 4-19 for `Type16` commands */
     getLogicalChannel(): number {
         const type = this.getType();
         switch (type) {
@@ -291,8 +289,43 @@ export class CommandApdu {
         }
     }
 
+    /**
+     * Sets secure messaging bits in CLA byte  
+     * `0` - no secure messaging; `Type4` and `Type16` APDUs  
+     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs  
+     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs  
+     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs  
+     */
+    setSecMgsType(type: 0 | 1 | 2 | 3): this {
+        const cmdType = this.getType();
+        if(type < 0 || type > 3) throw new Error(`Unsupported secure message type: ${type}`);
+        if (cmdType === 4) {
+            this.setCla(this.getCla() & 0xF3 ); // zero both bits
+            this.setCla(this.getCla() | (type << 2) );
+        } else {
+            if (type > 1) throw new Error('Type16 APDUs support only 0 or 1 for secure message type');
+            this.setCla(this.getCla() | (type << 5) );
+        }
+        return this;
+    }
 
-
+    /**
+     * Gets secure messaging type from CLA byte  
+     * `0` - no secure messaging; `Type4` and `Type16` APDUs  
+     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs  
+     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs  
+     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs  
+     */
+    getSecMgsType(): number {
+        const cmdType = this.getType();
+        let result = 0;
+        if (cmdType === 4) {
+            result = (this.getCla() >> 2) & 0x03;
+        } else {
+            result = (this.getCla() >> 5) & 0x01;
+        }
+        return result;
+    }
 
 }
 
