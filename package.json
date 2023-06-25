@@ -33,13 +33,15 @@
         "build-esm": "tsc -p tsconfig.esm.json",
         "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
         "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\"",
-        "demo": "npx ts-node ./demo/demo.ts"
+        "demo": "npx ts-node ./demo/demo.ts",
+        "dev": "npx nodemon ./demo/demo.ts"
     },
     "dependencies": {
         "pcsclite": "1.0.1"
     },
     "devDependencies": {
         "concurrently": "^8.0.1",
+        "nodemon": "^2.0.22",
         "prettier": "^2.2.1",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4"
