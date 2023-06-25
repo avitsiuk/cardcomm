@@ -3,6 +3,7 @@ import { arrayToHex, bufferToArray } from './utils';
 import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
 import { ICard, IDevice, TCardEventName } from './typesInternal';
+import { getResponse } from './iso7816/commands';
 
 /** Response APDU max size(256 for data + 2 for status) */
 const maxTrResLen = 258;
@@ -14,6 +15,7 @@ class Card implements ICard {
     private _atr: number[];
     private _atrHex: string;
     private _autoGetResponse: boolean = false;
+    private _transformer: undefined | ((cmd: CommandApdu) => CommandApdu);
 
     constructor(device: IDevice, atr: Buffer, protocol: number) {
         this._device = device;
@@ -34,6 +36,31 @@ class Card implements ICard {
         return `Card(atr:0x${this.atrHex})`;
     }
 
+    /** Function that transforms each command before sending;  
+     * Can be used to add secure session authentication
+    */
+    setTransformer(
+        func?: ((cmd: CommandApdu) => CommandApdu),
+    ): this {
+        this._transformer = func;
+        return this;
+    }
+
+    /** Function that transforms each command before sending;  
+     * Can be used to add secure session authentication
+    */
+    get transformer(): undefined | ((cmd: CommandApdu) => CommandApdu) {
+        return this._transformer;
+    }
+
+    private _doTransform(cmd: CommandApdu): CommandApdu {
+        if (typeof this._transformer === 'undefined') {
+            return cmd;
+        } else {
+            return this._transformer(cmd);
+        }
+    }
+
     /**
      * If set to true(default), `GET_RESPONSE APDU` gets sent automatically upon receiving `0x61XX` response.  
      * Also the command `Le` value gets corrected and commands is sent again upon receiving `0x6CXX` response.
@@ -48,49 +75,10 @@ class Card implements ICard {
     }
 
     private _issueCmdInternal(cmd: CommandApdu, callback: (err: any, response: ResponseApdu) => void ): void {
-        let transmitCallback: (err: any, response: Buffer) => void;
-        if (this.autoGetResponse) {
-            transmitCallback = (err: any, respBuffer: Buffer) => {
-                const response = new ResponseApdu(respBuffer);
-                this._eventEmitter.emit('response-received', {
-                    card: this,
-                    command: cmd,
-                    response,
-                });
-                if (response.status.length >= 2 && response.status[0] !== 0x90) {
-                    if (response.status[0] === 0x61) {
-                        const getRespCmd = new CommandApdu([0x00, 0xC0, 0x00, 0x00, response.status[1]]);
-                        this._eventEmitter.emit('command-issued', {
-                            card: this,
-                            command: getRespCmd,
-                        });
-                        this._device.transmit(
-                            getRespCmd.toBuffer(),
-                            maxTrResLen,
-                            this._protocol,
-                            transmitCallback,
-                        );
-                    } else if (response.status[0] === 0x6C) {
-                        const correctLeCmd = new CommandApdu(cmd).setLe(response.status[1]);
-                        this._eventEmitter.emit('command-issued', {
-                            card: this,
-                            command: correctLeCmd,
-                        });
-                        this._device.transmit(
-                            correctLeCmd.toBuffer(),
-                            maxTrResLen,
-                            this._protocol,
-                            transmitCallback,
-                        );
-                    } else {
-                        callback(err, response);
-                    }
-                } else {
-                    callback(err, response);
-                }
-            }
-        } else {
-            transmitCallback = (err: any, respBuffer: Buffer) => {
+        const respAcc = new Array<number>(0); // response accumulator
+        let middleCallback: (err: any, response: Buffer) => void;
+        if (!this.autoGetResponse) {
+            middleCallback = (err: any, respBuffer: Buffer) => {
                 const response = new ResponseApdu(respBuffer);
                 this._eventEmitter.emit('response-received', {
                     card: this,
@@ -99,18 +87,67 @@ class Card implements ICard {
                 });
                 callback(err, response);
             }
+        } else {
+            middleCallback = (err: any, respBuffer: Buffer) => {
+                const response = new ResponseApdu(respBuffer);
+                this._eventEmitter.emit('response-received', {
+                    card: this,
+                    command: cmd,
+                    response,
+                });
+
+                const bytesToGet = response.availableResponseBytes();
+                if (bytesToGet > 0) {
+                    if(response.dataLength > 0) respAcc.push(...response.data);
+                    let cmdToResend: CommandApdu | undefined;
+                    switch (response.status[0]) {
+                        case 0x61:
+                            cmdToResend = getResponse(response.status[1]).setCla(cmd.getCla());
+                            break;
+                        case 0x6C:
+                            cmdToResend = new CommandApdu(cmd).setLe(response.status[1]);
+                            break;
+                        default:
+                            break;
+                    }
+
+                    // console.log(cmdToResend?.toString());
+
+                    // callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
+
+                    if(typeof cmdToResend === 'undefined') {
+                        callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
+                    } else {
+                        cmdToResend = this._doTransform(cmdToResend);
+                        this._eventEmitter.emit('command-issued', {
+                            card: this,
+                            command: cmdToResend,
+                        });
+                        this._device.transmit(
+                            cmdToResend.toBuffer(),
+                            maxTrResLen,
+                            this._protocol,
+                            middleCallback,
+                        );
+                    }
+                } else {
+                    callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
+                }
+            }
         }
+
+        const tCmd = this._doTransform(cmd);
 
         this._eventEmitter.emit('command-issued', {
             card: this,
-            command: cmd,
+            command: tCmd,
         });
 
         this._device.transmit(
-            cmd.toBuffer(),
+            tCmd.toBuffer(),
             maxTrResLen,
             this._protocol,
-            transmitCallback,
+            middleCallback,
         );
     }
 
@@ -122,7 +159,7 @@ class Card implements ICard {
     ): void | Promise<ResponseApdu> {
         let cmd = new CommandApdu(command);
 
-        if (cmd.length < 5) {
+        if (cmd.length < 4) {
             throw new Error(`Command too short; Min: 5 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`);
         }
 
