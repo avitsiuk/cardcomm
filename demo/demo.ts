@@ -1,9 +1,8 @@
 
 import {
-    // CommandApdu,
     Devices,
-    // Iso7816Commands,
-    // Utils,
+    Iso7816Commands,
+    gpDefStaticKeys,
     GPSecureSession,
 } from '../src/index';
 
@@ -26,15 +25,13 @@ pcscDevices.on('device-activated', (event => {
     }
     console.log(`New device: ["${device.name}"](${devType})`);
 
-    // if (devType != devTypes.nfc) return;
-
     device.on('error', (error) => {
         console.error(`[${devType}] error: ${error.message}`);
     })
 
     device.on('card-removed', (event) => {
         if (!event.card) {
-            console.log(`[${devType}]: Removed  [null]`);
+            console.log(`[${devType}]: No card inserted`);
             return;
         }
         let card = event.card;
@@ -60,12 +57,22 @@ pcscDevices.on('device-activated', (event => {
             console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
         });
 
-        const secSession = new GPSecureSession(card);
+        console.log('=========================================================');
 
-        secSession.init()
+        // selecting ISD
+        await card.issueCommand(Iso7816Commands.select());
+
+        // creating new secure session
+        const secSession = new GPSecureSession(card)
+            .setStaticKeys(gpDefStaticKeys)
+            .setSecurityLevel(0);
+
+        // initializing new secure session and authenticating host
+        secSession.initAndAuth()
             .then((resp) => {
                 console.log('===================================');
-                console.log(`Authenticated to ISD!!`);
+                console.log('Authenticated to ISD!!');
+                console.log(`[${resp.toString()}]`);
                 console.log('===================================');
             })
             .catch((err) => {
@@ -73,6 +80,44 @@ pcscDevices.on('device-activated', (event => {
                 console.log(`Error: ${err}`);
                 console.log('===================================');
             })
-        // secSession.issueCommand(cmd);
     });
 }));
+
+// const d = (data: number[]) => {
+//     let result: any;
+//     try {
+//         result = sd(data);
+//     } catch (error) {
+//         return arrayToHex(data);
+//     }
+//     const keys = Object.keys(result);
+//     for (let i = 0; i < keys.length; i++) {
+//         const tag = keys[i];
+//         if (result[tag].length > 0) {
+//             result[tag].value = d(result[tag].value);
+//         }
+//     }
+//     return result;
+// }
+
+// const tlv = d(sResp.data);
+
+// console.log(JSON.stringify(tlv, null, 2));
+
+// const printTlv = (tlv: any, i: number = 0) => {
+//     let msg = '';
+//     msg = '';
+//     const tags = Object.keys(tlv);
+//     for (let tragIdx = 0; tragIdx < tags.length; tragIdx++) {
+//         const tag = tags[tragIdx];
+//         msg = `[${tag}](${tlv[tag].length}):`;
+
+//         if (typeof tlv[tag].value === 'string') {
+//             msg += ` [${tlv[tag].value.toUpperCase()}]`;
+//             console.log(msg.padStart((msg.length + (4 * i)), ' '));
+//         } else {
+//             console.log(msg.padStart((msg.length + (4 * i)), ' '));
+//             printTlv(tlv[tag].value, ++i);
+//         }
+//     }
+// };

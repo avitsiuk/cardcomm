@@ -6,44 +6,59 @@ import * as Iso7816Commands from '../iso7816/commands';
 import * as GPCommands from './commands';
 import Card from '../card';
 
+type TSecLvl = 0 | 1 | 3;
+
 interface ISessionKeys {
     enc: number[],
     mac: number[],
     dek: number[],
 }
 
+interface ISessionInfo {
+    /** Get set to true after a sussessful authorization. */
+    isActive: boolean,
+    /** Session security level. Read the setSecurityLevel() method documentation to know more. */
+    secLvl: TSecLvl,
+    /** Secure channel protocol(SCP) number */
+    protocol: number,
+    /** Key diversification data */
+    keyDivData: number[],
+    /** Used key version */
+    keyVersion: number,
+    /**  Secure Channel Sequence Counter */
+    seqCount: number[],
+}
+
 const defKey = [0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F];
-const defStaticKeys: ISessionKeys = {
+
+export const defStaticKeys: ISessionKeys = {
     enc: defKey,
     mac: defKey,
     dek: defKey,
 }
 
 function tDesCbcEnc(data: Buffer, key: Buffer, iv: Buffer): Buffer {
-    const cipher = crypto
-        .createCipheriv('des-ede3-cbc', key, iv)
-        .setAutoPadding(true);
+    const cipher = crypto.createCipheriv('des-ede3-cbc', key, iv);
     return Buffer.concat([cipher.update(data), cipher.final()]);
 }
 
 function tDesCbcDec(data: Buffer, key: Buffer, iv: Buffer): Buffer {
-    const decipher = crypto
-        .createDecipheriv('des-ede3-cbc', key, iv)
-        .setAutoPadding(true);
+    const decipher = crypto.createDecipheriv('des-ede3-cbc', key, iv);
     return Buffer.concat([decipher.update(data), decipher.final()]);
 }
 
 function genSessionKey(
     type: 'enc' | 'mac' | 'dek',
-    sequenceNumber: number[],
-    staticSessionKey: number[] = defStaticKeys[type],
+    sequenceCounter: number[],
+    staticSessionKey: number[],
 ): number[] {
-    if(sequenceNumber.length !== 2) {
-        throw new Error('Wrong sequence number length');
+    if(sequenceCounter.length !== 2) {
+        throw new Error('Cequence counter must be 2 bytes long');
     }
     if(staticSessionKey.length !== 16) {
-        throw new Error('Wrong static key length');
+        throw new Error('Static key must be 16 bytes long');
     }
+
     const derivationData = Buffer.alloc(16, 0);
     switch (type) { // const values defined by GP
         case 'enc':
@@ -58,24 +73,20 @@ function genSessionKey(
         default:
             throw new Error(`Unknown key type: '${type}'`);
     }
-    // sequence counter, card challenge first 2 bytes
-    // remaining bytes are set to 0
-    derivationData.set(sequenceNumber, 2);
-    // 3 keys, 8 bytes each
+    derivationData.set(sequenceCounter, 2);
+
     const tDesKey = Buffer.alloc(24 , 0);
-    // staticSessionKey = K1K2
     tDesKey.set(staticSessionKey);
-    // K3=K1, actual bytes are K1K2K1
     tDesKey.set(staticSessionKey.slice(0, 8), 16);
 
-    // 2key-3DES
     const iv = Buffer.alloc(8, 0);
+
     return [...tDesCbcEnc(derivationData, tDesKey, iv).subarray(0, 16)];
 }
 
 function genSessionKeys(
     sequenceNumber: number[],
-    staticKeys: ISessionKeys = defStaticKeys,
+    staticKeys: ISessionKeys,
 ): ISessionKeys {
     return {
         enc: genSessionKey('enc', sequenceNumber, staticKeys.enc),
@@ -84,72 +95,65 @@ function genSessionKeys(
     }
 }
 
-function genCardCryptogram(
+function genCryptogram(
+    type: 'card' | 'host',
     cardChallenge: number[],
     hostChallenge: number[],
-    enc: number[],
+    encKey: number[],
 ) {
     if(cardChallenge.length !== 8) {
-        throw new Error('Wrong card challenge length');
+        throw new Error('Card challenge must be 8 bytes long');
     }
     if(hostChallenge.length !== 8) {
-        throw new Error('Wrong host challenge length');
+        throw new Error('Host challenge must be 8 bytes long');
     }
-    if(cardChallenge.length !== 8) {
-        throw new Error('Wrong ENC key length');
+    if(encKey.length !== 16) {
+        throw new Error('ENC key must be 16 bytes long');
     }
-    // host + card + 80000...
-    const data = Buffer.alloc(24, 0);
-    data.set(hostChallenge);
-    data.set(cardChallenge, 8);
-    data.set([0x80], 16);
-    const tDesKey = Buffer.alloc(24 , 0);
-    tDesKey.set(enc);
-    tDesKey.set(enc.slice(0, 8), 16);
-    const iv = Buffer.alloc(8, 0);
-    return [...tDesCbcEnc(data, tDesKey, iv).subarray(16, 24)];
-}
 
-function genHostCryptogram(
-    cardChallenge: number[],
-    hostChallenge: number[],
-    enc: number[],
-) {
-    if(cardChallenge.length !== 8) {
-        throw new Error('Wrong card challenge length');
-    }
-    if(hostChallenge.length !== 8) {
-        throw new Error('Wrong host challenge length');
-    }
-    if(cardChallenge.length !== 8) {
-        throw new Error('Wrong ENC key length');
-    }
-    // card + host + 80000...
     const data = Buffer.alloc(24, 0);
-    data.set(cardChallenge);
-    data.set(hostChallenge, 8);
+    switch (type) {
+        case 'card':
+            data.set(hostChallenge);
+            data.set(cardChallenge, 8);
+            break;
+        case 'host':
+            data.set(cardChallenge);
+            data.set(hostChallenge, 8);
+            break;
+        default:
+            throw new Error(`Unknown cryptogram type: "${type}"`)
+    }
     data.set([0x80], 16);
-    const tDesKey = Buffer.alloc(24 , 0)
-    tDesKey.set(enc);
-    tDesKey.set(enc.slice(0, 8), 16);
+
+    const tDesKey = Buffer.alloc(24 , 0);
+    tDesKey.set(encKey);
+    tDesKey.set(encKey.slice(0, 8), 16);
+
     const iv = Buffer.alloc(8, 0);
+
     return [...tDesCbcEnc(data, tDesKey, iv).subarray(16, 24)];
 }
 
 function authenticateCmd(
     cmd: CommandApdu,
-    macKey: number[],
+    sessionKeys: ISessionKeys,
+    secLvl: TSecLvl,
+    icv: number[] = new Array<number>(8).fill(0),
 ) {
-    if(macKey.length !== 16) {
+    if(sessionKeys.mac.length !== 16) {
         throw new Error('Wrong MAC key length');
     }
+    if(icv.length !== 8) {
+        throw new Error('Wrong ICV length');
+    }
     const macLength = 8;
-    const k1 = Buffer.from(macKey.slice(0, 8));
-    const k2 = Buffer.from(macKey.slice(8));
+    const k1 = Buffer.from(sessionKeys.mac.slice(0, 8));
+    const k2 = Buffer.from(sessionKeys.mac.slice(8));
 
-    const dataWithMac = Buffer.alloc(cmd.getData().length + macLength, 0);
+    const dataWithMac = Buffer.alloc(cmd.getLc() + macLength, 0);
     dataWithMac.set(cmd.getData());
-    const tempCmd = new CommandApdu(cmd).setData([...dataWithMac]);
+    const tempCmd = new CommandApdu(cmd).setSecMgsType(1).setData([...dataWithMac]);
     let dataToAuthenticate = Buffer.from(tempCmd.toArray());
     // remove Le and '00' mac bytes
     dataToAuthenticate = dataToAuthenticate.subarray(0, dataToAuthenticate.length - 9);
@@ -160,7 +164,7 @@ function authenticateCmd(
     const paddedData = Buffer.alloc(dataToAuthenticate.length + 1 + paddingLength, 0);
     paddedData.set(dataToAuthenticate);
     paddedData.set([0x80], dataToAuthenticate.length);
-    const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.alloc(8, 0));
+    const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.from(icv));
     const step1res = Buffer.concat([step1.update(paddedData), step1.final()]).subarray(0, 16);
     const step2 = crypto
         .createDecipheriv('des-ecb', k2, Buffer.alloc(0))
@@ -176,92 +180,164 @@ function authenticateCmd(
 
 export default class SecureSession {
     private _card: Card;
-    private _staticKeys: ISessionKeys = defStaticKeys;
-    private _sessionKeys: ISessionKeys = defStaticKeys;
+    private _isActive: boolean = false;
+    private _secLvl: TSecLvl = 0;
+    private _staticKeys: ISessionKeys | undefined;
+    private _sessionKeys: ISessionKeys | undefined;
 
-    private _hostChallenge: number[] = [];
-    private _cardChallenge: number[] = [];
-
-    private _keyDiversificationData: number[] = [];
+    private _keyDivData: number[] = [];
     private _keyVersion: number = 0;
     private _protocolVersion: number = 0;
-    private _sequenceCounter: number[] = []; // first 2 bytes of card challenge
+    private _sequenceCounter: number[] = [];
 
-    private _receivedCardCryptogram: number[] = [];
-    private _calculatedCardCryptogram: number[] = [];
-    private _hostCryptogram: number[] = [];
-
+    private _transformerFunction: ((cmd: CommandApdu) => CommandApdu) | undefined;
+    private _doTransform = (cmd: CommandApdu) => {
+        if (typeof this._transformerFunction === 'undefined' || !this.isActive) {
+            return cmd;
+        }
+        return this._transformerFunction(cmd);
+    }
 
     constructor(card: Card) {
         this._card = card;
     }
 
-    setStaticKeys(keys: ISessionKeys): this {
+    get isActive(): boolean {
+        return this._isActive;
+    }
+
+    /**
+     * Sets the security level for this session. Must be called before initAndAuth.
+     * @param secLvl - (Default:`0`) Defines the level of security for all secure messaging commands following this EXTERNAL AUTHENTICATE command (it does not apply to this command) and within this Secure Channel  
+     * Possible `secLvl` values:  
+     * `0` - No secure messaging expected  
+     * `1` - C-MAC  
+     * `3` - C-DECRYPTION and C-MAC  
+     */
+    setSecurityLevel(secLvl: TSecLvl = 0): this {
+        if(this.isActive) {
+            throw new Error('Cannot set a secured level on an active session. Reset it first.');
+        }
+        this._secLvl = secLvl;
+        return this;
+    }
+
+    get securityLevel(): TSecLvl {
+        return this._secLvl;
+    }
+
+    setStaticKeys(keys: ISessionKeys | undefined): this {
         this._staticKeys = keys;
         return this;
     }
 
-    get staticKeys(): ISessionKeys {
+    get staticKeys() {
         return this._staticKeys;
     }
 
-    setSessionKeys(keys: ISessionKeys): this {
-        this._sessionKeys = keys;
-        return this;
-    }
-
-    get sessionKeys(): ISessionKeys {
+    get sessionKeys() {
         return this._sessionKeys;
     }
 
-    init(secLvl: 0 | 1 | 3 = 0, keyVer: number = 0, keyId: number = 0): Promise<ResponseApdu> {
+    get protocolVersion() {
+        return this._protocolVersion;
+    }
+
+    /** Key diversification data */
+    get keyDivData() {
+        return this._keyDivData
+    }
+
+    get keyVersion() {
+        return this._keyVersion;
+    }
+
+    get sequenceCounter() {
+        return this._sequenceCounter;
+    }
+
+    get info(): ISessionInfo {
+        return {
+            isActive: this.isActive,
+            /** Session security level. Read the setSecurityLevel() method documentation to know more. */
+            secLvl: this.securityLevel,
+            /** Secure channel protocol(SCP) number */
+            protocol: this.protocolVersion,
+            /** Key diversification data */
+            keyDivData: this.keyDivData,
+            /** Used key version */
+            keyVersion: this.keyVersion,
+            /**  Secure Channel Sequence Counter */
+            seqCount: this.sequenceCounter,
+        }
+    }
+
+    get transformer(): (cmd: CommandApdu) => CommandApdu {
+        return this._doTransform;
+    }
+
+    /** Sends INITIALIZE_UPDATE and EXTERNAL AUTHENTICATE commands. Sets session as active on success */
+    initAndAuth(keyVer: number = 0, keyId: number = 0): Promise<ResponseApdu> {
         return new Promise((resolve, reject) => {
-            // selecting ISD applet first
-            this._card.issueCommand(Iso7816Commands.select())
+            if (typeof this.staticKeys === 'undefined') {
+                return reject(new Error('Cannot initialize secure session. No static keys have been set.'));
+            }
+            this.reset();
+            const hostChallenge = [...crypto.randomBytes(8)];
+            // sending INITIALIZE_UPDATE command with host challenge
+            this._card.issueCommand(GPCommands.initUpdate(hostChallenge, keyVer, keyId))
                 .then((response) => {
                     assertOk(response);
-                    // generating random host chalenge
-                    this._hostChallenge = [...crypto.randomBytes(8)];
-                    // sending INITIALIZE_UPDATE command with host challenge
-                    this._card.issueCommand(GPCommands.initUpdate(this._hostChallenge, keyVer, keyId))
+                    if (response.dataLength !== 28) {
+                        return reject(
+                            new Error(`Secure session init error; Response length error; resp: [${response.toString()}]`),
+                        );
+                    }
+
+                    const keyDivData = response.data.slice(0, 10);
+                    const keyVersion = response.data[10];
+                    const protocolVersion = response.data[11];
+                    if(protocolVersion !== 0x02) {
+                        return reject(new Error(`Only 0x02 protocol is supported. Received: 0x${protocolVersion.toString(16).padStart(2, '0').toUpperCase()}`));
+                    }
+                    const sequenceCounter = response.data.slice(12, 14);
+                    const cardChallenge = response.data.slice(12, 20);
+                    const cardCryptogram = response.data.slice(20);
+
+                    const sessionKeys = genSessionKeys(sequenceCounter, this.staticKeys!);
+                    const expectedCardCryptogram = genCryptogram(
+                        'card',
+                        cardChallenge,
+                        hostChallenge,
+                        sessionKeys.enc,
+                    );
+                    if (arrayToHex(cardCryptogram) !== arrayToHex(expectedCardCryptogram)) {
+                        return reject(new Error('Card cryptogram does not match'));
+                    }
+                    const hostCryptogram = genCryptogram(
+                        'host',
+                        cardChallenge,
+                        hostChallenge,
+                        sessionKeys.enc,
+                    );
+                    const extAuthCmd = authenticateCmd(
+                        GPCommands.extAuth(hostCryptogram, this.securityLevel),
+                        sessionKeys,
+                        this.securityLevel,
+                    );
+                    this._card.issueCommand(extAuthCmd)
                         .then((response) => {
                             assertOk(response);
-                            if (response.dataLength !== 28) {
-                                throw new Error(`Secure session init error; response length error; resp: [${response.toString()}]`)
-                            }
-
-                            this._keyDiversificationData = response.data.slice(0, 10);
-                            this._keyVersion = response.data[10];
-                            this._protocolVersion = response.data[11];
-                            this._sequenceCounter = response.data.slice(12, 14);
-                            this._cardChallenge = response.data.slice(12, 20);
-                            this._receivedCardCryptogram = response.data.slice(20);
-
-                            this._sessionKeys = genSessionKeys(this._sequenceCounter, this._staticKeys);
-                            this._calculatedCardCryptogram = genCardCryptogram(
-                                this._cardChallenge,
-                                this._hostChallenge,
-                                this._sessionKeys.enc,
-                            );
-                            if (arrayToHex(this._receivedCardCryptogram) !== arrayToHex(this._calculatedCardCryptogram)) {
-                                throw new Error('Card cryptogram does not match');
-                            }
-                            this._hostCryptogram = genHostCryptogram(
-                                this._cardChallenge,
-                                this._hostChallenge,
-                                this._sessionKeys.enc,
-                            );
-                            let extAuthCmd = GPCommands.extAuth(this._hostCryptogram, secLvl);
-                            // authenticating EXT_AUTH command using session key before senting
-                            extAuthCmd = authenticateCmd(extAuthCmd, this._sessionKeys.mac);
-                            this._card.issueCommand(extAuthCmd)
-                                .then((response) => {
-                                    assertOk(response);
-                                    resolve(response);
-                                })
-                                .catch((err) => {
-                                    reject(err);
-                                });
+                            this._sessionKeys = sessionKeys;
+                            this._keyDivData = keyDivData;
+                            this._keyVersion = keyVersion;
+                            this._protocolVersion = protocolVersion;
+                            this._sequenceCounter = sequenceCounter;
+                            this._transformerFunction = (cmd: CommandApdu) => {
+                                return authenticateCmd(cmd, this._sessionKeys!, this.securityLevel);
+                            };
+                            this._isActive = true;
+                            resolve(response);
                         })
                         .catch((err) => {
                             reject(err);
@@ -269,7 +345,17 @@ export default class SecureSession {
                 })
                 .catch((err) => {
                     reject(err);
-                })
+                });
         });
+    }
+
+    reset() {
+        this._isActive = false;
+        this._transformerFunction = undefined;
+        this._sessionKeys = undefined;
+        this._keyDivData = [];
+        this._keyVersion = 0;
+        this._protocolVersion = 0;
+        this._sequenceCounter = [];
     }
 }

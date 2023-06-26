@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { CardReader, PCSCLite } from './typesPcsclite';
 import { CommandApdu } from './commandApdu';
-import { ResponseApdu } from './responseApdu';
+import ResponseApdu from './responseApdu';
 
 export type TCardEventName = 'command-issued' | 'response-received';
 
