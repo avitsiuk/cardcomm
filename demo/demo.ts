@@ -4,6 +4,7 @@ import {
     Iso7816Commands,
     gpDefStaticKeys,
     GPSecureSession,
+    CommandApdu,
 } from '../src/index';
 
 const pcscDevices = new Devices();
@@ -74,6 +75,10 @@ pcscDevices.on('device-activated', (event => {
                 console.log('Authenticated to ISD!!');
                 console.log(`[${resp.toString()}]`);
                 console.log('===================================');
+                // let cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
+                // cmd = secSession.transformer(cmd);
+                // // console.log(cmd.toString());
+                // await card.issueCommand(cmd);
             })
             .catch((err) => {
                 console.log('===================================');
