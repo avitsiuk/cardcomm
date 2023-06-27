@@ -135,70 +135,6 @@ function genCryptogram(
     return [...tDesCbcEnc(data, tDesKey, iv).subarray(16, 24)];
 }
 
-function authenticateExtAuth(
-    cmd: CommandApdu,
-    sessionKeys: ISessionKeys,
-    secLvl: TSecLvl,
-    icv: number[] = new Array<number>(8).fill(0),
-) {
-    const macLength = 8;
-    if(cmd.getLc() + macLength > 255 ) {
-        throw new Error(`Max ${255 - macLength} bytes of data`);
-    }
-    if(sessionKeys.mac.length !== 16) {
-        throw new Error('Wrong MAC key length');
-    }
-    if(icv.length !== 8) {
-        throw new Error('Wrong ICV length');
-    }
-
-    const k1 = Buffer.from(sessionKeys.mac.slice(0, 8));
-    const k2 = Buffer.from(sessionKeys.mac.slice(8));
-    const origData = cmd.getData();
-
-    // using temp CommandAPDU to set secure messaging
-    // and logical channel bits on the original header;
-    // logical channel bits must be restored on final apdu
-    const newHeader = new CommandApdu(cmd)
-        .setSecMgsType(1)
-        .setLogicalChannel(0)
-        .toArray()
-        .slice(0, 4);
-
-    // Data to sign: newHeader + Lc(origData + cMac) + origData + '0x80' + zeroes
-    // add zeroes so that total length must be a multiple of 8
-    // no zeroes required if it's already a multiple of 8
-    let missingBytes = (newHeader.length + 1 + origData.length + 1) % 8;
-    missingBytes = missingBytes > 0 ? (8 - missingBytes) : 0;
-    const dataToAuthenticate = Buffer.alloc(
-        //    header       Lc     origData     '0x80'  zeroes
-        newHeader.length + 1 + origData.length + 1 + missingBytes,
-        0,
-    );
-    dataToAuthenticate.set(newHeader);
-    dataToAuthenticate.set([origData.length + macLength], newHeader.length);
-    dataToAuthenticate.set(origData, newHeader.length + 1);
-    dataToAuthenticate.set([0x80], newHeader.length + 1 + origData.length);
-
-
-    const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.from(icv));
-    const step1res = Buffer.concat([step1.update(dataToAuthenticate), step1.final()])
-        .subarray(0, 16);
-    const step2 = crypto.createDecipheriv('des-ecb', k2, Buffer.alloc(0));
-    const step2res = Buffer.concat([step2.update(step1res), step2.update(step1res)])
-        .subarray(0, 16);
-    const step3 = crypto.createCipheriv('des-ecb', k1, Buffer.alloc(0));
-    const dataMac = Buffer.concat([step3.update(step2res), step3.update(step2res)])
-        .subarray(8, 16);
-
-    //                                           '0x80'   zeroes
-    const paddingIdx = dataToAuthenticate.length - 1 - missingBytes;
-    const newCmd = Buffer.alloc(paddingIdx + macLength + 1, 0);
-    newCmd.set(dataToAuthenticate.subarray(0, paddingIdx));
-    newCmd.set(dataMac, paddingIdx);
-    return new CommandApdu(newCmd).setLogicalChannel(cmd.getLogicalChannel());
-}
-
 function authenticateCmd(
     cmd: CommandApdu,
     sessionKeys: ISessionKeys,
@@ -244,8 +180,17 @@ function authenticateCmd(
     dataToAuthenticate.set(origData, newHeader.length + 1);
     dataToAuthenticate.set([0x80], newHeader.length + 1 + origData.length);
 
+    // calculating new ICV
+    let newIcv = Buffer.alloc(8, 0);
+    newIcv.set(icv);
+    if (newIcv.reduce((acc, curr) => { return acc + curr;}) !== 0) {
+        const icvCipher = crypto.createCipheriv('des-cbc', k1, Buffer.alloc(8, 0));
+        newIcv = Buffer.concat([icvCipher.update(Buffer.from(icv)), icvCipher.final()])
+            .subarray(0, 8);
+    }
 
-    const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.from(icv));
+
+    const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.from(newIcv));
     const step1res = Buffer.concat([step1.update(dataToAuthenticate), step1.final()])
         .subarray(0, 16);
     const step2 = crypto.createDecipheriv('des-ecb', k2, Buffer.alloc(0));
@@ -260,7 +205,7 @@ function authenticateCmd(
     const newCmd = Buffer.alloc(paddingIdx + macLength + 1, 0);
     newCmd.set(dataToAuthenticate.subarray(0, paddingIdx));
     newCmd.set(dataMac, paddingIdx);
-    return new CommandApdu(newCmd);
+    return new CommandApdu(newCmd).setLogicalChannel(cmd.getLogicalChannel());
 }
 
 export default class SecureSession {
@@ -278,10 +223,11 @@ export default class SecureSession {
     private _lastCmac: number[] = [];
 
     private _authenticateFunction: ((cmd: CommandApdu) => CommandApdu) | undefined;
-    private _doTransform = (cmd: CommandApdu) => {
-        if (typeof this._authenticateFunction === 'undefined'
-        || !this.isActive
-        || this.securityLevel < 1) {
+    private _doAuthenticate = (cmd: CommandApdu) => {
+        if (!this.isActive
+        || this.securityLevel < 1
+        || typeof this._authenticateFunction === 'undefined'
+        ) {
             return cmd;
         }
         return this._authenticateFunction(cmd);
@@ -361,8 +307,8 @@ export default class SecureSession {
         }
     }
 
-    get transformer(): (cmd: CommandApdu) => CommandApdu {
-        return this._doTransform;
+    get authenticator(): (cmd: CommandApdu) => CommandApdu {
+        return this._doAuthenticate;
     }
 
     /** Sends INITIALIZE_UPDATE and EXTERNAL AUTHENTICATE commands. Sets session as active on success */
@@ -412,7 +358,7 @@ export default class SecureSession {
                         hostChallenge,
                         sessionKeys.enc,
                     );
-                    const extAuthCmd = authenticateExtAuth(
+                    const extAuthCmd = authenticateCmd(
                         GPCommands.extAuth(hostCryptogram, this.securityLevel),
                         sessionKeys,
                         this.securityLevel,

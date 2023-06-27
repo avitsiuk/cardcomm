@@ -66,19 +66,21 @@ pcscDevices.on('device-activated', (event => {
         // creating new secure session
         const secSession = new GPSecureSession(card)
             .setStaticKeys(gpDefStaticKeys)
-            .setSecurityLevel(0);
+            .setSecurityLevel(1);
 
         // initializing new secure session and authenticating host
         secSession.initAndAuth()
-            .then((resp) => {
+            .then(async(resp) => {
                 console.log('===================================');
                 console.log('Authenticated to ISD!!');
                 console.log(`[${resp.toString()}]`);
                 console.log('===================================');
-                // let cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
-                // cmd = secSession.transformer(cmd);
-                // // console.log(cmd.toString());
-                // await card.issueCommand(cmd);
+                let cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
+                cmd = secSession.authenticator(cmd);
+                await card.issueCommand(cmd);
+                cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
+                cmd = secSession.authenticator(cmd);
+                await card.issueCommand(cmd);
             })
             .catch((err) => {
                 console.log('===================================');
