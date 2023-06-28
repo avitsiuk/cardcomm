@@ -183,7 +183,7 @@ function authenticateCmd(
     // calculating new ICV
     let newIcv = Buffer.alloc(8, 0);
     newIcv.set(icv);
-    if (newIcv.reduce((acc, curr) => { return acc + curr;}) !== 0) {
+    if (newIcv.some( value => value !== 0 )) {
         const icvCipher = crypto.createCipheriv('des-cbc', k1, Buffer.alloc(8, 0));
         newIcv = Buffer.concat([icvCipher.update(Buffer.from(icv)), icvCipher.final()])
             .subarray(0, 8);
