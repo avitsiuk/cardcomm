@@ -7,124 +7,128 @@ import {
     CommandApdu,
 } from '../src/index';
 
-const pcscDevices = new Devices();
+GPSecureSession.initAndAuthTest();
 
-const devTypes = {
-    nfc: 'NFC',
-    cnt: 'CONTACT',
-}
+// const pcscDevices = new Devices();
 
-console.log('============================================================');
-pcscDevices.on('device-activated', (event => {
-
-    const device = event.device;
-    let devType = 'Unknown';
-    if (device.name.includes('ACR122U')) {
-        devType = devTypes.nfc;
-    } else if(device.name.includes('ACR39U')) {
-        devType = devTypes.cnt;
-    }
-    console.log(`New device: ["${device.name}"](${devType})`);
-
-    device.on('error', (error) => {
-        console.error(`[${devType}] error: ${error.message}`);
-    })
-
-    device.on('card-removed', (event) => {
-        if (!event.card) {
-            console.log(`[${devType}]: No card inserted`);
-            return;
-        }
-        let card = event.card;
-        console.log(`[${devType}]: Removed  ${devType === devTypes.nfc ? 'ATS' : 'ATR'}:[${card.atrHex}]`);
-    });
-
-    device.on('card-inserted', async (event) => {
-        if (!event.card) {
-            console.log(`[${devType}]: Inserted [null]`);
-            return;
-        }
-
-        let card = event.card;
-        card.setAutoGetResponse();
-        console.log();
-        console.log(`[${devType}]: Inserted ${devType === devTypes.nfc ? 'ATS' : 'ATR'}:[${card.atrHex}]`);
-
-        card.on('command-issued', ({ card, command }) => {
-            console.log(`[${devType}]: CMD: [${command}]`);
-        });
-
-        card.on('response-received', ({ card, command, response }) => {
-            console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
-        });
-
-        console.log('=========================================================');
-
-        // selecting ISD
-        await card.issueCommand(Iso7816Commands.select());
-
-        // creating new secure session
-        const secSession = new GPSecureSession(card)
-            .setStaticKeys(gpDefStaticKeys)
-            .setSecurityLevel(3);
-
-        // initializing new secure session and authenticating host
-        secSession.initAndAuth()
-            .then(async(resp) => {
-                console.log('===================================');
-                console.log('Authenticated to ISD!!');
-                console.log(`[${resp.toString()}]`);
-                console.log('===================================');
-                let cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
-                cmd = secSession.authenticator(cmd);
-                await card.issueCommand(cmd);
-                cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000');
-                cmd = secSession.authenticator(cmd);
-                await card.issueCommand(cmd);
-            })
-            .catch((err) => {
-                console.log('===================================');
-                console.log(`Error: ${err}`);
-                console.log('===================================');
-            })
-    });
-}));
-
-// const d = (data: number[]) => {
-//     let result: any;
-//     try {
-//         result = sd(data);
-//     } catch (error) {
-//         return arrayToHex(data);
-//     }
-//     const keys = Object.keys(result);
-//     for (let i = 0; i < keys.length; i++) {
-//         const tag = keys[i];
-//         if (result[tag].length > 0) {
-//             result[tag].value = d(result[tag].value);
-//         }
-//     }
-//     return result;
+// const devTypes = {
+//     nfc: 'NFC',
+//     cnt: 'CONTACT',
 // }
 
-// const tlv = d(sResp.data);
+// console.log('============================================================');
+// pcscDevices.on('device-activated', (event => {
 
-// console.log(JSON.stringify(tlv, null, 2));
-
-// const printTlv = (tlv: any, i: number = 0) => {
-//     let msg = '';
-//     msg = '';
-//     const tags = Object.keys(tlv);
-//     for (let tragIdx = 0; tragIdx < tags.length; tragIdx++) {
-//         const tag = tags[tragIdx];
-//         msg = `[${tag}](${tlv[tag].length}):`;
-
-//         if (typeof tlv[tag].value === 'string') {
-//             msg += ` [${tlv[tag].value.toUpperCase()}]`;
-//             console.log(msg.padStart((msg.length + (4 * i)), ' '));
-//         } else {
-//             console.log(msg.padStart((msg.length + (4 * i)), ' '));
-//             printTlv(tlv[tag].value, ++i);
-//         }
+//     const device = event.device;
+//     let devType = 'Unknown';
+//     if (device.name.includes('ACR122U')) {
+//         devType = devTypes.nfc;
+//     } else if(device.name.includes('ACR39U')) {
+//         devType = devTypes.cnt;
 //     }
-// };
+//     console.log(`New device: ["${device.name}"](${devType})`);
+
+//     device.on('error', (error) => {
+//         console.error(`[${devType}] error: ${error.message}`);
+//     })
+
+//     device.on('card-removed', (event) => {
+//         if (!event.card) {
+//             console.log(`[${devType}]: No card inserted`);
+//             return;
+//         }
+//         let card = event.card;
+//         console.log(`[${devType}]: Removed  ${devType === devTypes.nfc ? 'ATS' : 'ATR'}:[${card.atrHex}]`);
+//     });
+
+//     device.on('card-inserted', async (event) => {
+//         if (!event.card) {
+//             console.log(`[${devType}]: Inserted [null]`);
+//             return;
+//         }
+
+//         let card = event.card;
+//         card.setAutoGetResponse();
+//         console.log();
+//         console.log(`[${devType}]: Inserted ${devType === devTypes.nfc ? 'ATS' : 'ATR'}:[${card.atrHex}]`);
+
+//         card.on('command-issued', ({ card, command }) => {
+//             console.log(`[${devType}]: CMD: [${command}]`);
+//         });
+
+//         card.on('response-received', ({ card, command, response }) => {
+//             console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
+//         });
+
+//         console.log('=========================================================');
+
+
+
+
+
+
+
+//         // 1  2  3
+//         // 00 00 00
+
+//         //initializing new secure session and authenticating host
+//         // secSession.initAndAuth()
+//         //     .then(async(resp) => {
+//         //         console.log('===================================');
+//         //         console.log('Authenticated to ISD!!');
+//         //         console.log(`[${resp.toString()}]`);
+//         //         console.log('===================================');
+//         //         // let cmd = new CommandApdu('80E60C00 XX 07A0000001515350 08A000000151535041 06112233445500 03 020000 00'); // install 112233445500
+//         //         // let cmd = new CommandApdu('80E60C001A0511223344550611223344550006112233445500010202c9000000'); // install 112233445500
+//         //         // let cmd = new CommandApdu('80E40000084F0611223344550000'); // delete 112233445500
+//         //         // let cmd = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000'); // get status
+//         //         // let cmd = new CommandApdu('80F28002024F0000');
+//         //         cmd = secSession.authenticator(cmd);
+//         //         await card.issueCommand(cmd);
+//         //     })
+//         //     .catch((err) => {
+//         //         console.log('===================================');
+//         //         console.log(`Error: ${err}`);
+//         //         console.log('===================================');
+//         //     })
+//     });
+// }));
+
+// // const d = (data: number[]) => {
+// //     let result: any;
+// //     try {
+// //         result = sd(data);
+// //     } catch (error) {
+// //         return arrayToHex(data);
+// //     }
+// //     const keys = Object.keys(result);
+// //     for (let i = 0; i < keys.length; i++) {
+// //         const tag = keys[i];
+// //         if (result[tag].length > 0) {
+// //             result[tag].value = d(result[tag].value);
+// //         }
+// //     }
+// //     return result;
+// // }
+
+// // const tlv = d(sResp.data);
+
+// // console.log(JSON.stringify(tlv, null, 2));
+
+// // const printTlv = (tlv: any, i: number = 0) => {
+// //     let msg = '';
+// //     msg = '';
+// //     const tags = Object.keys(tlv);
+// //     for (let tragIdx = 0; tragIdx < tags.length; tragIdx++) {
+// //         const tag = tags[tragIdx];
+// //         msg = `[${tag}](${tlv[tag].length}):`;
+
+// //         if (typeof tlv[tag].value === 'string') {
+// //             msg += ` [${tlv[tag].value.toUpperCase()}]`;
+// //             console.log(msg.padStart((msg.length + (4 * i)), ' '));
+// //         } else {
+// //             console.log(msg.padStart((msg.length + (4 * i)), ' '));
+// //             printTlv(tlv[tag].value, ++i);
+// //         }
+// //     }
+// // };

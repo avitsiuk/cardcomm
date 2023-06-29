@@ -167,11 +167,13 @@ function addMac(
     // Data to sign: newHeader + Lc(origData + cMac) + origData + '0x80' + zeroes
     // add zeroes so that total length must be a multiple of 8
     // no zeroes required if it's already a multiple of 8
-    let missingBytes = (newHeader.length + 1 + origData.length + 1) % 8;
-    missingBytes = missingBytes > 0 ? (8 - missingBytes) : 0;
+    const paddingBytes = Buffer.from('8000000000000000', 'hex');
+    const neededPadding = 8 - ((newHeader.length + origData.length) % 8);
+    // let missingBytes = 8- ((newHeader.length + 1 + origData.length + 1) % 8);
+    // missingBytes = missingBytes > 0 ? (8 - missingBytes) : 0;
     const dataToAuthenticate = Buffer.alloc(
         //    header       Lc     origData     '0x80'  zeroes
-        newHeader.length + 1 + origData.length + 1 + missingBytes,
+        newHeader.length + origData.length + neededPadding,
         0,
     );
     dataToAuthenticate.set(newHeader);
@@ -187,6 +189,8 @@ function addMac(
         newIcv = Buffer.concat([icvCipher.update(Buffer.from(icv)), icvCipher.final()])
             .subarray(0, 8);
     }
+
+    console.log(`mac input: [${dataToAuthenticate.toString('hex').toUpperCase()}]`);
 
 
     const step1 = crypto.createCipheriv('des-cbc', k1, Buffer.from(newIcv));
@@ -413,6 +417,7 @@ export default class SecureSession {
                             this._sequenceCounter = sequenceCounter;
                             this._lastCmac = extAuthCmd.getData().slice(extAuthCmd.getLc() - 8);
                             this._authenticateFunction = (cmd: CommandApdu) => {
+                                //this._lastCmac
                                 const result = authenticateCmd(this.securityLevel, cmd, this._sessionKeys!, this._lastCmac);
                                 this._lastCmac = result.getData().slice(result.getLc() - 8);
                                 return result;
@@ -428,6 +433,126 @@ export default class SecureSession {
                     reject(err);
                 });
         });
+    }
+
+    static initAndAuthTest(keyVer: number = 0, keyId: number = 0) {
+        const staticKeys = defStaticKeys;
+        const securityLevel = 1;
+        const hostChallenge = hexToArray('431F8AEFD8189131');
+        const initUpdResp = new ResponseApdu('000002650183039536622002022505F65F04B9111A9A1804A9D4B6779000');
+        const keyDivData = initUpdResp.data.slice(0, 10);
+        const keyVersion = initUpdResp.data[10];
+        const protocolVersion = initUpdResp.data[11];
+        const sequenceCounter = initUpdResp.data.slice(12, 14);
+        const cardChallenge = initUpdResp.data.slice(12, 20);
+        const cardCryptogram = initUpdResp.data.slice(20);
+        const sessionKeys = genSessionKeys(sequenceCounter, staticKeys);
+
+        const expectedCardCryptogram = genCryptogram(
+            'card',
+            cardChallenge,
+            hostChallenge,
+            sessionKeys.enc,
+        );
+
+        const hostCryptogram = genCryptogram(
+            'host',
+            cardChallenge,
+            hostChallenge,
+            sessionKeys.enc,
+        );
+
+        const extAuthCmd = addMac(
+            GPCommands.extAuth(hostCryptogram, securityLevel),
+            sessionKeys,
+        );
+        if (extAuthCmd.toString() === '84820100109ee87f63293d2a65749e60e7d1ced39300') {
+            console.log('EXT_AUTH OK');
+        } else {
+            console.log('EXT_AUTH NOT OK!!!!!!!');
+            return;
+        }
+        console.log('==========================================');
+
+        let lastMac = extAuthCmd.getData().slice(extAuthCmd.getLc() - 8);
+
+        let cmd = new CommandApdu('80F28002024F0000');
+        cmd = authenticateCmd(1, cmd, sessionKeys, lastMac);
+        console.log(cmd.toString());
+        // return new Promise((resolve, reject) => {
+        //     if (typeof this.staticKeys === 'undefined') {
+        //         return reject(new Error('Cannot initialize secure session. No static keys have been set.'));
+        //     }
+        //     this.reset();
+        //     const hostChallenge = [...crypto.randomBytes(8)];
+        //     // sending INITIALIZE_UPDATE command with host challenge
+        //     this._card.issueCommand(GPCommands.initUpdate(hostChallenge, keyVer, keyId))
+        //         .then((response) => {
+        //             assertOk(response);
+        //             if (response.dataLength !== 28) {
+        //                 this.reset();
+        //                 return reject(
+        //                     new Error(`Secure session init error; Response length error; resp: [${response.toString()}]`),
+        //                 );
+        //             }
+
+        //             const keyDivData = response.data.slice(0, 10);
+        //             const keyVersion = response.data[10];
+        //             const protocolVersion = response.data[11];
+        //             if(protocolVersion !== 0x02) {
+        //                 this.reset();
+        //                 return reject(new Error(`Only 0x02 protocol is supported. Received: 0x${protocolVersion.toString(16).padStart(2, '0').toUpperCase()}`));
+        //             }
+        //             const sequenceCounter = response.data.slice(12, 14);
+        //             const cardChallenge = response.data.slice(12, 20);
+        //             const cardCryptogram = response.data.slice(20);
+
+        //             const sessionKeys = genSessionKeys(sequenceCounter, this.staticKeys!);
+        //             const expectedCardCryptogram = genCryptogram(
+        //                 'card',
+        //                 cardChallenge,
+        //                 hostChallenge,
+        //                 sessionKeys.enc,
+        //             );
+        //             if (arrayToHex(cardCryptogram) !== arrayToHex(expectedCardCryptogram)) {
+        //                 this.reset();
+        //                 return reject(new Error('Card cryptogram does not match'));
+        //             }
+        //             const hostCryptogram = genCryptogram(
+        //                 'host',
+        //                 cardChallenge,
+        //                 hostChallenge,
+        //                 sessionKeys.enc,
+        //             );
+        //             const extAuthCmd = addMac(
+        //                 GPCommands.extAuth(hostCryptogram, this.securityLevel),
+        //                 sessionKeys,
+        //             );
+        //             this._card.issueCommand(extAuthCmd)
+        //                 .then((response) => {
+        //                     assertOk(response);
+        //                     this._sessionKeys = sessionKeys;
+        //                     this._keyDivData = keyDivData;
+        //                     this._keyVersion = keyVersion;
+        //                     this._protocolVersion = protocolVersion;
+        //                     this._sequenceCounter = sequenceCounter;
+        //                     this._lastCmac = extAuthCmd.getData().slice(extAuthCmd.getLc() - 8);
+        //                     this._authenticateFunction = (cmd: CommandApdu) => {
+        //                         const result = authenticateCmd(this.securityLevel, cmd, this._sessionKeys!, this._lastCmac);
+        //                         this._lastCmac = result.getData().slice(result.getLc() - 8);
+        //                         return result;
+        //                     };
+        //                     this._isActive = true;
+        //                     resolve(response);
+        //                 })
+        //                 .catch((err) => {
+        //                     reject(err);
+        //                 });
+        //         })
+        //         .catch((err) => {
+        //             reject(err);
+        //         });
+        // });
     }
 
     reset() {
