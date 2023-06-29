@@ -66,7 +66,7 @@ pcscDevices.on('device-activated', (event => {
         // creating new secure session
         const secSession = new GPSecureSession(card)
             .setStaticKeys(gpDefStaticKeys)
-            .setSecurityLevel(1);
+            .setSecurityLevel(3);
 
         // initializing new secure session and authenticating host
         secSession.initAndAuth()

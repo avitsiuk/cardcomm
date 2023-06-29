@@ -135,10 +135,9 @@ function genCryptogram(
     return [...tDesCbcEnc(data, tDesKey, iv).subarray(16, 24)];
 }
 
-function authenticateCmd(
+function addMac(
     cmd: CommandApdu,
     sessionKeys: ISessionKeys,
-    secLvl: TSecLvl,
     icv: number[] = new Array<number>(8).fill(0),
 ) {
     const macLength = 8;
@@ -206,6 +205,48 @@ function authenticateCmd(
     newCmd.set(dataToAuthenticate.subarray(0, paddingIdx));
     newCmd.set(dataMac, paddingIdx);
     return new CommandApdu(newCmd).setLogicalChannel(cmd.getLogicalChannel());
+}
+
+function encryptCmd(
+    cmd: CommandApdu,
+    sessionKeys: ISessionKeys,
+) {
+    if(sessionKeys.enc.length !== 16) {
+        throw new Error('Wrong ENC session key length');
+    }
+    const k1 = Buffer.from(sessionKeys.enc.slice(0, 8));
+    const k2 = Buffer.from(sessionKeys.enc.slice(8));
+    const icv = Buffer.alloc(8, 0);
+
+    const origData = cmd.getData().slice(0, cmd.getLc() - 8);
+    const origMac = cmd.getData().slice(cmd.getLc() - 8);
+
+    let paddingNeeded = (origData.length +1) % 8;
+    paddingNeeded = paddingNeeded > 0 ? (8-paddingNeeded) : 0;
+    const paddedData = Buffer.alloc(origData.length + 1 + paddingNeeded, 0);
+    paddedData.set(origData);
+    paddedData.set([0x80], origData.length);
+    const encryptedData = tDesCbcEnc(paddedData, Buffer.concat([k1, k2, k1]), icv)
+    .subarray(0, paddedData.length);
+
+    const result = new CommandApdu(cmd).setData([...Buffer.concat([encryptedData, Buffer.from(origMac)])]);
+    return result;
+}
+
+function authenticateCmd(
+    secLvl: TSecLvl,
+    cmd: CommandApdu,
+    sessionKeys: ISessionKeys,
+    icv: number[] = new Array<number>(8).fill(0),
+) {
+    let result = new CommandApdu(cmd);
+    if (secLvl >= 1) {
+        result = addMac(result, sessionKeys, icv);
+    }
+    if (secLvl >= 3) {
+        result = encryptCmd(result, sessionKeys);
+    }
+    return result;
 }
 
 export default class SecureSession {
@@ -358,10 +399,9 @@ export default class SecureSession {
                         hostChallenge,
                         sessionKeys.enc,
                     );
-                    const extAuthCmd = authenticateCmd(
+                    const extAuthCmd = addMac(
                         GPCommands.extAuth(hostCryptogram, this.securityLevel),
                         sessionKeys,
-                        this.securityLevel,
                     );
                     this._card.issueCommand(extAuthCmd)
                         .then((response) => {
@@ -373,7 +413,7 @@ export default class SecureSession {
                             this._sequenceCounter = sequenceCounter;
                             this._lastCmac = extAuthCmd.getData().slice(extAuthCmd.getLc() - 8);
                             this._authenticateFunction = (cmd: CommandApdu) => {
-                                const result = authenticateCmd(cmd, this._sessionKeys!, this.securityLevel, this._lastCmac);
+                                const result = authenticateCmd(this.securityLevel, cmd, this._sessionKeys!, this._lastCmac);
                                 this._lastCmac = result.getData().slice(result.getLc() - 8);
                                 return result;
                             };
