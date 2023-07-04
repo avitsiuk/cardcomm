@@ -40,9 +40,12 @@
         "pcsclite": "1.0.1"
     },
     "devDependencies": {
+        "@affidaty/t2-lib": "^2.3.3",
+        "@types/prompt-sync": "^4.2.0",
         "concurrently": "^8.0.1",
         "nodemon": "^2.0.22",
         "prettier": "^2.2.1",
+        "prompt-sync": "^4.2.0",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4"
     }
