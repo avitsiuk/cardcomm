@@ -119,6 +119,66 @@ pcscDevices.on('device-activated', (event => {
         }
 
         const printHelp = () => {
+            console.log(`
+                          ...:::::::....                           
+                      .:^^~~~~~~~~~~!!!!!!!!~~^:.                     
+                  .:^~~~^::...           ...:^~!!!~^.                 
+               :^~~^:.                           .:^!!^:              
+            .^~^:                                    .:~!^.           
+          .^^:                                          .^~^.         
+        .^:.                       .                       .^^.       
+       ::.                      .~!77~.                      .^:      
+     .:.    .::^^~~~~~^^::.     ^777??:     .:^~~!!!!~~^^:.    .:.    
+     .   :^~!777777777777!!~^:. .^~!!^  .^~77?????????????7!~:   .    
+      .^!7!!~^:::::::^~!!7!!7!!^:.....:~7?????77!^^:::::^~!77?7^.     
+    .^!!~:.             .:~!!!!!!!!!77?????7!^.             .^!?7~.   
+   .!!^.                   .^!!!!!!7??????~.                   .~?!.  
+  .!~.                       :~7!!!7????!:                       :77. 
+ .!~.                         .~!!!77??!.                         :7! 
+ :!.                           .!!77??7.                           :7.
+ ^~                             ^7777?^                             7^
+ ^~                             ^777??^                        :!7!.7^
+ :~                             .~!77~.                        !5GY~7:
+ .~.      .!:      ...    ..      .::              .  ..~7!:   .J?:^! 
+  ^^     .5&P.  :JP7!77!5J!!?.~5.:YY!~7J!   .J?  !?75Y!!^!GB! :J?. !^ 
+  .!:   .5~7&5   ?#~::::GY::: 7B. Y5. .!#J  75B? :.:G5    .Y#PY!  ^!. 
+   :~. .LKS!RMS. ?#!^: :G5^^. 7B. Y5.  ^#5.?Y~5#7  :G5      5&?  :7:  
+    ^~.J!....7GY.?G.   :5?    !G~ JP~^!Y7:~7::.?G7 :PJ      JG7 :!^   
+     ^~:       :...     ..     ..  ..:.   .     .:  ..      .. :!:    
+      :~^                                                     ~!.     
+       .^~.                                                 :!~.      
+         :^^.                                             :!~.        
+           :^~:.                                       .^~~.          
+             .^~^^.                                .:^~~^.            
+                .:^~~^:..                     ..^~!!~^.               
+                   ..:^~~~~^^:::....:::::^~~~!!!~^:.                  
+                        ..::^^~~~~~!!!!!!~~^:..                       
+                `
+            );
+            /*
+            console.log(`
+                                                                             
+                     .....:::::....                              
+              ..:^^~~!!!!!!!777777!~:..                          
+          ..^~!!!~^::..........::~!JY7:..                        
+       .:~!!~^:..      .:^^^^:   ..:757:.                        
+    ..:!?!:..           .::^:.   ..:!5?:..                       
+   ..~J7:..                .:   .:^!?5?^:.                       
+  ..~57:.. .:::::.          .:. .~Y5555J:.                       
+  ..757::. .:::::........... :^..:~!77!^.                        
+  ..^?Y?~::...        .......::^::..::::::::::::::::.....        
+   ..:~7???7!!!!~~~~~~~~~!!!!!!!!!!!!~^^^:::::..............     
+      ...:::^^^^^^^^^^^^^::::....    ...                         
+                            ^?JJ?7:     ........                 
+                            ~?Y5J?:       .^^^^^:                
+                              ?J.           ....                 
+                              YJ                          ..     
+                              75~                     ....       
+                               ~??!^:....  .....::::..           
+                                 .^~~~~~~~~~^^::..               
+            
+            `);
+            */
             console.log('___________ ______ _   _ _____ _____');
             console.log('|_   _| ___ \\_   _| \\ | /  __ \\_   _|');
             console.log('  | | | |_/ / | | |  \\| | /  \\/ | |');
@@ -127,10 +187,14 @@ pcscDevices.on('device-activated', (event => {
             console.log('  \\_/ \\_| \\_|\\___/\\_| \\_/\\____/\\___/╚═╝╩ ╩╩╚══╩╝');
             console.log('╒════════════════════════════════════════════════');
             console.log('│ Options:');
-            console.log('│    "h" - this help');
-            console.log('│    "p" - authenticate with pin');
-            console.log('│    "i" - get the card account id');
-            console.log('│    "t" - transfer #EURS');
+            console.log('│    "h"   - this help');
+            console.log('│    "PUK" - set puk');
+            console.log('│    "puk" - validate puk');
+            console.log('│    "PIN" - set pin');
+            console.log('│    "pin" - validate pin');
+            console.log('│    "gen" - generate Acc');
+            console.log('│    "id"  - get the card account id');
+            console.log('│    "tr"  - transfer #EURS');
         };
 
         
@@ -148,16 +212,37 @@ pcscDevices.on('device-activated', (event => {
                 case 'h': case 'H':
                     printHelp();
                     break;
-                case 'p': case 'P':
-                    let pinByteArray;
+                case 'PUK':
+                    let pukByteArray;
                     try {
-                        pinByteArray = parsePinString(prompt('Input PIN: '));
-                        // pinByteArray = parsePinString('1234');   
+                        // pukByteArray = parsePinString(prompt('New PUK: '));
+                        pukByteArray = parsePinString('0123456789');   
                     } catch (error) {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8000000000').setData(pinByteArray));
+                    resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
+                    if (resp.isOk()) {
+                        resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
+                        if (resp.isOk()) {
+                            console.log('Success!');
+                        } else {
+                            console.log(`Error! Response: [${resp.toString()}]`);
+                        }
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
+                    break;
+                case 'puk':
+                    let pukByteArray2;
+                    try {
+                        // pukByteArray = parsePinString(prompt('Input PUK: '));
+                        pukByteArray2 = parsePinString('0123456789');
+                    } catch (error) {
+                        console.log(`${error}`);
+                        break;
+                    }
+                    resp = await card.issueCommand(new CommandApdu('8010000000').setData(pukByteArray2));
                     if (resp.isOk()) {
                         console.log('Success!');
                     } else {
@@ -168,8 +253,57 @@ pcscDevices.on('device-activated', (event => {
                         }
                     }
                     break;
-                case 'i': case 'I':
+                case 'PIN':
+                    let pinByteArray;
+                    try {
+                        // pinByteArray = parsePinString(prompt('New PIN: '));
+                        pinByteArray = parsePinString('0123');   
+                    } catch (error) {
+                        console.log(`${error}`);
+                        break;
+                    }
+                    resp = await card.issueCommand(new CommandApdu('8001000000').setData(pinByteArray));
+                    if (resp.isOk()) {
+                        resp = await card.issueCommand(new CommandApdu('8001000000').setData(pinByteArray));
+                        if (resp.isOk()) {
+                            console.log('Success!');
+                        } else {
+                            console.log(`Error! Response: [${resp.toString()}]`);
+                        }
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
+                    break;
+                case 'pin':
+                    let pinByteArray2;
+                    try {
+                        // pinByteArray = parsePinString(prompt('Input PIN: '));
+                        pinByteArray2 = parsePinString('0123');
+                    } catch (error) {
+                        console.log(`${error}`);
+                        break;
+                    }
+                    resp = await card.issueCommand(new CommandApdu('8011000000').setData(pinByteArray2));
+                    if (resp.isOk()) {
+                        console.log('Success!');
+                    } else {
+                        if (resp.dataLength === 2) {
+                            console.log(`Error; Remaining tries: ${resp.data[1]}`);
+                        } else {
+                            console.log(`Error! Response: [${resp.toString()}]`);
+                        }
+                    }
+                    break;
+                case 'gen':
                     resp = await card.issueCommand(new CommandApdu('8002000000'));
+                    if (resp.isOk()) {
+                        console.log('Success!');
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
+                    break;
+                case 'id':
+                    resp = await card.issueCommand(new CommandApdu('8012000000'));
                     if (resp.isOk()) {
                         const accId = await getCardAccountId(resp.data);
                         console.log(`Card Account: ${accId}`);
@@ -177,8 +311,8 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`Error! Response: [${resp.toString()}]`);
                     }
                     break;
-                case 't': case 't':
-                    resp = await card.issueCommand(new CommandApdu('8002000000'));
+                case 'tr':
+                    resp = await card.issueCommand(new CommandApdu('8012000000'));
                     let pubKey: t2lib.ECDSAKey;
                     let accId: string;
                     if (resp.isOk()) {
@@ -190,10 +324,10 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`Error! Response: [${resp.toString()}]`);
                         break;
                     }
-                    const to = prompt('To: ');
-                    // const to = '#Affidaty';
-                    const amount = parseInt(prompt('Amount: '));
-                    // const amount = 100;
+                    // const to = prompt('To: ');
+                    const to = '#Affidaty';
+                    // const amount = parseInt(prompt('Amount: '));
+                    const amount = 100;
                     const tx = new t2lib.UnitaryTransaction();
                     tx.data.genNonce();
                     tx.data.accountId = '#EURS';
@@ -207,15 +341,17 @@ pcscDevices.on('device-activated', (event => {
                     }
                     tx.data.signerPublicKey = pubKey;
                     const txSHA384 = await getTxSHA384(tx);
-                    resp = await card.issueCommand(new CommandApdu('8003000000').setData(txSHA384));
+                    resp = await card.issueCommand(new CommandApdu('8013000000').setData(txSHA384));
                     if (resp.isOk()) {
                         tx.signature = new Uint8Array(processSignature(resp.data));
                         if (await tx.verify()) {
-                            const ticket = await trinciClient.submitTx(tx);
-                            const rec = await trinciClient.waitForTicket(ticket);
-                            console.log(`Success: ${rec.success}`);
+                            console.log('Valid!');
+                            break;
+                            // const ticket = await trinciClient.submitTx(tx);
+                            // const rec = await trinciClient.waitForTicket(ticket);
+                            // console.log(`Success: ${rec.success}`);
                         } else {
-                            console.log('Error: transaction cannot be verified');
+                            console.log('Error: not valid!');
                             break;
                         }
                     } else {
@@ -227,52 +363,6 @@ pcscDevices.on('device-activated', (event => {
                     break;
             }
         }
-
-
-
-        // while (event.card) {   
-        //     const comando = prompt('Insert your command:');
-        //     let cmdToStr = comando.toString();
-        //     if (typeof comando === 'string') {
-        //         switch(cmdToStr) {
-        //             case 'validate':
-        //                 console.log(`[VALIDATE] PIN command 0x00`);
-        //                 const inputPIN = prompt('Authenticate with CARD PIN:').toString();
-        //                 let lenPIN = inputPIN.length;
-        //                 //await card.issueCommand(new CommandApdu('8000000000').setData([0x00,0x01,0x02,0x03]));
-        //                 await card.issueCommand(new CommandApdu('8000000000').setData(parsePin(inputPIN)));
-        //                 break;
-        //             case 'echo':
-        //                 console.log(`[ECHO] ECHO command 0x01`);
-        //                 await card.issueCommand(new CommandApdu('8001000000'));
-        //                 break;
-        //             case 'encrypt':
-        //                 console.log(`[ENCRYPT] command 0x02`);
-        //                 const toENC = prompt('What would you like to encrypt on the card:').toString();
-        //                 let lenENC = toENC.length;
-        //                 await card.issueCommand(new CommandApdu(`8002000000`));
-        //                 break;
-        //             case 'sign':
-        //                 console.log(`[SIGN] command 0x03`);
-        //                 await card.issueCommand(new CommandApdu('8003000000'));
-        //                 break;
-        //             case 'id':
-        //                 console.log(`[ID] command 0x04`);
-        //                 let pubKey = await card.issueCommand(new CommandApdu('8004000000'));
-        //                 const kp = new t2lib.ECDSAKey('public');
-        //                 await kp.setRaw(new Uint8Array(pubKey.data));
-        //                 let TrinciId = await t2lib.getAccountId(kp);
-        //                 console.log(`[TrinciId]:${TrinciId}`);
-        //                 break;
-        //             default:
-        //                 console.log(`not valid command`);
-        //         }
-        //     } else {console.log("invalid command");}
-        // } 
-
-
-
-
 
         // await card.issueCommand(Iso7816Commands.select('A000000151535041'));
         // await card.issueCommand(Iso7816Commands.select('112233445500'));
