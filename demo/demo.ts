@@ -1,3 +1,20 @@
+/*
+ * TODO: Init Update, Secure Channel Transport Layer
+ * TODO: Java class converter
+ * TODO: Load, Install,Select from .cap files
+ * TODO: Card Lifecycle management
+ * TODO: TLV 'encoder' > Import of privKey
+ * TODO: Request ObjectDeletion where needed
+ * TODO: pubKey setting during import
+ * 
+ * scriptgen (cap -> scripts);
+ */
+
+// secure session TODO:
+// - authentication - certificate?;
+// - Integrity and anti-replay - MAC
+// - Confidentiality - AES encryption
+
 import crypto from 'crypto';
 import Prompt from 'prompt-sync';
 import t2lib from '@affidaty/t2-lib';
@@ -5,7 +22,7 @@ import {
     Devices,
     Iso7816Commands,
     gpDefStaticKeys,
-    GPSecureSession,
+    SCP02,
     CommandApdu,
     Utils,
     ResponseApdu,
@@ -103,6 +120,7 @@ pcscDevices.on('device-activated', (event => {
         }
 
         const processSignature = (cardSig: number[]) => {
+            console.log(`Signature(${cardSig.length}): [${arrayToHex(cardSig)}]`);
             let result = new Array<number>(0);
             let data = cardSig.slice(2);
             const firstLen = data[1];
@@ -119,42 +137,44 @@ pcscDevices.on('device-activated', (event => {
         }
 
         const printHelp = () => {
-            console.log(`
-                          ...:::::::....                           
-                      .:^^~~~~~~~~~~!!!!!!!!~~^:.                     
-                  .:^~~~^::...           ...:^~!!!~^.                 
-               :^~~^:.                           .:^!!^:              
-            .^~^:                                    .:~!^.           
-          .^^:                                          .^~^.         
-        .^:.                       .                       .^^.       
-       ::.                      .~!77~.                      .^:      
-     .:.    .::^^~~~~~^^::.     ^777??:     .:^~~!!!!~~^^:.    .:.    
-     .   :^~!777777777777!!~^:. .^~!!^  .^~77?????????????7!~:   .    
-      .^!7!!~^:::::::^~!!7!!7!!^:.....:~7?????77!^^:::::^~!77?7^.     
-    .^!!~:.             .:~!!!!!!!!!77?????7!^.             .^!?7~.   
-   .!!^.                   .^!!!!!!7??????~.                   .~?!.  
-  .!~.                       :~7!!!7????!:                       :77. 
- .!~.                         .~!!!77??!.                         :7! 
- :!.                           .!!77??7.                           :7.
- ^~                             ^7777?^                             7^
- ^~                             ^777??^                        :!7!.7^
- :~                             .~!77~.                        !5GY~7:
- .~.      .!:      ...    ..      .::              .  ..~7!:   .J?:^! 
-  ^^     .5&P.  :JP7!77!5J!!?.~5.:YY!~7J!   .J?  !?75Y!!^!GB! :J?. !^ 
-  .!:   .5~7&5   ?#~::::GY::: 7B. Y5. .!#J  75B? :.:G5    .Y#PY!  ^!. 
-   :~. .LKS!RMS. ?#!^: :G5^^. 7B. Y5.  ^#5.?Y~5#7  :G5      5&?  :7:  
-    ^~.J!....7GY.?G.   :5?    !G~ JP~^!Y7:~7::.?G7 :PJ      JG7 :!^   
-     ^~:       :...     ..     ..  ..:.   .     .:  ..      .. :!:    
-      :~^                                                     ~!.     
-       .^~.                                                 :!~.      
-         :^^.                                             :!~.        
-           :^~:.                                       .^~~.          
-             .^~^^.                                .:^~~^.            
-                .:^~~^:..                     ..^~!!~^.               
-                   ..:^~~~~^^:::....:::::^~~~!!!~^:.                  
-                        ..::^^~~~~~!!!!!!~~^:..                       
-                `
-            );
+            console.log();
+            console.log();
+//             console.log(`
+//                           ...:::::::....                           
+//                       .:^^~~~~~~~~~~!!!!!!!!~~^:.                     
+//                   .:^~~~^::...           ...:^~!!!~^.                 
+//                :^~~^:.                           .:^!!^:              
+//             .^~^:                                    .:~!^.           
+//           .^^:                                          .^~^.         
+//         .^:.                       .                       .^^.       
+//        ::.                      .~!77~.                      .^:      
+//      .:.    .::^^~~~~~^^::.     ^777??:     .:^~~!!!!~~^^:.    .:.    
+//      .   :^~!777777777777!!~^:. .^~!!^  .^~77?????????????7!~:   .    
+//       .^!7!!~^:::::::^~!!7!!7!!^:.....:~7?????77!^^:::::^~!77?7^.     
+//     .^!!~:.             .:~!!!!!!!!!77?????7!^.             .^!?7~.   
+//    .!!^.                   .^!!!!!!7??????~.                   .~?!.  
+//   .!~.                       :~7!!!7????!:                       :77. 
+//  .!~.                         .~!!!77??!.                         :7! 
+//  :!.                           .!!77??7.                           :7.
+//  ^~                             ^7777?^                             7^
+//  ^~                             ^777??^                        :!7!.7^
+//  :~                             .~!77~.                        !5GY~7:
+//  .~.      .!:      ...    ..      .::              .  ..~7!:   .J?:^! 
+//   ^^     .5&P.  :JP7!77!5J!!?.~5.:YY!~7J!   .J?  !?75Y!!^!GB! :J?. !^ 
+//   .!:   .5~7&5   ?#~::::GY::: 7B. Y5. .!#J  75B? :.:G5    .Y#PY!  ^!. 
+//    :~. .LKS!RMS. ?#!^: :G5^^. 7B. Y5.  ^#5.?Y~5#7  :G5      5&?  :7:  
+//     ^~.J!....7GY.?G.   :5?    !G~ JP~^!Y7:~7::.?G7 :PJ      JG7 :!^   
+//      ^~:       :...     ..     ..  ..:.   .     .:  ..      .. :!:    
+//       :~^                                                     ~!.     
+//        .^~.                                                 :!~.      
+//          :^^.                                             :!~.        
+//            :^~:.                                       .^~~.          
+//              .^~^^.                                .:^~~^.            
+//                 .:^~~^:..                     ..^~!!~^.               
+//                    ..:^~~~~^^:::....:::::^~~~!!!~^:.                  
+//                         ..::^^~~~~~!!!!!!~~^:..                       
+//                 `
+//             );
             /*
             console.log(`
                                                                              
@@ -187,19 +207,36 @@ pcscDevices.on('device-activated', (event => {
             console.log('  \\_/ \\_| \\_|\\___/\\_| \\_/\\____/\\___/╚═╝╩ ╩╩╚══╩╝');
             console.log('╒════════════════════════════════════════════════');
             console.log('│ Options:');
-            console.log('│    "h"   - this help');
-            console.log('│    "PUK" - set puk');
-            console.log('│    "puk" - validate puk');
-            console.log('│    "PIN" - set pin');
-            console.log('│    "pin" - validate pin');
-            console.log('│    "gen" - generate Acc');
-            console.log('│    "id"  - get the card account id');
-            console.log('│    "tr"  - transfer #EURS');
+            console.log('│    "h"    - this help');
+            console.log('│    "s"    - get card state');
+            console.log('│    "e"    - echo');
+            console.log('│    "ka"   - key agreement');
+            console.log('│    "PUK"  - set puk');
+            console.log('│    "puk"  - validate puk');
+            console.log('│    "PIN"  - set pin');
+            console.log('│    "pin"  - validate pin');
+            console.log('│    "pinw" - validate wrong pin');
+            console.log('│    "gen"  - generate Acc');
+            console.log('│    "imp"  - import ');
+            console.log('│    "id"   - get the card account id');
+            console.log('│    "tr"   - transfer #EURS');
         };
 
-        
+        // prompt('Insert your private key: ');
+        const privKeyB58 = '9XwbySgVsf1qZvErcMkdGtzDnrDVoRfL6AxQGQ35A2bnCstJbexGjxJKe1UzJzYgyw1W83qzBwdFcccWfmQpPcVGpbTAPQkbCZRMk1HxH3zUyoMppD2ae5R4m7gedbjrwsXnmqdULQBJ44hn2giNSjZ1N39DW7L1CQaU8rFtpYwRTfXGMwP4jwWxq6Daf79GW1PLquMfbGEihu6xiQqmhZUrYmKeNKqoaAqMztWpcZH6hvLBhxxiCq7weXAYZ2wQvFeEqF4HT';
+        const importedPrivKey = new t2lib.ECDSAKey('private');
+        await importedPrivKey.importBin(new Uint8Array(t2lib.binConversions.base58ToArrayBuffer(privKeyB58)));
 
-        await card.issueCommand(Iso7816Commands.select('112233445500'))
+        const kp = new t2lib.ECDSAKeyPair();
+        kp.privateKey = importedPrivKey;
+        kp.publicKey = await importedPrivKey.extractPublic();
+        // await kp.generate();
+
+
+        const resp = await card.issueCommand(Iso7816Commands.select('112233445500'));
+        if (!resp.isOk()) {
+            throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
+        }
 
         printHelp();
 
@@ -211,6 +248,43 @@ pcscDevices.on('device-activated', (event => {
             switch (option) {
                 case 'h': case 'H':
                     printHelp();
+                    break;
+                case 'e':
+                    resp = await card.issueCommand(new CommandApdu('80FF000000'));
+                    console.log(`Response: [${resp.toString()}]`);
+                    break;
+                case 's':
+                    resp = await card.issueCommand(new CommandApdu('80F2000000'));
+                    if (resp.isOk()) {
+                        if (resp.dataLength !== 1) {
+                            console.log(`Unknown response: [${resp.toString()}]`);
+                        }
+                        const stateByte = resp.data[0];
+                        console.log(`PUK set: [${(stateByte & 0x01) > 0}]`);
+                        console.log(`PIN set: [${(stateByte & 0x02) > 0}]`);
+                        console.log(`ACC set: [${(stateByte & 0x04) > 0}]`);
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
+                    break;
+                case 'ka':
+
+                    const ecdh = crypto.createECDH('prime256v1');
+                    await ecdh.generateKeys();
+
+                    // const s1 = kp1.computeSecret(kp2.getPublicKey());
+                    // const s2 = kp2.computeSecret(kp1.getPublicKey());
+                    resp = await card.issueCommand(new CommandApdu('8020000000').setData([...ecdh.getPublicKey()]));
+                    if (resp.isOk()) {
+                        const cardEcdhPubKey = resp.data.slice(0, 65);
+                        const secret = resp.data.slice(65);
+                        console.log(`pubKey(${cardEcdhPubKey.length}): [${arrayToHex(cardEcdhPubKey)}]`);
+                        console.log(`card secret(${secret.length}): [${arrayToHex(secret)}]`);
+                        const computedSecret = ecdh.computeSecret(Buffer.from(cardEcdhPubKey));
+                        console.log(`  my secret(${computedSecret.length}): [${arrayToHex([...computedSecret])}]`);
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
                     break;
                 case 'PUK':
                     let pukByteArray;
@@ -236,7 +310,7 @@ pcscDevices.on('device-activated', (event => {
                 case 'puk':
                     let pukByteArray2;
                     try {
-                        // pukByteArray = parsePinString(prompt('Input PUK: '));
+                        // pukByteArray2 = parsePinString(prompt('Input PUK: '));
                         pukByteArray2 = parsePinString('0123456789');
                     } catch (error) {
                         console.log(`${error}`);
@@ -277,7 +351,7 @@ pcscDevices.on('device-activated', (event => {
                 case 'pin':
                     let pinByteArray2;
                     try {
-                        // pinByteArray = parsePinString(prompt('Input PIN: '));
+                        // pinByteArray2 = parsePinString(prompt('Input PIN: '));
                         pinByteArray2 = parsePinString('0123');
                     } catch (error) {
                         console.log(`${error}`);
@@ -287,15 +361,52 @@ pcscDevices.on('device-activated', (event => {
                     if (resp.isOk()) {
                         console.log('Success!');
                     } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
                         if (resp.dataLength === 2) {
-                            console.log(`Error; Remaining tries: ${resp.data[1]}`);
-                        } else {
-                            console.log(`Error! Response: [${resp.toString()}]`);
+                            console.log(`Remaining tries: ${resp.data[1]}`);
+                        }
+                    }
+                    break;
+                case 'pinw':
+                    let pinByteArrayW;
+                    try {
+                        pinByteArrayW = parsePinString('1234');
+                    } catch (error) {
+                        console.log(`${error}`);
+                        break;
+                    }
+                    resp = await card.issueCommand(new CommandApdu('8011000000').setData(pinByteArrayW));
+                    if (resp.isOk()) {
+                        console.log('Success!');
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                        if (resp.dataLength === 2) {
+                            console.log(`Remaining tries: ${resp.data[1]}`);
                         }
                     }
                     break;
                 case 'gen':
                     resp = await card.issueCommand(new CommandApdu('8002000000'));
+                    if (resp.isOk()) {
+                        console.log('Success!');
+                    } else {
+                        console.log(`Error! Response: [${resp.toString()}]`);
+                    }
+                    break;
+                case 'imp':
+                    const priv = kp.privateKey;
+                    const pub = kp.publicKey;
+
+                    console.log(`Generated account: [${await t2lib.getAccountId(pub)}]`);
+
+                    const privKeyJWK = await priv.getJWK();
+
+                    const d = [...t2lib.binConversions.base64urlToBuffer(privKeyJWK.d!)];
+
+                    const pubRaw = [...await pub.getRaw()];
+
+                    const cmd = new CommandApdu('8003000000').setData(d.concat(pubRaw));
+                    resp = await card.issueCommand(cmd);
                     if (resp.isOk()) {
                         console.log('Success!');
                     } else {
@@ -344,6 +455,7 @@ pcscDevices.on('device-activated', (event => {
                     resp = await card.issueCommand(new CommandApdu('8013000000').setData(txSHA384));
                     if (resp.isOk()) {
                         tx.signature = new Uint8Array(processSignature(resp.data));
+                        console.log(await tx.toUnnamedObject());
                         if (await tx.verify()) {
                             console.log('Valid!');
                             break;
@@ -380,7 +492,7 @@ pcscDevices.on('device-activated', (event => {
 
         // // initializing new secure session and authenticating host
         // await card.issueCommand(Iso7816Commands.select('A000000151535041'));
-        // const secSession = new GPSecureSession(card)
+        // const secSession = new SCP02(card)
         //     .setStaticKeys(gpDefStaticKeys)
         //     .setSecurityLevel(3);
 

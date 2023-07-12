@@ -239,7 +239,7 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; Nc inconsistent with parameters P1-P2';
                 break;
             case sw2 == 0x88:
-                msg += '; Referenced data or reference data not found (exact meaning depending on the command)';
+                msg += '; Referenced data or reference data not found (exact meaning depends on the command)';
                 break;
             case sw2 == 0x89:
                 msg += '; File already exists';

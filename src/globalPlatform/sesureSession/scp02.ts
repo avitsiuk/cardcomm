@@ -1,10 +1,10 @@
 import crypto from 'crypto';
-import { arrayToHex, hexToArray } from '../utils';
-import ResponseApdu, {assertOk} from '../responseApdu';
-import CommandApdu from '../commandApdu';
-import * as Iso7816Commands from '../iso7816/commands';
-import * as GPCommands from './commands';
-import Card from '../card';
+import { arrayToHex, hexToArray } from '../../utils';
+import ResponseApdu, {assertOk} from '../../responseApdu';
+import CommandApdu from '../../commandApdu';
+import * as Iso7816Commands from '../../iso7816/commands';
+import * as GPCommands from '../commands';
+import Card from '../../card';
 
 type TSecLvl = 0 | 1 | 3;
 
@@ -250,7 +250,7 @@ function authenticateCmd(
     return result;
 }
 
-export default class SecureSession {
+export default class SCP02 {
     private _card: Card;
     private _isActive: boolean = false;
     private _secLvl: TSecLvl = 0;
