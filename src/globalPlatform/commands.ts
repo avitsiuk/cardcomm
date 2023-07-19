@@ -1,9 +1,11 @@
+import * as Tlv from '../tlv';
 import CommandApdu from '../commandApdu';
-import { hexToArray } from '../utils';
+import { hexToArray, arrayToHex } from '../utils';
 
 const insByteList = {
     INIT_UPDATE: 0x50,
     EXT_AUTH: 0x82,
+    INT_AUTH: 0x88,
 };
 
 export function initUpdate(
@@ -47,5 +49,82 @@ export function extAuth(
         .setP1(secLvl)
         .setP2(0x00)
         .setData(hostCryptogram);
+    return cmd;
+}
+
+export function intAuth(
+    key: number[],
+    secLvl: 0x34 | 0x3C = 0x34,
+    includeId: boolean = false,
+    id: number[] = [],
+) {
+
+    // const BerTlvTagClassNames = [
+    //     'universal',        // 00
+    //     'application',      // 01
+    //     'context-specific', // 10
+    //     'private',          // 11
+    // ]
+
+
+    // 95
+    // 00010101 => 15
+
+    let dataObj: Tlv.IBerObj = {
+        // '49': {// 5F49
+        //     class: 'application',
+        //     value: key,
+        // },
+        '06': { // A6
+            class: 'context-specific',
+            value: {
+                '10': { // 90
+                    class: 'context-specific',
+                    value: [0x11, (includeId ? 0x04 : 0x00)],
+                },
+                '15': { // 95
+                    class: 'context-specific',
+                    value: [secLvl],
+                },
+                '00': { // 80
+                    class: 'context-specific',
+                    value: [0x88],
+                },
+                '01': { // 81
+                    class: 'context-specific',
+                    value: [key.length],
+                },
+            }
+        },
+        '49': {// 5F49
+            class: 'application',
+            value: key,
+        }
+    };
+
+    if (includeId) {
+        const idElem = {
+            class: 'context-specific',
+            value: id
+        };
+        (dataObj['06'].value as Tlv.IBerObj)['04'] = idElem; // 84
+    }
+
+    // let data: number[] = Tlv.berTlvEncode(dataObj);
+    const data1 = '5f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9a612900211049501348001888101418403010203';
+    const data2 = 'a6129002110495013480018881014184030102035f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9';
+
+    const data = hexToArray(data2);
+
+    console.log(`DATA: [${arrayToHex(data)}]`);
+
+    let cmd = new CommandApdu()
+        .setProprietary()
+        .setType(4)
+        .setSecMgsType(0)
+        .setIns(insByteList.INT_AUTH)
+        .setP1(0x00) // key version
+        .setP2(0x00) // key identifier
+        .setData(data);
     return cmd;
 }

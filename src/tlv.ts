@@ -1,3 +1,5 @@
+import { isHex, arrayToHex } from './utils';
+
 interface ItlvObj {
     [key: string]: {
         length: number,
@@ -18,7 +20,7 @@ export function simpleDecode(data: number[]): ItlvObj {
             throw new Error(`Invalid tag: [${data[tagIdx].toString(16).padStart(2, '0')}]`);
         }
         const tagHex = data[tagIdx].toString(16).toUpperCase().padStart(2, '0');
-        const lenIdx = tagIdx + 1;1
+        const lenIdx = tagIdx + 1;
         if (lenIdx >= data.length) throw new Error(ERR_DATA_END);
         let valueIdx: number;
         let valueLen = 0;
@@ -65,8 +67,8 @@ const BerTlvTagClassNames = [
 
 interface IBerTlvObj {
     [key: string]: {
-        class: string,
-        constructed: boolean, 
+        class: typeof BerTlvTagClassNames[number],
+        constructed: boolean,
         value: number[] | IBerTlvObj,
     }
 }
@@ -81,7 +83,7 @@ export function berDecode(data: number[]): IBerTlvObj {
         const tagClass = data[tagIdx] >> 6;
         const constructed = (data[tagIdx] & 0x20) > 0;
         let tagValue = data[tagIdx] & 0x1F;
-        let lenIdx = tagIdx + 1; 
+        let lenIdx = tagIdx + 1;
         if (tagValue === 0x1F) {
             const tagArr: number[] = [];
             let tagEndIdx = tagIdx;
@@ -105,7 +107,6 @@ export function berDecode(data: number[]): IBerTlvObj {
         let valueIdx = lenIdx + (valueLen > 0 ? 1 : 0);
         if ((valueLen & 0x80) > 0) {
             const lenNBytes = data[lenIdx] & 0x7F;
-            console.log(lenNBytes);
             if (lenNBytes > 4) throw new Error('Length field too long. Max 5 bytes total.');
             if(lenIdx + lenNBytes >= data.length) throw new Error(ERR_DATA_END);
             let tmp = new Uint32Array([0]);
@@ -133,4 +134,75 @@ export function berDecode(data: number[]): IBerTlvObj {
         }
     }
     return berTvlObj;
+}
+
+export interface IBerObj {
+    [key: string]: {
+        class: typeof BerTlvTagClassNames[number],
+        value: number[] | IBerObj,
+    }
+}
+
+export function berTlvEncode(obj: IBerObj): number[] {
+    let result: number[] = [];
+    const tags = Object.keys(obj);
+    for (let i = 0; i < tags.length; i++) {
+        const tagStr = tags[i];
+        if (!isHex(tagStr)) {
+            throw new Error(`tag "${tagStr}" is not a hex string`);
+        }
+
+        const tagClass = BerTlvTagClassNames.indexOf(obj[tagStr].class);
+        if (tagClass < 0) throw new Error(`Unknown class: "${obj[tagStr].class}"`);
+
+        const tagNum = Number.parseInt(tagStr, 16);
+
+        let tagBytes: number[] = [0];
+        tagBytes[0] |= tagClass << 6;
+
+        if (tagNum < 31) {
+            tagBytes[0] |= tagNum;
+        } else {
+            tagBytes[0] |= 31;
+            const bitNum = Math.floor(Math.log2(tagNum)) + 1;
+            const additionalBytesNum = Math.ceil(bitNum / 7);
+            const additionalTagBytes = new Array<number>(additionalBytesNum).fill(0);
+
+            const bitMask = 0x7F;
+
+            for (let i = 0; i < additionalBytesNum; i++) {
+                const shiftValue = 7*(additionalBytesNum - i - 1);
+                additionalTagBytes[i] = (tagNum & (bitMask << shiftValue)) >> shiftValue;
+                if (i < (additionalBytesNum - 1)) {
+                    additionalTagBytes[i] |= 0x80;
+                }
+            }
+            tagBytes.push(...additionalTagBytes);
+        }
+
+        let valueBytes: number[] = [];
+        if(Array.isArray(obj[tagStr].value)) {
+            valueBytes = obj[tagStr].value as number[];
+        } else {
+            tagBytes[0] |= 0x20;
+            valueBytes = berTlvEncode(obj[tagStr].value as IBerObj);
+        }
+
+        const maxLen = 0xFFFFFFFF;
+        if (valueBytes.length > maxLen) {
+            throw new Error(`value for tag ${tagStr} is too long; max: ${maxLen} bytes; received: ${valueBytes.length} bytes`);
+        }
+        const lenBytes: number[] = [valueBytes.length];
+        if (lenBytes[0] > 127) {
+            const tmp = [...Buffer.from(arrayToHex(lenBytes, false), 'hex')];
+            lenBytes[0] = 0x80;
+            lenBytes[0] |= tmp.length;
+            lenBytes.push(...tmp);
+        }
+
+        result.push(...tagBytes);
+        result.push(...lenBytes);
+        result.push(...valueBytes);
+    }
+    return result;
 }

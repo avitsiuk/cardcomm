@@ -10,6 +10,7 @@ import  * as Iso7816Commands from './iso7816/commands';
 
 import * as GPCommands from './globalPlatform/commands';
 import SCP02, {defStaticKeys as gpDefStaticKeys} from './globalPlatform/sesureSession/scp02';
+import SCP11 from './globalPlatform/sesureSession/scp11';
 
 import Device from './device';
 import Devices from './devices';
@@ -24,6 +25,7 @@ export {
     Iso7816Commands,
     GPCommands,
     SCP02,
+    SCP11,
     gpDefStaticKeys,
     Device,
     Devices,

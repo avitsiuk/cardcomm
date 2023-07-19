@@ -3,9 +3,9 @@
  * TODO: Java class converter
  * TODO: Load, Install,Select from .cap files
  * TODO: Card Lifecycle management
- * TODO: TLV 'encoder' > Import of privKey
- * TODO: Request ObjectDeletion where needed
- * TODO: pubKey setting during import
+ * TODO: TLV 'encoder' > Import of privKey !!!
+ * TODO: Request ObjectDeletion where needed -> KeyAgreement !!!
+ * TODO: pubKey setting during import !!!
  * 
  * scriptgen (cap -> scripts);
  */
@@ -22,7 +22,7 @@ import {
     Devices,
     Iso7816Commands,
     gpDefStaticKeys,
-    SCP02,
+    SCP11,
     CommandApdu,
     Utils,
     ResponseApdu,
@@ -31,6 +31,8 @@ import {
 const nodeUrl = 'https://testnet.trinci.net/';
 const nodeNetwork = 'QmcvHfPC6XYpgxvJSZQCVBd7QAMEHnLbbK1ytA4McWx5UY';
 const trinciClient = new t2lib.Client(nodeUrl, nodeNetwork);
+
+let runLoop = false;
 
 const prompt = Prompt({sigint: true});
 const hexToArray = Utils.hexToArray;
@@ -60,6 +62,8 @@ pcscDevices.on('device-activated', (event => {
     })
 
     device.on('card-removed', (event) => {
+        runLoop = false;
+        console.log('Removed');
         if (!event.card) {
             console.log(`[${devType}]: No card inserted`);
             return;
@@ -69,6 +73,7 @@ pcscDevices.on('device-activated', (event => {
     });
 
     device.on('card-inserted', async (event) => {
+        runLoop = true;
         if (!event.card) {
             console.log(`[${devType}]: Inserted [null]`);
             return;
@@ -220,6 +225,7 @@ pcscDevices.on('device-activated', (event => {
             console.log('│    "imp"  - import ');
             console.log('│    "id"   - get the card account id');
             console.log('│    "tr"   - transfer #EURS');
+            console.log('│    "next" - Next Card');
         };
 
         // prompt('Insert your private key: ');
@@ -240,11 +246,12 @@ pcscDevices.on('device-activated', (event => {
 
         printHelp();
 
-        let runLoop: boolean = true;
+        runLoop = true;
         while(runLoop) {
             let resp: ResponseApdu;
             console.log();
             const option = prompt('Choose an option: ');
+            if (!runLoop) break;
             switch (option) {
                 case 'h': case 'H':
                     printHelp();
@@ -268,23 +275,25 @@ pcscDevices.on('device-activated', (event => {
                     }
                     break;
                 case 'ka':
+                    const s = new SCP11(card).setSecurityLevel(0x34);
+                    const res = await s.initAndAuth();
 
-                    const ecdh = crypto.createECDH('prime256v1');
-                    await ecdh.generateKeys();
+                    // const ecdh = crypto.createECDH('prime256v1');
+                    // await ecdh.generateKeys();
 
-                    // const s1 = kp1.computeSecret(kp2.getPublicKey());
-                    // const s2 = kp2.computeSecret(kp1.getPublicKey());
-                    resp = await card.issueCommand(new CommandApdu('8020000000').setData([...ecdh.getPublicKey()]));
-                    if (resp.isOk()) {
-                        const cardEcdhPubKey = resp.data.slice(0, 65);
-                        const secret = resp.data.slice(65);
-                        console.log(`pubKey(${cardEcdhPubKey.length}): [${arrayToHex(cardEcdhPubKey)}]`);
-                        console.log(`card secret(${secret.length}): [${arrayToHex(secret)}]`);
-                        const computedSecret = ecdh.computeSecret(Buffer.from(cardEcdhPubKey));
-                        console.log(`  my secret(${computedSecret.length}): [${arrayToHex([...computedSecret])}]`);
-                    } else {
-                        console.log(`Error! Response: [${resp.toString()}]`);
-                    }
+                    // // const s1 = kp1.computeSecret(kp2.getPublicKey());
+                    // // const s2 = kp2.computeSecret(kp1.getPublicKey());
+                    // resp = await card.issueCommand(new CommandApdu('8020000000').setData([...ecdh.getPublicKey()]));
+                    // if (resp.isOk()) {
+                    //     const cardEcdhPubKey = resp.data.slice(0, 65);
+                    //     const secret = resp.data.slice(65);
+                    //     console.log(`pubKey(${cardEcdhPubKey.length}): [${arrayToHex(cardEcdhPubKey)}]`);
+                    //     console.log(`card secret(${secret.length}): [${arrayToHex(secret)}]`);
+                    //     const computedSecret = ecdh.computeSecret(Buffer.from(cardEcdhPubKey));
+                    //     console.log(`  my secret(${computedSecret.length}): [${arrayToHex([...computedSecret])}]`);
+                    // } else {
+                    //     console.log(`Error! Response: [${resp.toString()}]`);
+                    // }
                     break;
                 case 'PUK':
                     let pukByteArray;
@@ -471,6 +480,9 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
                     break;
+                case 'next':
+                    runLoop = false;
+                    return;
                 default:
                     break;
             }
