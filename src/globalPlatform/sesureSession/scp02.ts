@@ -38,12 +38,12 @@ export const defStaticKeys: ISessionKeys = {
 }
 
 function tDesCbcEnc(data: Buffer, key: Buffer, iv: Buffer): Buffer {
-    const cipher = crypto.createCipheriv('des-ede3-cbc', key, iv);
+    const cipher = crypto.createCipheriv('des-ede3-cbc', key, iv).setAutoPadding(false);
     return Buffer.concat([cipher.update(data), cipher.final()]);
 }
 
 function tDesCbcDec(data: Buffer, key: Buffer, iv: Buffer): Buffer {
-    const decipher = crypto.createDecipheriv('des-ede3-cbc', key, iv);
+    const decipher = crypto.createDecipheriv('des-ede3-cbc', key, iv).setAutoPadding(false);
     return Buffer.concat([decipher.update(data), decipher.final()]);
 }
 
@@ -141,8 +141,8 @@ function addMac(
     icv: number[] = new Array<number>(8).fill(0),
 ) {
     const macLength = 8;
-    if(cmd.getLc() + macLength > 255 ) {
-        throw new Error(`Max ${255 - macLength} bytes of data`);
+    if(cmd.getLc() + macLength > CommandApdu.MAX_DATA_BYTES ) {
+        throw new Error(`Max ${CommandApdu.MAX_DATA_BYTES - macLength} bytes of data`);
     }
     if(sessionKeys.mac.length !== 16) {
         throw new Error('Wrong MAC key length');
