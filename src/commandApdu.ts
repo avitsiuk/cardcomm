@@ -3,6 +3,8 @@ import { bufferToArray, hexToArray, arrayToHex } from './utils';
 type TCommandType = ''
 
 export class CommandApdu {
+    static MAX_DATA_BYTES: number = 255;
+
     private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00];
 
     constructor(command?: string | number[] | Buffer | CommandApdu) {
@@ -130,8 +132,8 @@ export class CommandApdu {
     }
 
     setData(data: number[]): this {
-        if (data.length > 255) {
-            throw new Error(`Data too long; Max: 255 bytes; Received: ${data.length} bytes`);
+        if (data.length > CommandApdu.MAX_DATA_BYTES) {
+            throw new Error(`Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${data.length} bytes`);
         }
         const header = this._byteArray.slice(0, 4);
         let le: number;
@@ -140,7 +142,7 @@ export class CommandApdu {
         } else {
             le = 0;
         }
-        this._byteArray = header;
+        this._byteArray = new Array<number>(...header);
         const lc = data.length;
         if (lc > 0) {
             this._byteArray.push(lc);
@@ -153,8 +155,8 @@ export class CommandApdu {
     getData(): number[] {
         let data = new Array<number>(0);
         if (this._byteArray.length > 5) {
-            const dataWithLc = this._byteArray.slice(4, -1);
-            if (dataWithLc.length > 1) data = dataWithLc.slice(1);
+            const dataWithLc = this._byteArray.slice(4);
+            if (dataWithLc.length > 1) data = dataWithLc.slice(1, 1 + dataWithLc[0]);
         }
         return data;
     }
