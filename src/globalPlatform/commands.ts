@@ -52,71 +52,57 @@ export function extAuth(
     return cmd;
 }
 
+/**
+ * Internal authenticate
+ * @param key - ephemeral OCE key agreement public key
+ * @param secLvl - (Default:`0x34`) Defines the level of security for all secure messaging commands following this INTERNAL_AUTHENTICATE command (it does not apply to this command) and within this Secure Channel  
+ * Possible `secLvl` values:  
+ * `0x34` - C-MAC and R-MAC only  
+ * `0x3C` - C-MAC, C-DECRYPTION, R-MAC, R-ENCRYPTION
+ * @param includeId - (Default: `false`) If true, a passed id can be included
+ * @param id - id to include if `includeId` parameter has been set to `true`
+ */
 export function intAuth(
     key: number[],
     secLvl: 0x34 | 0x3C = 0x34,
     includeId: boolean = false,
     id: number[] = [],
 ) {
-
-    // const BerTlvTagClassNames = [
-    //     'universal',        // 00
-    //     'application',      // 01
-    //     'context-specific', // 10
-    //     'private',          // 11
-    // ]
-
-
-    // 95
-    // 00010101 => 15
-
-    let dataObj: Tlv.IBerObj = {
-        // '49': {// 5F49
-        //     class: 'application',
-        //     value: key,
-        // },
-        '06': { // A6
-            class: 'context-specific',
+    let berObj: Tlv.IBerObj = {
+        'A6': {
             value: {
-                '10': { // 90
-                    class: 'context-specific',
+                '90': {
                     value: [0x11, (includeId ? 0x04 : 0x00)],
                 },
-                '15': { // 95
-                    class: 'context-specific',
+                '95': {
                     value: [secLvl],
                 },
-                '00': { // 80
-                    class: 'context-specific',
+                '80': {
                     value: [0x88],
                 },
-                '01': { // 81
-                    class: 'context-specific',
+                '81': {
                     value: [key.length],
                 },
             }
         },
-        '49': {// 5F49
-            class: 'application',
+        '5F49': {
             value: key,
         }
     };
 
     if (includeId) {
-        const idElem = {
-            class: 'context-specific',
+        (berObj['06'].value as Tlv.IBerObj)['84'] = {
             value: id
         };
-        (dataObj['06'].value as Tlv.IBerObj)['04'] = idElem; // 84
     }
 
-    // let data: number[] = Tlv.berTlvEncode(dataObj);
-    const data1 = '5f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9a612900211049501348001888101418403010203';
-    const data2 = 'a6129002110495013480018881014184030102035f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9';
+    const data: number[] = Tlv.berTlvEncode(berObj);
+    // const data1 = '5f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9a612900211049501348001888101418403010203';
+    // const data2 = 'a6129002110495013480018881014184030102035f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9';
 
-    const data = hexToArray(data2);
+    // const data = hexToArray(data2);
 
-    console.log(`DATA: [${arrayToHex(data)}]`);
+    // console.log(`DATA: [${arrayToHex(data)}]`);
 
     let cmd = new CommandApdu()
         .setProprietary()
