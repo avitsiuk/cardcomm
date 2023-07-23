@@ -170,8 +170,8 @@ class Card implements ICard {
             throw new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`)
         }
 
-        if (cmd.length > 261) {
-            throw new Error(`Command too long; Max: 261 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`);
+        if (cmd.length > CommandApdu.MAX_DATA_BYTES) {
+            throw new Error(`Command too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`);
         }
 
         if(cmd.getLc() !== cmd.getData().length) {

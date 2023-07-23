@@ -8,6 +8,7 @@ import Card from '../../card';
 
 const KEY_BYTE_LEN = 32;
 const BLOCK_BYTE_LEN = 16;
+const CMAC_BYTE_LEN = 8;
 
 /**
  * 0x34: C-MAC and R-MAC only
@@ -60,6 +61,9 @@ export default class SCP11 {
     private _macChainingValue: number[];
     private _encryptCounter: number[];
 
+    private _prevMacChaining: number[];
+    private _prevEncryptCounter: number[];
+
     private _authenticateFunction: ((cmd: CommandApdu) => CommandApdu) | undefined;
     private _doAuthenticate = (cmd: CommandApdu) => {
         if (!this.isActive
@@ -75,6 +79,10 @@ export default class SCP11 {
         this._macChainingValue = new Array<number>(BLOCK_BYTE_LEN).fill(0);
         this._encryptCounter = new Array<number>(BLOCK_BYTE_LEN).fill(0);
         this._encryptCounter[this._encryptCounter.length - 1] = 1;
+
+        this._prevEncryptCounter = this._encryptCounter;
+        this._prevMacChaining = this._macChainingValue;
+
         this.reset();
     }
 
@@ -85,6 +93,9 @@ export default class SCP11 {
         this._macChainingValue = new Array<number>(BLOCK_BYTE_LEN).fill(0);;
         this._encryptCounter = new Array<number>(BLOCK_BYTE_LEN).fill(0);
         this._encryptCounter[this._encryptCounter.length - 1] = 0x01;
+
+        this._prevEncryptCounter = this._encryptCounter;
+        this._prevMacChaining = this._macChainingValue;
     }
 
     get isActive(): boolean {
@@ -92,6 +103,7 @@ export default class SCP11 {
     }
 
     private increaseCounter() {
+        this._prevEncryptCounter = new Array<number>(...this._encryptCounter);
         for (let i = (this._encryptCounter.length - 1); i >= 0; i -=1) {
             if (this._encryptCounter[i] < 0xFF) {
                 this._encryptCounter[i] += 1;
@@ -165,12 +177,50 @@ export default class SCP11 {
         return this._doAuthenticate;
     }
 
-    private addMac(
+    private cEnc(
         cmd: CommandApdu,
     ) {
-        const macLength = 8;
-        if(cmd.getLc() + macLength > 255 ) {
-            throw new Error(`Max ${255 - macLength} bytes of data`);
+        // do not apply encryption if there are no data.
+        if(cmd.getLc() <= 0) {
+            return cmd;
+        }
+        if (typeof this._sessionKeys === 'undefined') {
+            throw new Error(`Session keys not defined`);
+        }
+        if(this._sessionKeys.sEnc.length !== KEY_BYTE_LEN) {
+            throw new Error(`Wrong s-enc length; expected ${KEY_BYTE_LEN} bytes; received ${this._sessionKeys.sEnc.length} bytes`);
+        }
+        if(this._encryptCounter.length !== BLOCK_BYTE_LEN) {
+            throw new Error(`Wrong encryption counter length; expected ${BLOCK_BYTE_LEN} bytes; received ${this._encryptCounter.length} bytes`);
+        }
+
+        // data: [cmd.data](Lc) + [8000...00](missingPaddingBytes)
+        // total data len must be multiple of BLOCK_BYTE_LEN
+        const missingPaddingBytes = BLOCK_BYTE_LEN - ( cmd.getLc() % BLOCK_BYTE_LEN);
+        let dataToEncrypt = Buffer.alloc((cmd.getLc() + missingPaddingBytes), 0);
+        dataToEncrypt.set(cmd.getData());
+        dataToEncrypt[cmd.getLc()] = 0x80;
+
+        const icvCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0));
+        const icv = Buffer.concat([icvCipher.update(Buffer.from(this._encryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
+
+        const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), icv);
+        const encryptedData =  Buffer.concat([cipher.update(dataToEncrypt), cipher.final()]);
+
+        // const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), icv);
+        // const plain = Buffer.concat([decipher.update(encryptedData), decipher.final()]);
+        // console.log(`P: [${dataToEncrypt.toString('hex')}]`);
+        // console.log(`E: [${encryptedData.toString('hex')}]`);
+        // console.log(`D: [${plain.toString('hex')}]`);
+
+        return new CommandApdu(cmd).setSecMgsType(1).setData([...encryptedData]);
+    }
+
+    private cMac(
+        cmd: CommandApdu,
+    ) {
+        if(cmd.getLc() + CMAC_BYTE_LEN > 255 ) {
+            throw new Error(`Max ${255 - CMAC_BYTE_LEN} bytes of data`);
         }
         if (typeof this._sessionKeys === 'undefined') {
             throw new Error(`Session keys not defined`);
@@ -201,154 +251,221 @@ export default class SCP11 {
         let dataToAuthenticate = Buffer.alloc(21 + origData.length + missingPaddingBytes, 0);
         dataToAuthenticate.set(this._macChainingValue, 0);
         dataToAuthenticate.set(newHeader, this._macChainingValue.length);
-        dataToAuthenticate.set([origData.length + macLength], (this._macChainingValue.length + 4));
+        dataToAuthenticate.set([origData.length + CMAC_BYTE_LEN], (this._macChainingValue.length + 4));
         dataToAuthenticate.set(origData, (this._macChainingValue.length + 5));
         dataToAuthenticate.set([0x80], (this._macChainingValue.length + 5 + origData.length));
 
-        const icvCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0));
+        const icvCipher = crypto
+            .createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0))
+            .setAutoPadding(false);
+            // console.log(`CNT: [${arrayToHex(this._encryptCounter)}]`);
         const icv = Buffer.concat([icvCipher.update(Buffer.from(this._encryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
 
         // prepend BLOCK_BYTE_LEN-byte mac chaining value to the data before 
         const macCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sMac), icv);
-        this._macChainingValue = [...Buffer.concat([macCipher.update(dataToAuthenticate), macCipher.final()]).subarray(0, BLOCK_BYTE_LEN)];
+        const macCipherResult = Buffer.concat([macCipher.update(dataToAuthenticate), macCipher.final()]);
+        const macStartIdx = BLOCK_BYTE_LEN * Math.max((Math.floor(macCipherResult.length / BLOCK_BYTE_LEN) - 2), 0)
+        // also first 8 bytes of the new chaining value is the current C-MAC
+        this._prevMacChaining = this._macChainingValue;
+        this._macChainingValue = [...macCipherResult.subarray(macStartIdx, macStartIdx + BLOCK_BYTE_LEN)];
 
         // // remove padding (8000...) and append mac instead
         const paddingIdx = dataToAuthenticate.length - missingPaddingBytes;
         const newCmdBytes = Buffer.concat([
                 dataToAuthenticate.subarray(this._macChainingValue.length, paddingIdx),
-                Buffer.from(this._macChainingValue.slice(0, macLength))
+                Buffer.from(this._macChainingValue.slice(0, CMAC_BYTE_LEN)),
             ]);
+
+        // console.log(`DTA: [${dataToAuthenticate.toString('hex')}]`);
+        // console.log(`ICV: [${icv.toString('hex')}]`);
+        // console.log(`RES: [${macCipherResult.toString('hex')}]`);
+        // console.log(`MAC: [${arrayToHex(this._macChainingValue)}]`);
+        // console.log();
 
         // // Do not forget to set original logical channel
         return new CommandApdu(newCmdBytes).setLogicalChannel(cmd.getLogicalChannel());
     }
+
+    public isCMacValid(cmd: CommandApdu): boolean {
+        // console.log();
+        // console.log(`CMD: [${arrayToHex(cmd.toArray())}]`);
+        if(cmd.getSecMgsType() === 0) {
+            throw new Error('No secure messaging flag in the command apdu');
+        }
+        if (cmd.getLc() < CMAC_BYTE_LEN) {
+            throw new Error('Not enough data in the command apdu');
+        }
+
+        if(cmd.getLc() + CMAC_BYTE_LEN > 255 ) {
+            throw new Error(`Max ${255 - CMAC_BYTE_LEN} bytes of data`);
+        }
+        if (typeof this._sessionKeys === 'undefined') {
+            throw new Error(`Session keys not defined`);
+        }
+        if(this._sessionKeys.sMac.length !== KEY_BYTE_LEN) {
+            throw new Error(`Wrong s-mac length; expected ${KEY_BYTE_LEN} bytes; received ${this._sessionKeys.sMac.length} bytes`);
+        }
+        if(this._sessionKeys.sEnc.length !== KEY_BYTE_LEN) {
+            throw new Error(`Wrong s-enc length; expected ${KEY_BYTE_LEN} bytes; received ${this._sessionKeys.sEnc.length} bytes`);
+        }
+        if(this._prevEncryptCounter.length !== BLOCK_BYTE_LEN) {
+            throw new Error(`Wrong prev encryption counter length; expected ${BLOCK_BYTE_LEN} bytes; received ${this._prevEncryptCounter.length} bytes`);
+        }
+
+        // c67da3b35214fcbc94eb78bc475828b98f8c0dde7065c2973997343c4f9b25fa870994af06e32c1b04f1783c3406d3e978b719ba44d158aedacd8cc29a6c78a6b1b2981954087631
+
+        const header = new CommandApdu(cmd).setLogicalChannel(0).toArray().slice(0, 5);
+        const data = cmd.getData().slice(0, cmd.getLc() - CMAC_BYTE_LEN);
+        const missingPaddingBytes = BLOCK_BYTE_LEN - ((header.length + data.length) % BLOCK_BYTE_LEN);
+        const dataToAuthenticate = Buffer.alloc(16 + header.length + data.length + missingPaddingBytes, 0);
+        dataToAuthenticate.set(this._prevMacChaining, 0);
+        dataToAuthenticate.set(header, this._prevMacChaining.length);
+        dataToAuthenticate.set(data, this._prevMacChaining.length + header.length);
+        dataToAuthenticate.set([0x80], this._prevMacChaining.length + data.length + header.length);
+
+        const icvCipher = crypto
+            .createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0))
+            .setAutoPadding(false);
+        // console.log(`CNT: [${arrayToHex(this._prevEncryptCounter)}]`);
+        const icv = Buffer.concat([icvCipher.update(Buffer.from(this._prevEncryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
+
+        // prepend BLOCK_BYTE_LEN-byte mac chaining value to the data before
+        const macCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sMac), icv);
+        const macCipherResult = Buffer.concat([macCipher.update(dataToAuthenticate), macCipher.final()]);
+        const macStartIdx = BLOCK_BYTE_LEN * Math.max((Math.floor(macCipherResult.length / BLOCK_BYTE_LEN) - 2), 0);
+        const mac = macCipherResult.subarray(macStartIdx, macStartIdx + CMAC_BYTE_LEN);
+        // console.log(`DTA: [${dataToAuthenticate.toString('hex')}]`);
+        // console.log(`ICV: [${icv.toString('hex')}]`);
+        // console.log(`RES: [${macCipherResult.toString('hex')}]`);
+        // console.log(`MAC: [${mac.toString('hex')}]`);
+
+        const receivedMac = Buffer.from(cmd.getData().slice(cmd.getLc() - CMAC_BYTE_LEN));
+        // console.log(`MAC: [${receivedMac.toString('hex')}]`);
+        // console.log(`MAC: [${arrayToHex(cmd.getData())}]`);
+
+        if (receivedMac.toString('hex') === mac.toString('hex')) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public cDecryptWithCMac(cmd: CommandApdu): CommandApdu {
+        // console.log();
+        // console.log(`CMD: [${arrayToHex(cmd.toArray())}]`);
+        if(cmd.getSecMgsType() === 0) {
+            throw new Error('No secure messaging flag in the command apdu');
+        }
+        if (cmd.getLc() <= CMAC_BYTE_LEN) {
+            throw new Error('Not enough data in the command apdu; ');
+        }
+        if (typeof this._sessionKeys === 'undefined') {
+            throw new Error(`Session keys not defined`);
+        }
+        if(this._sessionKeys.sEnc.length !== KEY_BYTE_LEN) {
+            throw new Error(`Wrong s-enc length; expected ${KEY_BYTE_LEN} bytes; received ${this._sessionKeys.sEnc.length} bytes`);
+        }
+        if(this._prevEncryptCounter.length !== BLOCK_BYTE_LEN) {
+            throw new Error(`Wrong prev encryption counter length; expected ${BLOCK_BYTE_LEN} bytes; received ${this._prevEncryptCounter.length} bytes`);
+        }
+
+        const encryptedData = Buffer.from(cmd.getData().slice(0, cmd.getLc() - CMAC_BYTE_LEN));
+
+        if (encryptedData.length < 1) {
+            return cmd;
+        }
+
+        const icvCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0));
+        const icv = Buffer.concat([icvCipher.update(Buffer.from(this._prevEncryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
+
+        const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(this._sessionKeys!.sEnc), icv);
+        const plainWithPadding = [...Buffer.concat([decipher.update(encryptedData), decipher.final()])];
+
+        let paddingIdx = plainWithPadding.length;
+        for (let i = plainWithPadding.length - 1; i >= 0; i -= 1) {
+            if (plainWithPadding[i] === 0x80) {
+                paddingIdx = i;
+                break;
+            }
+            if (plainWithPadding[i] !== 0) {
+                break;
+            }
+        }
+
+        // console.log(`DTA: [${encryptedData.toString('hex')}]`);
+        // console.log(`ICV: [${icv.toString('hex')}]`);
+        // console.log(`RES: [${Buffer.from(plainWithPadding.slice(0, paddingIdx)).toString('hex')}]`);
+        // console.log(`IDX: [${paddingIdx}]`);
+
+        // console.log(`CMD: [${new CommandApdu(cmd).toBuffer().toString('hex')}]`);
+
+        return new CommandApdu(cmd).setData(plainWithPadding.slice(0, paddingIdx));
+    }
+
+    /**
+     * 
+     * @param eSkOceEcka - Off-card entity ephemeral private(secret) key for EC key agreement protocol
+     * @param pkSdEcka - secure domain(applet) static public key for EC key agreement protocol
+     * @param ePkSdEcka - secure domain(applet) ephemeral public key for EC key agreement protocol
+     */
+    private genSessionKeys(
+        eSkOceEcka: number[],
+        pkSdEcka: number[],
+        ePkSdEcka: number[],
+    ): void {
+        const eEcka = crypto.createECDH('prime256v1');
+        eEcka.setPrivateKey(Buffer.from(eSkOceEcka));
+        const shSee = eEcka.computeSecret(Buffer.from(ePkSdEcka));
+        const shSes = eEcka.computeSecret(Buffer.from(pkSdEcka));
+        const shS = Buffer.concat([shSee, shSes]);
+
+        // see 4.3.3. Key Derivation Functions:
+        // https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03111/BSI-TR-03111_V-2-1_pdf.pdf
+        this._sessionKeys = {
+            sEnc:   [...crypto.createHash('sha256').update(Buffer.concat([shS, Buffer.from('00000001', 'hex')])).digest()],
+            sMac:   [...crypto.createHash('sha256').update(Buffer.concat([shS, Buffer.from('00000002', 'hex')])).digest()],
+            sRMac:  [...crypto.createHash('sha256').update(Buffer.concat([shS, Buffer.from('00000004', 'hex')])).digest()],
+        }
+    }
+
 
     /** Sends INITIALIZE_UPDATE and EXTERNAL AUTHENTICATE commands. Sets session as active on success */
     initAndAuth(keyVer: number = 0, keyId: number = 0): Promise<ResponseApdu> {
         return new Promise(async(resolve, reject) => {
             this.reset();
 
-            // generate ephemeral asymmetric EC keys
-            const eEcka = crypto.createECDH('prime256v1');
-            const eSkOceEcka = Buffer.from('b1c74760249d83c9ad70439338f746c1ea52f6f25b6d0d5f384176e529114146', 'hex');
-            eEcka.setPrivateKey(eSkOceEcka);
-            const ePkOceEcka = Buffer.from('04927ea9624053449f8fce329228615408c748eb8d3009417df663f34c02aae4c467d414a1c164716412692f264b4a054ce515aa6337ff016d877d5f9d9f22db4d', 'hex');
+            // generate ephemeral asymmetric EC keys for key agreement
+            const eSkOceEcka = hexToArray('b1c74760249d83c9ad70439338f746c1ea52f6f25b6d0d5f384176e529114146');
+            const ePkOceEcka = hexToArray(
+                '04927ea9624053449f8fce329228615408c748eb8d3009417df663f34c02aae4c467d414a1c164716412692f264b4a054ce515aa6337ff016d877d5f9d9f22db4d'
+            );
 
-            // const shSee = Buffer.from('ff7b1c8a6e2c0a61e10047960f79e1babf445f94ecca665b55d34a0acb3293a3', 'hex');
-            // const shSes = Buffer.from('c9115c67873d130b9472b3799867b29fd240c4f9ccff29bdf0a965ac8468b549', 'hex');
-
-            // ff7b1c8a6e2c0a61e10047960f79e1babf445f94ecca665b55d34a0acb3293a3c9115c67873d130b9472b3799867b29fd240c4f9ccff29bdf0a965ac8468b549
-            // 313ad390a1f46d5fc0c1b62736d337936ede69c468af11b40384acb08f04d6ba
-
-            // build INTERNAL_AUTHENTICATE command
+            // // send ephemeral public key in a INTERNAL_AUTHENTICATE command
             const intAuthCmd = GPCommands.intAuth([...ePkOceEcka], this._secLvl, this._includeId, this._id);
 
-            // get card public keys from intAuth response
-            const pkSdEcka = Buffer.from('046930f10f99eb9f3efcc793f79e76ce4bfb666ca22d1dca5ab0fb5d1c1caecb31f7ccc10b4063fddc76193107f6a20e99e75a31aacb183a3f1308a34955fc1fe8', 'hex');
-            const ePkSdEcka = Buffer.from('0422987603e2cc0974aeefc3990263ae71b3a9a149f99ead6e7daaca2730d2ac42c1773289a2c8f69a52fcec1e77f2455c4cd220fcefdfd61ce9ecb9409fc10b2d', 'hex');
+            // get card static public key
+            const pkSdEcka = hexToArray('046930f10f99eb9f3efcc793f79e76ce4bfb666ca22d1dca5ab0fb5d1c1caecb31f7ccc10b4063fddc76193107f6a20e99e75a31aacb183a3f1308a34955fc1fe8');
+            // get card ephemeral public key from intAuth response
+            const ePkSdEcka = hexToArray('0422987603e2cc0974aeefc3990263ae71b3a9a149f99ead6e7daaca2730d2ac42c1773289a2c8f69a52fcec1e77f2455c4cd220fcefdfd61ce9ecb9409fc10b2d');
+            this.genSessionKeys(
+                eSkOceEcka,
+                pkSdEcka,
+                ePkSdEcka,
+            );
 
-            const shSee = eEcka.computeSecret(ePkSdEcka);
-            console.log(`shSee: [${shSee.toString('hex')}]`);
-            const shSes = eEcka.computeSecret(pkSdEcka);
-            console.log(`shSes: [${shSes.toString('hex')}]`);
-
-            const key = crypto.createHash('sha256').update(Buffer.concat([shSee, shSes])).digest();
-            console.log(`Key:   [${key.toString('hex')}]`);
-
-            this._sessionKeys = {
-                sEnc:   [...key],
-                sMac:   [...key],
-                sRMac:  [...key],
-            }
-
-            const testCmd = new CommandApdu().setProprietary().setLogicalChannel(1).setIns(0xFF).setData([0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]);
-
-            for (let i = 0; i < 100; i++) {
-                this.addMac(testCmd);
+            for (let i = 0; i < 255; i++) {
+                let testCmd = new CommandApdu(intAuthCmd);
+                console.log();
+                console.log(`CMD: [${testCmd.toBuffer().toString('hex')}]`);
+                testCmd = this.cEnc(testCmd);
+                testCmd = this.cMac(testCmd);
                 this.increaseCounter();
+                console.log(`ENC: [${testCmd.toBuffer().toString('hex')}]`);
+                console.log(`AUTH: [${this.isCMacValid(testCmd)}]`);
+                console.log(`DEC: [${Buffer.from(this.cDecryptWithCMac(testCmd).getData()).toString('hex')}]`);
             }
 
             return resolve(new ResponseApdu());
-
-            // this._card.issueCommand(cmd)
-            //     .then((result) => {
-            //         console.log(result.toString());
-            //         return resolve(new ResponseApdu());
-            //     })
-            //     .catch((err) => {
-            //         return reject(err);
-            //     })
-            // const hostChallenge = [...crypto.randomBytes(8)];
-            // // sending INITIALIZE_UPDATE command with host challenge
-            // this._card.issueCommand(GPCommands.initUpdate(hostChallenge, keyVer, keyId))
-            //     .then((response) => {
-            //         assertOk(response);
-            //         if (response.dataLength !== 28) {
-            //             this.reset();
-            //             return reject(
-            //                 new Error(`Secure session init error; Response length error; resp: [${response.toString()}]`),
-            //             );
-            //         }
-
-            //
-
-            //         const keyDivData = response.data.slice(0, 10);
-            //         const keyVersion = response.data[10];
-            //         const protocolVersion = response.data[11];
-            //         if(protocolVersion !== 0x02) {
-            //             this.reset();
-            //             return reject(new Error(`Only 0x02 protocol is supported. Received: 0x${protocolVersion.toString(16).padStart(2, '0').toUpperCase()}`));
-            //         }
-            //         const sequenceCounter = response.data.slice(12, 14);
-            //         const cardChallenge = response.data.slice(12, 20);
-            //         const cardCryptogram = response.data.slice(20);
-
-            //         const sessionKeys = genSessionKeys(sequenceCounter, this.staticKeys!);
-            //         const expectedCardCryptogram = genCryptogram(
-            //             'card',
-            //             cardChallenge,
-            //             hostChallenge,
-            //             sessionKeys.enc,
-            //         );
-            //         if (arrayToHex(cardCryptogram) !== arrayToHex(expectedCardCryptogram)) {
-            //             this.reset();
-            //             return reject(new Error('Card cryptogram does not match'));
-            //         }
-            //         const hostCryptogram = genCryptogram(
-            //             'host',
-            //             cardChallenge,
-            //             hostChallenge,
-            //             sessionKeys.enc,
-            //         );
-            //         const extAuthCmd = addMac(
-            //             GPCommands.extAuth(hostCryptogram, this.securityLevel),
-            //             sessionKeys,
-            //         );
-            //         this._card.issueCommand(extAuthCmd)
-            //             .then((response) => {
-            //                 assertOk(response);
-            //                 this._sessionKeys = sessionKeys;
-            //                 this._keyDivData = keyDivData;
-            //                 this._keyVersion = keyVersion;
-            //                 this._protocolVersion = protocolVersion;
-            //                 this._sequenceCounter = sequenceCounter;
-            //                 this._lastCmac = extAuthCmd.getData().slice(extAuthCmd.getLc() - 8);
-            //                 this._authenticateFunction = (cmd: CommandApdu) => {
-            //                     //this._lastCmac
-            //                     const result = authenticateCmd(this.securityLevel, cmd, this._sessionKeys!, this._lastCmac);
-            //                     this._lastCmac = result.getData().slice(result.getLc() - 8);
-            //                     return result;
-            //                 };
-            //                 this._isActive = true;
-            //                 resolve(response);
-            //             })
-            //             .catch((err) => {
-            //                 reject(err);
-            //             });
-            //     })
-            //     .catch((err) => {
-            //         reject(err);
-            //     });
         });
     }
 }

@@ -8,7 +8,10 @@ import {
     CommandApdu,
     Utils,
     ResponseApdu,
+    Tlv,
 } from '../src/index';
+const arrayToHex = Utils.arrayToHex;
+const hexToArray = Utils.hexToArray;
 
 async function main() {
     const s = new SCP11();
