@@ -81,7 +81,7 @@ export function intAuth(
                     value: [0x88],
                 },
                 '81': {
-                    value: [key.length],
+                    value: [Math.floor(key.length / 2)],
                 },
             }
         },
