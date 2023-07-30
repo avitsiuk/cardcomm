@@ -74,7 +74,11 @@ class Card implements ICard {
         return this._autoGetResponse;
     }
 
-    private _issueCmdInternal(cmd: CommandApdu, callback: (err: any, response: ResponseApdu) => void ): void {
+    private _issueCmdInternal(
+        cmd: CommandApdu,
+        callback: (err: any, response: ResponseApdu) => void,
+    ): void {
+        let doTransform: boolean = true;
         const respAcc = new Array<number>(0); // response accumulator
         let middleCallback: (err: any, response: Buffer) => void;
         if (!this.autoGetResponse) {
@@ -103,6 +107,7 @@ class Card implements ICard {
                     switch (response.status[0]) {
                         case 0x61:
                             cmdToResend = getResponse(response.status[1]).setCla(cmd.getCla());
+                            doTransform = false;
                             break;
                         case 0x6C:
                             cmdToResend = new CommandApdu(cmd).setLe(response.status[1]);
@@ -111,14 +116,14 @@ class Card implements ICard {
                             break;
                     }
 
-                    // console.log(cmdToResend?.toString());
-
-                    // callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
-
                     if(typeof cmdToResend === 'undefined') {
                         callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
                     } else {
-                        cmdToResend = this._doTransform(cmdToResend);
+                        if (doTransform) {
+                            cmdToResend = this._doTransform(cmdToResend);
+                        } else {
+                            doTransform = true;
+                        }
                         this._eventEmitter.emit('command-issued', {
                             card: this,
                             command: cmdToResend,
@@ -136,7 +141,11 @@ class Card implements ICard {
             }
         }
 
-        const tCmd = this._doTransform(cmd);
+        let tCmd = cmd;
+        if (doTransform) {
+            tCmd = this._doTransform(cmd);
+            doTransform = true;
+        }
 
         this._eventEmitter.emit('command-issued', {
             card: this,
