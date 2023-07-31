@@ -243,7 +243,7 @@ pcscDevices.on('device-activated', (event => {
             throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
         }
 
-        let secureSession = new SCP11(card);
+        let secureSession = new SCP11(card).setSecurityLevel(0x3C);
 
         printHelp();
 
@@ -268,6 +268,7 @@ pcscDevices.on('device-activated', (event => {
                             console.log(`Unknown response: [${resp.toString()}]`);
                         }
                         const stateByte = resp.data[0];
+                        console.log(`[${arrayToHex(resp.data)}]`);
                         console.log(`PUK set: [${(stateByte & 0x01) > 0}]`);
                         console.log(`PIN set: [${(stateByte & 0x02) > 0}]`);
                         console.log(`ACC set: [${(stateByte & 0x04) > 0}]`);
@@ -276,35 +277,34 @@ pcscDevices.on('device-activated', (event => {
                     }
                     break;
                 case 'ka':
-                    secureSession.setSecurityLevel(0x3C);
                     try {
                         await secureSession.initAndAuth();
                     } catch (error) {
                         throw new Error(`Error initializing secure session: ${error}`);
                     }
-                    card.setTransformer(secureSession.authenticator);
+                    card.setCommandTransformer(secureSession.commandAuthenticator);
+                    card.setResponseTransformer(secureSession.responseAuthenticator);
                     console.log('==========================');
                     console.log(`Secure session initialized`);
                     console.log('==========================');
 
-                    const sleep = (ms: number) => {
-                        return new Promise((resolve) => {
-                            setTimeout(() => {
-                                resolve(1);
-                            }, ms);
-                        })
-                    }
-
-                    const testCmd = new CommandApdu('80FF000003FF00FF00');
-                    let count = 0;
-                    while(true) {
-                        resp = await card.issueCommand(testCmd);
-                        if(!resp.isOk()) {
-                            break;
-                        }
-                        count++;
-                        console.log(`Count: [${count}]`);
-                    }
+                    // const sleep = (ms: number) => {
+                    //     return new Promise((resolve) => {
+                    //         setTimeout(() => {
+                    //             resolve(1);
+                    //         }, ms);
+                    //     })
+                    // }
+                    // const testCmd = new CommandApdu('8000000000').setData([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                    // let count = 0;
+                    // while(true) {
+                    // resp = await card.issueCommand(testCmd);
+                    //     if(!resp.isOk()) {
+                    //         break;
+                    //     }
+                    //     count++;
+                    //     console.log(`Count: [${count}]`);
+                    // }
 
 
                     // let testCmd = new CommandApdu('80dd000003ff00ff00');
@@ -319,9 +319,10 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
+
                     resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
                     if (resp.isOk()) {
-                        // pukByteArray = parsePinString('0123456788');
+                        // // pukByteArray = parsePinString('0123456788');
                         resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
                         if (resp.isOk()) {
                             console.log('Success!');
@@ -432,9 +433,7 @@ pcscDevices.on('device-activated', (event => {
                     }
                     break;
                 case 'gen':
-                    console.log('1');
                     resp = await card.issueCommand(new CommandApdu('8002000000'));
-                    console.log('2');
                     if (resp.isOk()) {
                         console.log('Success!');
                     } else {
@@ -520,7 +519,8 @@ pcscDevices.on('device-activated', (event => {
                     }
                     break;
                 case 'debug':
-                    let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
+                    let cmdX = new CommandApdu('8099000000');
+                    //let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
                     resp = await card.issueCommand(cmdX);
                     if (resp.isOk()) {
                         console.log('Success!');

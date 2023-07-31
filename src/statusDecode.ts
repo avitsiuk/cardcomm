@@ -69,7 +69,7 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; File filled up by the last write';
                 break;
             case sw2 >= 0xC0 && sw2 <= 0xCF:
-                msg += `; Counter: ${sw2 & 15} (exact meaning depends on the command)`;
+                msg += `; Counter: ${sw2 & 0x0F} (exact meaning depends on the command)`;
                 break;
             default:
                 msg += `; ${unkSw2(sw2)}`;
