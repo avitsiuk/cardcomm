@@ -3,7 +3,7 @@ import { arrayToHex, bufferToArray } from './utils';
 import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
 import { ICard, IDevice, TCardEventName } from './typesInternal';
-import { getResponse } from './iso7816/commands';
+import * as Iso7816Commands from './iso7816/commands';
 
 /** Response APDU max size(256 for data + 2 for status) */
 const maxTrResLen = 258;
@@ -15,7 +15,8 @@ class Card implements ICard {
     private _atr: number[];
     private _atrHex: string;
     private _autoGetResponse: boolean = false;
-    private _transformer: undefined | ((cmd: CommandApdu) => CommandApdu);
+    private _commandTransformer: undefined | ((cmd: CommandApdu) => CommandApdu);
+    private _responseTransformer: undefined | ((rsp: ResponseApdu) => ResponseApdu);
 
     constructor(device: IDevice, atr: Buffer, protocol: number) {
         this._device = device;
@@ -39,25 +40,50 @@ class Card implements ICard {
     /** Function that transforms each command before sending;  
      * Can be used to add secure session authentication
     */
-    setTransformer(
+    setCommandTransformer(
         func?: ((cmd: CommandApdu) => CommandApdu),
     ): this {
-        this._transformer = func;
+        this._commandTransformer = func;
         return this;
     }
 
     /** Function that transforms each command before sending;  
      * Can be used to add secure session authentication
     */
-    get transformer(): undefined | ((cmd: CommandApdu) => CommandApdu) {
-        return this._transformer;
+    get commandTransformer(): undefined | ((cmd: CommandApdu) => CommandApdu) {
+        return this._commandTransformer;
     }
 
-    private _doTransform(cmd: CommandApdu): CommandApdu {
-        if (typeof this._transformer === 'undefined') {
+    private _doCommandTransform(cmd: CommandApdu): CommandApdu {
+        if (typeof this._commandTransformer === 'undefined') {
             return cmd;
         } else {
-            return this._transformer(cmd);
+            return this._commandTransformer(cmd);
+        }
+    }
+
+    /** Function that transforms each response before returning it;  
+     * Can be used to add secure session authentication
+    */
+    setResponseTransformer(
+        func?: ((rsp: ResponseApdu) => ResponseApdu),
+    ): this {
+        this._responseTransformer = func;
+        return this;
+    }
+
+    /** Function that transforms each response before returning it;  
+     * Can be used to add secure session authentication
+    */
+    get responseTransformer(): undefined | ((rsp: ResponseApdu) => ResponseApdu) {
+        return this._responseTransformer;
+    }
+
+    private _doResponseTransform(rsp: ResponseApdu): ResponseApdu {
+        if (typeof this._responseTransformer === 'undefined') {
+            return rsp;
+        } else {
+            return this._responseTransformer(rsp);
         }
     }
 
@@ -78,27 +104,29 @@ class Card implements ICard {
         cmd: CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): void {
-        let doTransform: boolean = true;
+        let doCommandTransform: boolean = true;
         const respAcc = new Array<number>(0); // response accumulator
         let middleCallback: (err: any, response: Buffer) => void;
         if (!this.autoGetResponse) {
             middleCallback = (err: any, respBuffer: Buffer) => {
-                const response = new ResponseApdu(respBuffer);
+                let response = new ResponseApdu(respBuffer);
                 this._eventEmitter.emit('response-received', {
                     card: this,
                     command: cmd,
                     response,
                 });
+                response = this._doResponseTransform(response);
                 callback(err, response);
             }
         } else {
             middleCallback = (err: any, respBuffer: Buffer) => {
-                const response = new ResponseApdu(respBuffer);
+                let response = new ResponseApdu(respBuffer);
                 this._eventEmitter.emit('response-received', {
                     card: this,
                     command: cmd,
                     response,
                 });
+                response = this._doResponseTransform(response);
 
                 const bytesToGet = response.availableResponseBytes();
                 if (bytesToGet > 0) {
@@ -106,8 +134,8 @@ class Card implements ICard {
                     let cmdToResend: CommandApdu | undefined;
                     switch (response.status[0]) {
                         case 0x61:
-                            cmdToResend = getResponse(response.status[1]).setCla(cmd.getCla());
-                            doTransform = false;
+                            cmdToResend = Iso7816Commands.getResponse(response.status[1]).setCla(cmd.getCla());
+                            doCommandTransform = false;
                             break;
                         case 0x6C:
                             cmdToResend = new CommandApdu(cmd).setLe(response.status[1]);
@@ -119,10 +147,10 @@ class Card implements ICard {
                     if(typeof cmdToResend === 'undefined') {
                         callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
                     } else {
-                        if (doTransform) {
-                            cmdToResend = this._doTransform(cmdToResend);
+                        if (doCommandTransform) {
+                            cmdToResend = this._doCommandTransform(cmdToResend);
                         } else {
-                            doTransform = true;
+                            doCommandTransform = true;
                         }
                         this._eventEmitter.emit('command-issued', {
                             card: this,
@@ -142,9 +170,9 @@ class Card implements ICard {
         }
 
         let tCmd = cmd;
-        if (doTransform) {
-            tCmd = this._doTransform(cmd);
-            doTransform = true;
+        if (doCommandTransform) {
+            tCmd = this._doCommandTransform(cmd);
+            doCommandTransform = true;
         }
 
         this._eventEmitter.emit('command-issued', {
