@@ -9,7 +9,7 @@ import Card from '../../card';
 
 const KEY_BYTE_LEN = 32;
 const BLOCK_BYTE_LEN = 16;
-const CMAC_BYTE_LEN = 8;
+const MAC_BYTE_LEN = 8;
 
 /**
  * 0x34: C-MAC and R-MAC only
@@ -223,8 +223,8 @@ export default class SCP11 {
     private cMac(
         cmd: CommandApdu,
     ) {
-        if(cmd.getLc() + CMAC_BYTE_LEN > 255 ) {
-            throw new Error(`Max ${255 - CMAC_BYTE_LEN} bytes of data`);
+        if(cmd.getLc() + MAC_BYTE_LEN > 255 ) {
+            throw new Error(`Max ${255 - MAC_BYTE_LEN} bytes of data`);
         }
         if (typeof this._sessionKeys === 'undefined') {
             throw new Error(`Session keys not defined`);
@@ -255,7 +255,7 @@ export default class SCP11 {
         let dataToAuthenticate = Buffer.alloc(BLOCK_BYTE_LEN + 5 + origData.length + missingPaddingBytes, 0);
         dataToAuthenticate.set(this._macChainingValue, 0);
         dataToAuthenticate.set(newHeader, BLOCK_BYTE_LEN);
-        dataToAuthenticate.set([origData.length + CMAC_BYTE_LEN], (BLOCK_BYTE_LEN + 4));
+        dataToAuthenticate.set([origData.length + MAC_BYTE_LEN], (BLOCK_BYTE_LEN + 4));
         dataToAuthenticate.set(origData, (BLOCK_BYTE_LEN + 5));
         dataToAuthenticate.set([0x80], (BLOCK_BYTE_LEN + 5 + origData.length));
 
@@ -275,11 +275,47 @@ export default class SCP11 {
         const paddingIdx = dataToAuthenticate.length - missingPaddingBytes;
         const newCmdBytes = Buffer.concat([
                 dataToAuthenticate.subarray(this._macChainingValue.length, paddingIdx),
-                Buffer.from(this._macChainingValue.slice(0, CMAC_BYTE_LEN)),
+                Buffer.from(this._macChainingValue.slice(0, MAC_BYTE_LEN)),
             ]);
 
         // // Do not forget to set original logical channel
         return new CommandApdu(newCmdBytes).setLogicalChannel(cmd.getLogicalChannel());
+    }
+
+    public isResponseMacValid(rsp: ResponseApdu): boolean {
+        // console.log(`RSP: [${rsp.toString()}]`);
+
+        const plainDataLen = rsp.dataLength - MAC_BYTE_LEN;
+        const expectedMac = rsp.data.slice(plainDataLen);
+        // console.log(`EXP: [${arrayToHex(expectedMac)}]`);
+
+        // [macChainingValue]+[data without mac]+[status]+[80]+[00...00]
+        let authDataLen = BLOCK_BYTE_LEN + plainDataLen + 2;
+        const missingPaddingBytes = BLOCK_BYTE_LEN - (authDataLen % BLOCK_BYTE_LEN);
+        const dataToAuthenticate = Buffer.alloc(authDataLen + missingPaddingBytes, 0);
+        dataToAuthenticate[authDataLen] = 0x80;
+        authDataLen += missingPaddingBytes;
+        dataToAuthenticate.set(this._macChainingValue, 0);
+        dataToAuthenticate.set(rsp.data.slice(0, plainDataLen), BLOCK_BYTE_LEN);
+        dataToAuthenticate.set(rsp.status, BLOCK_BYTE_LEN + plainDataLen);
+        dataToAuthenticate.set([0x80], BLOCK_BYTE_LEN + plainDataLen + 2);
+        // console.log(`DTA: [${dataToAuthenticate.toString('hex')}]`);
+
+        const icvCipher = crypto
+            .createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys!.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0))
+            .setAutoPadding(false);
+        const icv = Buffer.concat([icvCipher.update(Buffer.from(this._encryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
+
+        // prepend BLOCK_BYTE_LEN-byte mac chaining value to the data before 
+        const macCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys!.sRmac), icv).setAutoPadding(false);
+        const macCipherResult = Buffer.concat([macCipher.update(dataToAuthenticate), macCipher.final()]);
+        // also first 8 bytes of the new chaining value is the current C-MAC
+        this._macChainingValue = [...macCipherResult.subarray(macCipherResult.length - BLOCK_BYTE_LEN)];
+
+        if (arrayToHex(this._macChainingValue.slice(0, MAC_BYTE_LEN)) === arrayToHex(expectedMac)) {
+            return true;
+        }
+        return false;
     }
 
     public decryptResponse(rsp: ResponseApdu): ResponseApdu {
@@ -298,7 +334,7 @@ export default class SCP11 {
 
         const encryptedData = Buffer.from(rsp.data);
 
-        const icvCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0));
+        const icvCipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(this._sessionKeys.sEnc), Buffer.alloc(BLOCK_BYTE_LEN, 0)).setAutoPadding(false);
         const icv = Buffer.concat([icvCipher.update(Buffer.from(this._encryptCounter)), icvCipher.final()]).subarray(0, BLOCK_BYTE_LEN);
         // console.log(`DEC CNT: [${arrayToHex(this._encryptCounter)}]`);
 
@@ -428,7 +464,14 @@ export default class SCP11 {
                             }
                             this._responseAuthenticateFunction = (rsp: ResponseApdu) => {
                                 let authenticatedRsp = rsp;
+                                if (!this.isResponseMacValid(authenticatedRsp)) {
+                                    throw new Error('Response mac not valid');
+                                }
                                 if (this._secLvl === 0x3C) {
+                                    authenticatedRsp = new ResponseApdu([
+                                        ...authenticatedRsp.data.slice(0, authenticatedRsp.dataLength - MAC_BYTE_LEN),
+                                        ... authenticatedRsp.status],
+                                    );
                                     authenticatedRsp = this.decryptResponse(authenticatedRsp);
                                 }
                                 this.increaseCounter();
