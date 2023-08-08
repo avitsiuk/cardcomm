@@ -34,10 +34,14 @@
         "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
         "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\"",
         "demo": "npx ts-node ./demo/demo.ts",
-        "dev": "npx nodemon ./demo/demo.ts"
+        "dev": "npx nodemon ./demo/demo.ts",
+        "server": "npx ts-node ./server/server.ts"
     },
     "dependencies": {
-        "pcsclite": "1.0.1"
+        "cors": "^2.8.5",
+        "express": "^4.18.2",
+        "pcsclite": "1.0.1",
+        "socket.io": "^4.7.2"
     },
     "devDependencies": {
         "@affidaty/t2-lib": "^2.3.3",

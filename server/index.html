@@ -1,0 +1,464 @@
+<html>
+    <head>
+        <script src="https://cdn.socket.io/4.5.1/socket.io.js" type="text/javascript"></script>
+        <script>
+            let terminal,li,texnode,p;
+            let devices = [];
+            
+            const socket = io.connect("http://localhost:3000", {
+                cors: {
+                    origin: ["*/*"]
+                },
+            });
+            socket.on("connect", () => {
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`You connected with socket id: ${socket.id}`);
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`You connected with socket id: ${socket.id}`);
+                //trigger("asd");
+            });
+
+            socket.on("rsp",(data)=>{
+                getRSP(data);
+                // terminal = document.getElementById("terminal");
+                // li = document.createElement("li");
+                // textnode = document.createTextNode(`[RSP]: ${JSON.stringify(data)}`);
+                // li.appendChild(textnode);
+                // terminal.appendChild(li);
+                // console.log(`[RSP]: ${data.toString()}`);
+            })
+            socket.on("cmd",(data)=>{
+                getRSP(data);
+                // terminal = document.getElementById("terminal");
+                // li = document.createElement("li");
+                // textnode = document.createTextNode(`[CMD]: ${data}`);
+                // li.appendChild(textnode);
+                // terminal.appendChild(li);
+                // console.log(`[CMD]: ${socket.id}`);
+            })
+
+            socket.on("event",(data)=>{
+                getRSP(data);
+                // terminal = document.getElementById("terminal");
+                // li = document.createElement("li");
+                // textnode = document.createTextNode(`[EVENT]: ${data}`);
+                // li.appendChild(textnode);
+                // terminal.appendChild(li);
+                // console.log(`[EVENT]: ${socket.id}`);
+            })
+
+            socket.on("device-error",(data)=>{
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`[${data.devName}]: ${data.msg}`);
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`[SYSTEM]: ${socket.id}`);
+            })
+
+            socket.on("card-inserted",(devName)=>{
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`[card-inserted]: ${devName}`);
+                if (devices.indexOf(devName) < 0) {
+                    devices.push(devName);
+                }
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`[SYSTEM]: ${socket.id}`);
+                let x = document.getElementById("terminal_container");
+                x.scrollTop = terminal.scrollHeight;                
+                console.log(terminal.scrollHeight);  
+            });
+
+            socket.on("card-removed",(devName)=>{
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`[card-removed]: ${devName}`);
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`[SYSTEM]: ${socket.id}`);
+                let x = document.getElementById("terminal_container");
+                x.scrollTop = terminal.scrollHeight;                
+                console.log(terminal.scrollHeight);  
+            });
+
+            socket.on("command-issued",(data)=>{
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`[${data.devName}]: CMD: [${data.msg}]`);
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`[SYSTEM]: ${socket.id}`);
+            });
+
+            socket.on("response-received",(data)=>{
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                textnode = document.createTextNode(`[${data.devName}]: RSP: [${data.msg}]`);
+                li.appendChild(textnode);
+                terminal.appendChild(li);
+                console.log(`[SYSTEM]: ${socket.id}`);
+            });
+
+            socket.on("device-list-get",(data)=>{
+                devices = [];
+                document.getElementById("device_list").innerHTML = "";
+                document.getElementById("device_list_ul").innerHTML = "";
+                console.log("LIST:",JSON.stringify(data));
+                for (let i=0;i<data.length;i++) {
+                    let selector = document.getElementById("device_list");
+                    let selectorUL = document.getElementById("device_list_ul");
+                    let option = document.createElement("option");
+                    textnode = document.createTextNode(`${data[i]}`);
+                    textnodeLabel = document.createTextNode(`${data[i]}`);
+                    option.value = data[i];
+                    option.appendChild(textnode);
+                    selector.appendChild(option);
+                    let ul_li = document.createElement("li");
+                    ul_li.appendChild(textnodeLabel);
+                    selectorUL.appendChild(ul_li);
+                }
+
+            });
+            /*
+            socket.on("add-device",(data)=>{                
+                let selector = document.getElementById("device_list");
+
+                console.log("Device:",data);
+                
+                devices.forEach(item=>{
+                    if(item.id===data){
+                        console.log("Already in...")
+                        return;
+                    } else {
+                        
+                    }
+                });               
+                // console.log("Adding device:", data);
+                // devices.push({id:data});                        
+                // let option = document.createElement("option");
+                // textnode = document.createTextNode(`${data}`);
+                // option.appendChild(textnode);
+                // selector.appendChild(option);
+                // console.log(`[DEVICES]: ${JSON.stringify(devices)}`);
+            });
+            */
+            function trigger(data) {
+                console.log("sending cmd...",data);
+                const obj = {
+                    devName: document.getElementById("device_list").value,
+                    //devName: data.devName,
+                    //devName: 'ACS ACR39U ICC Reader 00 00',
+                    apdu: data,
+                }
+                socket.emit("cmd", obj);
+            }
+            
+        </script>
+        <style>
+            html {}
+            body {
+                font-family: monospace;
+                font-size:23px;
+                color:white;
+                /* display: grid; */
+                height: 100vh;
+                /* overflow: auto; */
+            }
+            .container {
+                display: flex;
+                height: 100%;
+            }
+            .logo {
+                width: 100px;
+                margin: 5px;
+            }
+            #nav {
+                z-index: 1;
+                display: flex;
+                text-align: center;            
+                height: 100px;
+                background: rgba(0,0,0,1);
+                position: absolute;
+                width: 100%;
+                border: 3px solid white;
+                border-radius: 10px;
+            }
+            #main {
+                background-color: black;
+            }
+            .frame {
+                width: 100%;
+                margin: 10px auto;
+                padding:10px;
+                border: 1px solid white;
+                border-radius: 10px;
+                overflow: auto;
+            }
+            #terminal {
+                list-style-type: disclosure-closed;
+                font-size:16px;
+                width: auto;
+                position: relative;
+                /* height: 100vh; */
+            }
+            #cmd {
+                position: relative;
+                width: 100%;
+                margin: 10px auto;
+            }
+            li {
+                word-break: break-word;
+                /* max-width: 550px; */
+            }
+            input {
+                margin: 5px auto;
+                width: auto;
+                font-size: 23px;
+                font-family: monospace;
+                padding: 5px;
+                background: rgba(0,0,255,.3);
+                color:white;
+            }
+            .input {
+                margin: 5px auto;
+                width: 100px;
+                font-size: 23px;
+                font-family: monospace;
+                padding: 5px;
+                background: rgba(0,0,255,.3);
+                color:white;
+            }
+            select {
+                padding: 5px;
+                width: 100%;
+                color: white;
+                border-radius: 10px;
+                border: 1px solid orange;
+                background: rgba(0,0,0,.3);
+            }
+            option {
+                height:100px;
+            }
+            
+            button {
+                font-size: 23px;
+                font-family: monospace;
+                padding: 5px;
+                margin: 5px auto;
+                border-radius: 10px;
+                background: rgba(0,0,255,.3);
+                color:white;
+            }
+            button:hover{
+                color:orange;
+                box-shadow: 0px 0px 5px white;
+            }
+            .col_blue {
+                color: blue;
+            }
+            .col_orange {
+                color: orange;
+            }
+            .col_red {
+                color: red;
+            }
+            /*SCROLLBAR*/
+            /* width */
+            ::-webkit-scrollbar {
+                width: 5px;
+                display: none;
+            }
+
+            /* Track */
+            ::-webkit-scrollbar-track {
+                box-shadow: inset 0 0 5px black;
+                border-radius: 3px;
+            }
+
+            /* Handle */
+            ::-webkit-scrollbar-thumb {
+                background: rgba(0, 0, 0, 0.1);
+                border-radius: 3px;
+            }
+
+            /* Handle on hover */
+            ::-webkit-scrollbar-thumb:hover {
+                background: rgba(0, 0, 0, 0.3);
+            }
+        </style>
+    </head>
+
+    <body id="main">
+
+        <div id="nav">
+            <img src="https://affidaty.io/wp-content/uploads/2021/12/LOGO-AFFIDATY-1.png" alt="logo">
+            <h1 class="col_orange">Smart Card </h1>
+            <h2 class="col_red">framework server</h2>
+        </div>
+        <div class="container">
+            <div class="frame" hidden>
+                <ul>
+                    <li>"h" - this help</li>
+                    <li>"s" - get card state</li>
+                    <li>"e" - echo</li>
+                    <li>"ka" - key agreement</li>
+                    <li>"PUK" - set puk</li>
+                    <li>"puk" - validate puk</li>
+                    <li>"pukw" - validate wrong puk</li>
+                    <li>"PIN" - set pin</li>
+                    <li>"pin" - validate pin</li>
+                    <li>"pinw" - validate wrong pin</li>
+                    <li>"gen" - generate Acc</li>
+                    <li>"imp" - import </li>
+                    <li>"id" - get the card account id</li>
+                    <li>"tr" - transfer #EURS</li>
+                </ul>
+            </div>
+
+            <div class="frame">
+                <h2 class="col_red">Interface</h2>
+                <select onChange="change()" id="option" hidden>
+                    <option value="h">help</option>
+                    <option value="s">card state</option>
+                    <option value="e">echo</option>
+                    <option value="ka">key agreement</option>
+                    <option value="PUK">set puk</option>
+                    <option value="puk">validate puk</option>
+                    <option value="pukw">wrong puk</option>
+                    <option value="PIN">set pin</option>
+                    <option value="pin">validate pin</option>
+                    <option value="pinw">wrong pin</option>
+                    <option value="gen">generate key</option>
+                    <option value="imp">import key</option>
+                    <option value="id">get account id</option>
+                    <option value="tr">sign tx</option>
+                </select>
+
+                <input id="cmd" type="text" placeholder="command" value="" hidden>
+                
+                <button onClick="sendCMD()" hidden>Send Command<span id="debug"></span></button>
+
+                <label>Device List:</label>
+                <ul id="device_list_ul"></ul>
+                <select id="device_list" name="device_list"></select>
+                <hr>
+
+                <label>Card State</label><br/>
+                <button onClick="sendBTN('s')">CARD STATE</button>
+                <button onClick="sendBTN('e')">ECHO</button>
+                <hr>
+                <label>Secure Session</label><br/>
+                <button onClick="sendBTN('ka')">KEY AGREEMENT</button>
+                <hr>
+                <label>PUK</label><br/>
+                <button onClick="sendBTN('PUK')">SET PUK</button>
+                <button onClick="sendBTN('puk')">VALIDATE PUK</button>
+                <button onClick="sendBTN('pukw')">WRONG PUK</button>
+                <br>
+                <label>PIN</label><br/>
+                <button onClick="sendBTN('PIN')">SET PIN</button>
+                <button onClick="sendBTN('pin')">VALIDATE PIN</button>
+                <button onClick="sendBTN('pinw')">WRONG PIN</button>
+                <hr>
+                <label>Keys</label><br/>
+                <button onClick="sendBTN('gen')">GENERATE KEY</button>
+                <button onClick="sendBTN('imp')">IMPORT KEY</button>
+                <br>
+                <label>TRINCI</label><br/>
+                <button onClick="sendBTN('id')">GET ACCOUNT ID</button>
+                <button onClick="sendBTN('tr')">SIGN TX</button>
+
+                <hr>
+                <label>Custom APDU</label><br/>
+                <input id="CLA" class="input" type="text" placeholder="CLA">
+                
+                <input id="INS" class="input" type="text" placeholder="INS">
+
+                <input id="P1" class="input" type="text" placeholder="P1">
+
+                <input id="P2" class="input" type="text" placeholder="P2">
+
+                <input id="LC" class="input" type="text" placeholder="LC">
+
+                <input id="DATA" class="input" type="text" placeholder="DATA">
+
+                <input id="LE" class="input" type="text" placeholder="LE">
+
+                <button onClick="sendCustomAPDU()">APDU</button>
+
+                <hr>
+
+            </div>
+
+            <div class="frame" id="terminal_container">
+                <h2 class="col_red">Terminal</h2>
+                <ul id="terminal"></ul>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            /*
+            async function getIT(param) {
+                let obj = await fetch(`http://localhost:3000/api/cmd/${param}`, {
+                    method: 'GET',
+                    //body: param,
+                    //body: JSON.stringify(param),
+                    headers: {'Content-Type':'application/json'}
+                })
+                console.log(JSON.stringify(obj));
+            }
+            */
+            function change() {
+                let cmd = document.getElementById("cmd");
+                const select = document.getElementById("option");
+                cmd.value = select.value;
+            }
+            function sendCMD() {
+                let cmd = document.getElementById("cmd").value;
+                const debug = document.getElementById("debug");
+                debug.innerHTML = ": "+ cmd;
+                //getIT(cmd);
+                trigger(cmd);
+            }
+            function sendBTN(data) {
+                let cmd = data;
+                trigger(cmd);
+            }
+            function sendCustomAPDU() {
+                let cla,ins,p1,p2,lc,data,le;
+                cla = document.getElementById("CLA").value;
+                ins = document.getElementById("INS").value;
+                p1 = document.getElementById("P1").value;
+                p2 = document.getElementById("P2").value;
+                lc = document.getElementById("LC").value;
+                datain = document.getElementById("DATA").value;
+                le = document.getElementById("LE").value;
+
+                let cmdcustom = `${cla}${ins}${p1}${p2}${lc}${datain}${le}`;
+                console.log("CUSTOM APDU:");
+                console.log(cmdcustom);
+                //socket.emit("cmd-custom", cmdcustom);
+            }
+            function getRSP(data) {
+                terminal = document.getElementById("terminal");
+                li = document.createElement("li");
+                p = document.createElement("p");
+                p.className = "col_orange";
+                textnode = document.createTextNode(`[RSP]: ${`${data}`}`);
+                p.appendChild(textnode);
+                li.appendChild(p);
+                terminal.appendChild(li);
+                console.log(`[RSP]: ${data}`);
+
+                let x = document.getElementById("terminal_container");
+                x.scrollTop = terminal.scrollHeight;                
+                console.log(terminal.scrollHeight);          
+            }
+        </script>
+    </body>
+
+</html>

@@ -45,6 +45,10 @@ const devTypes = {
     cnt: 'CONTACT',
 }
 
+// const connection = require('../server/server');
+//connection(connection.server);
+
+
 console.log('============================================================');
 pcscDevices.on('device-activated', (event => {
 
@@ -212,21 +216,22 @@ pcscDevices.on('device-activated', (event => {
             console.log('  \\_/ \\_| \\_|\\___/\\_| \\_/\\____/\\___/╚═╝╩ ╩╩╚══╩╝');
             console.log('╒════════════════════════════════════════════════');
             console.log('│ Options:');
-            console.log('│    "h"    - this help');
-            console.log('│    "s"    - get card state');
-            console.log('│    "e"    - echo');
-            console.log('│    "ka"   - key agreement');
-            console.log('│    "PUK"  - set puk');
-            console.log('│    "puk"  - validate puk');
-            console.log('│    "pukw" - validate wrong puk');
-            console.log('│    "PIN"  - set pin');
-            console.log('│    "pin"  - validate pin');
-            console.log('│    "pinw" - validate wrong pin');
-            console.log('│    "gen"  - generate Acc');
-            console.log('│    "imp"  - import ');
-            console.log('│    "id"   - get the card account id');
-            console.log('│    "tr"   - transfer #EURS');
-            console.log('│    "debug"- Debug Test');
+            console.log('│    "h"     - this help');
+            console.log('│    "s"     - get card state');
+            console.log('│    "e"     - echo');
+            console.log('│    "ka"    - key agreement');
+            console.log('│    "PUK"   - set puk');
+            console.log('│    "puk"   - validate puk');
+            console.log('│    "pukw"  - validate wrong puk');
+            console.log('│    "PIN"   - set pin');
+            console.log('│    "pin"   - validate pin');
+            console.log('│    "pinw"  - validate wrong pin');
+            console.log('│    "gen"   - generate Acc');
+            console.log('│    "imp"   - import ');
+            console.log('│    "id"    - get the card account id');
+            console.log('│    "tr"    - transfer #EURS');
+            console.log('│    "debug" - Debug Test');
+            console.log('│    "stress"- stress test');
         };
 
         // prompt('Insert your private key: ');
@@ -250,6 +255,7 @@ pcscDevices.on('device-activated', (event => {
         runLoop = true;
         while(runLoop) {
             let resp: ResponseApdu;
+            let cmd: CommandApdu;
             console.log();
             const option = prompt('Choose an option: ');
             if (!runLoop) break;
@@ -310,6 +316,7 @@ pcscDevices.on('device-activated', (event => {
                     // let testCmd = new CommandApdu('80dd000003ff00ff00');
                     // await card.issueCommand(testCmd);
                     break;
+                    
                 case 'PUK':
                     let pukByteArray;
                     try {
@@ -320,12 +327,12 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
 
-                    resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
+                    resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
                     if (resp.isOk()) {
                         // // pukByteArray = parsePinString('0123456788');
-                        resp = await card.issueCommand(new CommandApdu('8000000000').setData(pukByteArray));
+                        resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
                         if (resp.isOk()) {
-                            console.log('Success!');
+                            console.log(`Success! [${resp.toString()}]`);
                         } else {
                             console.log(`Error! Response: [${resp.toString()}]`);
                         }
@@ -342,15 +349,12 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8010000000').setData(pukByteArray2));
+
+                    resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray2).setCla(0x80));
                     if (resp.isOk()) {
-                        console.log('Success!');
+                        console.log(`Success! [${resp.toString()}]`);
                     } else {
-                        if (resp.dataLength === 2) {
-                            console.log(`Error; Remaining tries: ${resp.data[1]}`);
-                        } else {
-                            console.log(`Error! Response: [${resp.toString()}]`);
-                        }
+                        console.log(`Error! Response: [${resp.toString()}]`);
                     }
                     break;
                 case 'pukw':
@@ -362,15 +366,11 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8010000000').setData(pukByteArray3));
+                    resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray3).setCla(0x80));
                     if (resp.isOk()) {
-                        console.log('Success!');
+                        console.log(`Success! [${resp.toString()}]`);
                     } else {
-                        if (resp.dataLength === 2) {
-                            console.log(`Error; Remaining tries: ${resp.data[1]}`);
-                        } else {
-                            console.log(`Error! Response: [${resp.toString()}]`);
-                        }
+                        console.log(`Error! Response: [${resp.toString()}]`);
                     }
                     break;
                 case 'PIN':
@@ -382,12 +382,12 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8001000000').setData(pinByteArray));
+                    resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
                     if (resp.isOk()) {
                         // pinByteArray = parsePinString('0122');   
-                        resp = await card.issueCommand(new CommandApdu('8001000000').setData(pinByteArray));
+                        resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
                         if (resp.isOk()) {
-                            console.log('Success!');
+                            console.log(`Success! [${resp.toString()}]`);
                         } else {
                             console.log(`Error! Response: [${resp.toString()}]`);
                         }
@@ -404,14 +404,11 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8011000000').setData(pinByteArray2));
+                    resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArray2).setCla(0x80));
                     if (resp.isOk()) {
-                        console.log('Success!');
+                        console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
-                        if (resp.dataLength === 2) {
-                            console.log(`Remaining tries: ${resp.data[1]}`);
-                        }
                     }
                     break;
                 case 'pinw':
@@ -422,14 +419,11 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`${error}`);
                         break;
                     }
-                    resp = await card.issueCommand(new CommandApdu('8011000000').setData(pinByteArrayW));
+                    resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArrayW).setCla(0x80));
                     if (resp.isOk()) {
-                        console.log('Success!');
+                        console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
-                        if (resp.dataLength === 2) {
-                            console.log(`Remaining tries: ${resp.data[1]}`);
-                        }
                     }
                     break;
                 case 'gen':
@@ -452,7 +446,7 @@ pcscDevices.on('device-activated', (event => {
 
                     const pubRaw = [...await pub.getRaw()];
 
-                    const cmd = new CommandApdu('8003000000').setData(d.concat(pubRaw));
+                    cmd = new CommandApdu('8003000000').setData(d.concat(pubRaw));
                     resp = await card.issueCommand(cmd);
                     if (resp.isOk()) {
                         console.log('Success!');
@@ -528,6 +522,43 @@ pcscDevices.on('device-activated', (event => {
                         console.log(`Error! Response: [${resp.toString()}]`);
                     }
                     break;
+                case 'stress':
+                    try {
+                        await secureSession.initAndAuth();
+                    } catch (error) {
+                        throw new Error(`Error initializing secure session: ${error}`);
+                    }
+                    card.setCommandTransformer(secureSession.commandAuthenticator);
+                    card.setResponseTransformer(secureSession.responseAuthenticator);
+                    console.log('==========================');
+                    console.log(`Secure session initialized`);
+                    console.log('==========================');
+
+                    const sleep = (ms: number) => {
+                        return new Promise((resolve) => {
+                            setTimeout(() => {
+                                resolve(1);
+                            }, ms);
+                        })
+                    }
+                    const testCmd = new CommandApdu('80FF000003FF00FF00');
+                    let count = 0;
+                    let timer = new Utils.TimeMonitor();
+                    while(true) {
+                        timer.start();
+                        resp = await card.issueCommand(testCmd);
+                        const ms = timer.stop();
+                        if(!resp.isOk()) {
+                            break;
+                        }
+                        count++;
+                        console.log(`Count: [${count}](time: ${ms}ms)`);
+                    }
+
+
+                    // let testCmd = new CommandApdu('80dd000003ff00ff00');
+                    // await card.issueCommand(testCmd);
+                    break;
                 default:
                     break;
             }
@@ -569,7 +600,7 @@ pcscDevices.on('device-activated', (event => {
         //         // let cmd3 = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000'); // get status
         //         // let cmd4 = new CommandApdu('80F28002024F0000');
 
-        //         // const cmd = secSession.authenticator(cmd5);
+        //         // cmd = secSession.authenticator(cmd5);
         //         // await card.issueCommand(cmd5);
         //     })
         //     .catch((err) => {

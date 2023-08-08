@@ -49,3 +49,22 @@ export function hexToArray(hex: string): number[] {
     }
     return array;
 }
+
+
+
+export class TimeMonitor {
+    private s: number = 0;
+    constructor() {
+    }
+    start(): number {
+        this.s = new Date().getTime();
+        return this.s;
+    }
+    stop(): number {
+        const end = new Date().getTime();
+        return end - this.s;
+    }
+    static now(): number {
+        return new Date().getTime();
+    }
+}
