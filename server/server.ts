@@ -1,49 +1,84 @@
 import {EventEmitter} from 'events'
-import t2lib from '@affidaty/t2-lib';
+import path from 'path';
 import crypto from 'crypto';
-
+import Express from 'express';
+import { Server as SocketServer, Socket } from 'socket.io';
+import cors from 'cors';
+import t2lib from '@affidaty/t2-lib';
 import {
     Devices,
     Iso7816Commands,
-    gpDefStaticKeys,
     SCP11,
     CommandApdu,
     Utils,
     ResponseApdu,
     Card,
 } from '../src/index';
+
 const hexToArray = Utils.hexToArray;
 const arrayToHex = Utils.arrayToHex;
+const abs = ( filePath: string ) => {
+    return path.resolve(__dirname, filePath);
+};
 
+const timer = new Utils.TimeMonitor();
+
+const LISTEN_PORT = 3000;
+const TRINCI_AID = '112233445500';
 const nodeUrl = 'https://testnet.trinci.net/';
 const nodeNetwork = 'QmcvHfPC6XYpgxvJSZQCVBd7QAMEHnLbbK1ytA4McWx5UY';
 const trinciClient = new t2lib.Client(nodeUrl, nodeNetwork);
 
-const express = require('express');
-const app = express();
-const socket = require('socket.io');
-const cors = require('cors');
-const path = require('path');
+const serverEvents = new EventEmitter();
 
-const abs = (filePath:any) => {return path.resolve(__dirname, filePath);};
+/** List of connected cards identified by device name */
+const cardList: {[key: string]: Card} = {};
+/** List of established secure sessions */
+const scpList: {[key: string]: SCP11} = {};
+/** List of al currently connected clients */
+const clientList: {[key: string]: Socket} = {};
 
-const server = app.listen(3000 ,()=>{
-    console.log(`[Server] listening on port 3000, connect to http://localhost:3000`);
-});
+const server = Express()
+    .use(cors())
+    .get('/', (req, res) => {
+        res.sendFile(abs('./index.html'));
+    })
+    .listen(LISTEN_PORT, '0.0.0.0' ,()=>{
+        console.log(`Server listening on port 3000, connect to http://localhost:3000`);
+    })
 
-app.use(cors());
-
-app.get('/',(req:any,res:any)=>{
-    res.sendFile(abs('./index.html'));
-})
-
-const io =  socket(server, {cors:
-        {origin:
-            ["http://localhost:8080","http://localhost:3000","https://admin.socket.io","http://localhost:3333"]
+const io = new SocketServer(
+    server,
+    {
+        cors: {
+            origin: ["http://localhost:3000","https://admin.socket.io"],
         }
     }
 );
 
+const emitToAllClients = (eventName: string, ...args: any[]) => {
+    Object.keys(clientList).forEach((socketId: string) => {
+        clientList[socketId].emit(eventName, ...args);
+    });
+}
+
+const getDevListWithScp = () => {
+    const result: [string, string][] = [];
+    const devNames = Object.keys(cardList);
+    for (let i = 0; i < devNames.length; i += 1) {
+        const devName = devNames[i];
+        const elem: [string, string] = [devName, ''];
+        if (typeof scpList[devName] !== 'undefined') {
+            elem[1] = scpList[devName].protocolVersion.toString();
+        }
+        result.push(elem);
+    }
+    return result;
+}
+
+// =================================================================================================
+// Misc functions
+// =================================================================================================
 
 const parsePinString = (pin: string) => {
     if (/^\d+$/.test(pin)) {
@@ -91,49 +126,33 @@ const processSignature = (cardSig: number[]) => {
     result = result.concat(second);
     return result;
 }
-// =====================================================================
 
-// device-error (devName, msg)
-// card-inserted (devName)
-// card-removed (devName)
-// command-issued (devName, msg)
-// response-received (devName, msg)
+// =================================================================================================
+// Client events capturing
+// =================================================================================================
 
-// server-side
-
-const ee = new EventEmitter();
-
-const devList: {[key: string]: Card} = {};
-const scpList: {[key: string]: SCP11} = {};
-const clientList: {[key: string]: any} = {};
-
-const emitToAllClients = (eventName: string, args: any) => {
-    // console.log(`trying to send to all cients: [${eventName}]`);
-    Object.keys(clientList).forEach((socketId: string) => {
-        //clientList[socketId].emit("event",`${eventName} passa da qui`);
-        clientList[socketId].emit(eventName, args);
-    });
-}
-
-/* SOCKET */
-io.on('connection', (socket:any)=>{
+io.on('connection', (socket)=>{
     clientList[socket.id] = socket;
-    console.log('[SERVER] connection from socket id:',socket.id);
+    console.log(`Client ${socket.id} connected`);
 
-    socket.emit('device-list-get', Object.keys(devList));
+    socket.emit('device-list-update', getDevListWithScp());
 
     socket.on('cmd',async (obj: {devName: string, apdu: string})=>{
         const apdu = obj.apdu;
         const devName = obj.devName;
         console.log(JSON.stringify(obj));
-        console.log(Object.keys(devList));
+        console.log(Object.keys(cardList));
         console.log("APDU",apdu);
-        if (typeof devList[devName] == 'undefined') {
+        if (typeof cardList[devName] == 'undefined') {
             const msg = `Device [${devName}] not found`;
             socket.emit('rsp', msg);
             return;
         }
-        let card = devList[devName];
+        let card = cardList[devName];
+        if (card.isBusy()) {
+            socket.emit('rsp', `Device [${devName}] is busy`);
+            return;
+        }
 
         const privKeyB58 = '9XwbySgVsf1qZvErcMkdGtzDnrDVoRfL6AxQGQ35A2bnCstJbexGjxJKe1UzJzYgyw1W83qzBwdFcccWfmQpPcVGpbTAPQkbCZRMk1HxH3zUyoMppD2ae5R4m7gedbjrwsXnmqdULQBJ44hn2giNSjZ1N39DW7L1CQaU8rFtpYwRTfXGMwP4jwWxq6Daf79GW1PLquMfbGEihu6xiQqmhZUrYmKeNKqoaAqMztWpcZH6hvLBhxxiCq7weXAYZ2wQvFeEqF4HT';
         const importedPrivKey = new t2lib.ECDSAKey('private');
@@ -142,11 +161,6 @@ io.on('connection', (socket:any)=>{
         const kp = new t2lib.ECDSAKeyPair();
         kp.privateKey = importedPrivKey;
         kp.publicKey = await importedPrivKey.extractPublic();
-
-        //const select = await card.issueCommand(Iso7816Commands.select('112233445500'));
-        // if (!select.isOk()) {
-        //     throw new Error(`Coult not select TRINCI applet. Response: [${select.toString()}]`);
-        // }
 
         let data = apdu;
 
@@ -181,22 +195,32 @@ io.on('connection', (socket:any)=>{
                 socket.emit('rsp',resp.toString());
                 break;
             case 'ka':
+                let elapsedTime = 0;
                 if (typeof scpList[devName] !== 'undefined') {
                     delete scpList[devName];
                 }
-                scpList[devName] = new SCP11(devList[devName]).setSecurityLevel(0x3C);
+                cardList[devName].setCommandTransformer();
+                cardList[devName].setResponseTransformer();
+                emitToAllClients('device-list-update', getDevListWithScp());
+                scpList[devName] = new SCP11(cardList[devName]).setSecurityLevel(0x3C);
                 try {
+                    
+                    timer.start();
                     await scpList[devName].initAndAuth();
+                    elapsedTime = timer.stop();
+                    console.log(`Time elapsed: ${elapsedTime} ms`);
                 } catch (error) {
                     const msg = `Error initializing secure session: ${error}`;
                     socket.emit('rsp', msg);
+                    return;
                 }
-                devList[devName].setCommandTransformer(scpList[devName].commandAuthenticator);
-                devList[devName].setResponseTransformer(scpList[devName].responseAuthenticator);
+                cardList[devName].setCommandTransformer(scpList[devName].commandAuthenticator);
+                cardList[devName].setResponseTransformer(scpList[devName].responseAuthenticator);
+                emitToAllClients('device-list-update', getDevListWithScp());
                 // console.log('==========================');
                 // console.log(`Secure session initialized`);
                 // console.log('==========================');
-                socket.emit('rsp',"Secure session initialized");
+                socket.emit('rsp',`Secure session initialized in ${elapsedTime} ms`);
                 
                 break;
                 
@@ -408,17 +432,27 @@ io.on('connection', (socket:any)=>{
                 }
                 
                 break;
-            case 'debug':
-                let cmdX = new CommandApdu('8099000000');
-                //let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
-                resp = await card.issueCommand(cmdX);
-                if (resp.isOk()) {
-                    console.log('Success!');
-                } else {
-                    console.log(`Error! Response: [${resp.toString()}]`);
+            case 'debug': {
+                    // const debugData = hexToArray('a60e850220009902110087018895013c'); // 2 byte, 00ff
+                    // const debukgData = hexToArray('a609810100800100810100'); // 2 byte, 00ff
+                    // const debugData = hexToArray('5FFF4900'); // 2 byte, 00ff
+                    // const debugData = hexToArray('5f4981FF'); // 2 byte, 00ff
+                    // const debugData = hexToArray('5f4982ffff'); // 3 byte ffff
+                    // const debugData = hexToArray('5f4983ffffff'); // 3 byte ffff
+                    // const debugData = hexToArray('5f494104054158cb9b5754ea722a8725608f28fda2d8c88b099231ad8cae077629f6b2f9405a0700f6ce6514894f32545b41867b0fa00c80882f64f5650185ed33a2e4ada60d8001888101209002110095013c5f50005f50005f5000');
+                    const debugData = hexToArray('a60d8001888101209002110095013c5f494104054158cb9b5754ea722a8725608f28fda2d8c88b099231ad8cae077629f6b2f9405a0700f6ce6514894f32545b41867b0fa00c80882f64f5650185ed33a2e4ad');
+                    // const debugData = hexToArray('ffffff');
+                    //let cmdX = new CommandApdu(`8099000005${arrayToHex(debugData)}00`);//.setData(debugData);
+                    let cmdX = new CommandApdu(`809900000000`).setData(debugData);
+                    timer.start();
+                    resp = await card.issueCommand(cmdX);
+                    const elapsedTime = timer.stop();
+                    console.log(`Time elapsed: ${elapsedTime} ms`);
+
+                    socket.emit('rsp',`[${elapsedTime} ms]: ${resp.toString()}`);
+
+                    break;
                 }
-                socket.emit('rsp',resp.toString());
-                break;
             // case 'stress':
             //     try {
             //         await secureSession.initAndAuth();
@@ -462,96 +496,125 @@ io.on('connection', (socket:any)=>{
     });
 
     socket.on('cmd-custom', async(obj:{devName:string,apdu:string})=>{
-        
+        //
+        let cmdX = new CommandApdu(obj.apdu);
+        //let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
+        let card = cardList[obj.devName];
+        let resp = await card.issueCommand(cmdX);
+        if (resp.isOk()) {
+            console.log('Success!');
+        } else {
+            console.log(`Error! Response: [${resp.toString()}]`);
+        }
+        socket.emit('rsp',resp.toString());
     });
 
-    socket.on('device-list-get',(socket:any)=>{
-        //emitToAllClients('device-list-get', devList);
-    });
+    // socket.on('device-list-update',(socket)=>{
+    //     emitToAllClients('device-list-update', getDevListWithScp());
+    // });
 
-    socket.on('disconnect',(socket:any)=>{
-        delete clientList[socket.id];
-        console.log('[Socket]'+ socket +' disconnected');
+    socket.on('disconnect',(reason)=>{
+        if (typeof clientList[socket.id] !== 'undefined') {
+            delete clientList[socket.id];
+        }
+        console.log(`Client ${socket.id} disconnected; Reason: ${reason}`);
     });
 });
 
+// =================================================================================================
+// Server events management
+// =================================================================================================
 
+/*
+events emitted to clients:
+'device-error', devName: string, msg: string
+'card-inserted', devName: string
+'device-list-update', devList: [devName: string, scpProtocol: string][]
+'card-removed', devName: string
+'command-issued', devName: string, cmd: string
+'response-received', devName: string, rsp: string, meaning: string
+*/
 
-ee.on('device-error', (devName, msg) => {
-    emitToAllClients('device-error', {devName, msg});
+/*
+server events:
+'device-error', devName: string, msg: string
+'card-inserted', devName: string, card: Card
+'card-removed', devName: string
+'command-issued', devName: string, cmd: string
+'response-received', devName: string, rsp: string, meaning: string
+*/
+
+serverEvents.on('device-error', (devName: string, msg: string) => {
+    emitToAllClients('device-error', devName, msg);
+    emitToAllClients('device-list-update', getDevListWithScp());
 })
 
-ee.on('card-inserted', async (devName) => {
+serverEvents.on('card-inserted', async (devName: string, card: Card) => {
+    // reset everything just in case;
+    cardList[devName] = card
+        .setAutoGetResponse()
+        .setCommandTransformer()
+        .setResponseTransformer();
     emitToAllClients('card-inserted', devName);
-    emitToAllClients('device-list-get', Object.keys(devList));
-    if (typeof devList[devName] !== 'undefined') {
-        devList[devName].setAutoGetResponse();
-        let res = await devList[devName].issueCommand(Iso7816Commands.select('112233445500'));
-    }
-    if (typeof scpList[devName] !== 'undefined') {
-        delete scpList[devName];
-    }
+    emitToAllClients('device-list-update', getDevListWithScp());
+    // select TRINCI applet
+    await cardList[devName].issueCommand(Iso7816Commands.select(TRINCI_AID));
 })
 
-ee.on('card-removed', (devName) => {
-    if (typeof devList[devName] !== 'undefined') {
-        delete devList[devName];
+serverEvents.on('card-removed', (devName: string) => {
+    if (typeof cardList[devName] !== 'undefined') {
+        delete cardList[devName];
     }
     if (typeof scpList[devName] !== 'undefined') {
         delete scpList[devName];
     }
     emitToAllClients('card-removed', devName);
-    emitToAllClients('device-list-get', Object.keys(devList));
+    emitToAllClients('device-list-update', getDevListWithScp());
 })
 
-ee.on('command-issued', (devName, msg) => {
-    emitToAllClients('command-issued', {devName, msg});
+serverEvents.on('command-issued', (devName: string, cmd: string) => {
+    emitToAllClients('command-issued', devName, cmd);
 })
 
-ee.on('response-received', (devName, msg) => {
-    emitToAllClients('response-received', {devName, msg});
+serverEvents.on('response-received', (devName: string, rsp: string, meaning: string) => {
+    emitToAllClients('response-received', devName, rsp, meaning);
 })
 
-// PCSCD events handling
+// =================================================================================================
+// PCSC events capturing
+// =================================================================================================
+
 const pcscDevices = new Devices();
 
 pcscDevices.on('device-deactivated', (event => {
-    const device = event.device;
-    const devName = device.name;
-    ee.emit('card-removed', devName);
+    serverEvents.emit('card-removed', event.device.name);
 }));
 
 pcscDevices.on('device-activated', (event => {
     const device = event.device;
-    const devName = device.name;
 
     device.on('error', (error) => {
-        const msg = `${error.message}`;
-        ee.emit('device-error', devName, msg);
+        serverEvents.emit('device-error', device.name, `${error.message}`);
     })
 
     device.on('card-removed', (event) => {
         if (!event.card) {
             return;
         }
-        let card = event.card;
-        ee.emit('card-removed', devName);
+        serverEvents.emit('card-removed', device.name);
     });
 
     device.on('card-inserted', async (event) => {
         if (!event.card) {
             return;
         }
-        let card = event.card;
+        const card = event.card;
         card.on('command-issued', ({ card, command }) => {
-            const msg = `[${command.toString()}]`;
-            ee.emit('command-issued', devName, msg);
+            serverEvents.emit('command-issued', device.name, `${command.toString()}`);
         });
         card.on('response-received', ({ card, command, response }) => {
-            const msg = `[${response.toString()}](${response.meaning()})`;
-            ee.emit('response-received', devName, msg);
+            serverEvents.emit('response-received', device.name, `${response.toString()}`, `${response.meaning()}`);
         });
-        devList[devName] = card;
-        ee.emit('card-inserted', devName);
+        serverEvents.emit('card-inserted', device.name, card);
     });
 }));

@@ -17,7 +17,6 @@
                 li.appendChild(textnode);
                 terminal.appendChild(li);
                 console.log(`You connected with socket id: ${socket.id}`);
-                //trigger("asd");
             });
 
             socket.on("rsp",(data)=>{
@@ -29,33 +28,33 @@
                 // terminal.appendChild(li);
                 // console.log(`[RSP]: ${data.toString()}`);
             })
-            socket.on("cmd",(data)=>{
-                getRSP(data);
-                // terminal = document.getElementById("terminal");
-                // li = document.createElement("li");
-                // textnode = document.createTextNode(`[CMD]: ${data}`);
-                // li.appendChild(textnode);
-                // terminal.appendChild(li);
-                // console.log(`[CMD]: ${socket.id}`);
-            })
+            // socket.on("cmd",(data)=>{
+            //     getRSP(data);
+            //     // terminal = document.getElementById("terminal");
+            //     // li = document.createElement("li");
+            //     // textnode = document.createTextNode(`[CMD]: ${data}`);
+            //     // li.appendChild(textnode);
+            //     // terminal.appendChild(li);
+            //     // console.log(`[CMD]: ${socket.id}`);
+            // })
 
-            socket.on("event",(data)=>{
-                getRSP(data);
-                // terminal = document.getElementById("terminal");
-                // li = document.createElement("li");
-                // textnode = document.createTextNode(`[EVENT]: ${data}`);
-                // li.appendChild(textnode);
-                // terminal.appendChild(li);
-                // console.log(`[EVENT]: ${socket.id}`);
-            })
+            // socket.on("event",(data)=>{
+            //     getRSP(data);
+            //     // terminal = document.getElementById("terminal");
+            //     // li = document.createElement("li");
+            //     // textnode = document.createTextNode(`[EVENT]: ${data}`);
+            //     // li.appendChild(textnode);
+            //     // terminal.appendChild(li);
+            //     // console.log(`[EVENT]: ${socket.id}`);
+            // })
 
-            socket.on("device-error",(data)=>{
+            socket.on("device-error",(devName, msg)=>{
                 terminal = document.getElementById("terminal");
                 li = document.createElement("li");
-                textnode = document.createTextNode(`[${data.devName}]: ${data.msg}`);
+                textnode = document.createTextNode(`[${devName}]: ${msg}`);
                 li.appendChild(textnode);
                 terminal.appendChild(li);
-                console.log(`[SYSTEM]: ${socket.id}`);
+                // console.log(`[SYSTEM]: ${socket.id}`);
             })
 
             socket.on("card-inserted",(devName)=>{
@@ -67,10 +66,10 @@
                 }
                 li.appendChild(textnode);
                 terminal.appendChild(li);
-                console.log(`[SYSTEM]: ${socket.id}`);
+                // console.log(`[SYSTEM]: ${socket.id}`);
                 let x = document.getElementById("terminal_container");
                 x.scrollTop = terminal.scrollHeight;                
-                console.log(terminal.scrollHeight);  
+                // console.log(terminal.scrollHeight);  
             });
 
             socket.on("card-removed",(devName)=>{
@@ -79,42 +78,45 @@
                 textnode = document.createTextNode(`[card-removed]: ${devName}`);
                 li.appendChild(textnode);
                 terminal.appendChild(li);
-                console.log(`[SYSTEM]: ${socket.id}`);
+                // console.log(`[SYSTEM]: ${socket.id}`);
                 let x = document.getElementById("terminal_container");
                 x.scrollTop = terminal.scrollHeight;                
-                console.log(terminal.scrollHeight);  
+                // console.log(terminal.scrollHeight);  
             });
 
-            socket.on("command-issued",(data)=>{
+            socket.on("command-issued",(devName, cmd)=>{
                 terminal = document.getElementById("terminal");
                 li = document.createElement("li");
-                textnode = document.createTextNode(`[${data.devName}]: CMD: [${data.msg}]`);
+                textnode = document.createTextNode(`[${devName}]: CMD: [${cmd}]`);
                 li.appendChild(textnode);
                 terminal.appendChild(li);
-                console.log(`[SYSTEM]: ${socket.id}`);
+                // console.log(`[SYSTEM]: ${socket.id}`);
             });
 
-            socket.on("response-received",(data)=>{
+            socket.on("response-received",(devName, rsp, meaning)=>{
                 terminal = document.getElementById("terminal");
                 li = document.createElement("li");
-                textnode = document.createTextNode(`[${data.devName}]: RSP: [${data.msg}]`);
+                textnode = document.createTextNode(`[${devName}]: RSP: [${rsp}](${meaning})`);
                 li.appendChild(textnode);
                 terminal.appendChild(li);
-                console.log(`[SYSTEM]: ${socket.id}`);
+                // console.log(`[SYSTEM]: ${socket.id}`);
             });
 
-            socket.on("device-list-get",(data)=>{
-                devices = [];
+            socket.on("device-list-update",(devList)=>{
+                // get selected
+                // 
+                // devices = [];
                 document.getElementById("device_list").innerHTML = "";
                 document.getElementById("device_list_ul").innerHTML = "";
-                console.log("LIST:",JSON.stringify(data));
-                for (let i=0;i<data.length;i++) {
+                for (let i=0;i<devList.length;i++) {
                     let selector = document.getElementById("device_list");
                     let selectorUL = document.getElementById("device_list_ul");
                     let option = document.createElement("option");
-                    textnode = document.createTextNode(`${data[i]}`);
-                    textnodeLabel = document.createTextNode(`${data[i]}`);
-                    option.value = data[i];
+
+                    textnode = document.createTextNode(devList[i][0]);
+                    textnodeLabel = document.createTextNode(`${devList[i][0]} ${devList[i][1] === '' ? '' : `(SCP${devList[i][1]})`}`);
+
+                    option.value = devList[i][0];
                     option.appendChild(textnode);
                     selector.appendChild(option);
                     let ul_li = document.createElement("li");
@@ -159,7 +161,7 @@
             
         </script>
         <style>
-            html {}
+            /* html {} */
             body {
                 font-family: monospace;
                 font-size:23px;
@@ -170,20 +172,22 @@
             }
             .container {
                 display: flex;
+                width: 100%;
                 height: 100%;
             }
             .logo {
-                width: 100px;
-                margin: 5px;
+                margin: 50px;
             }
             #nav {
+                align-items: center;
+                justify-content: center;
                 z-index: 1;
                 display: flex;
                 text-align: center;            
                 height: 100px;
                 background: rgba(0,0,0,1);
-                position: absolute;
-                width: 100%;
+                position: -webkit-sticky;
+                width: auto;
                 border: 3px solid white;
                 border-radius: 10px;
             }
@@ -220,7 +224,7 @@
                 font-size: 23px;
                 font-family: monospace;
                 padding: 5px;
-                background: rgba(0,0,255,.3);
+                background: rgba(138, 138, 138, 0.644);
                 color:white;
             }
             .input {
@@ -229,7 +233,7 @@
                 font-size: 23px;
                 font-family: monospace;
                 padding: 5px;
-                background: rgba(0,0,255,.3);
+                background: rgba(138, 138, 138, 0.644);
                 color:white;
             }
             select {
@@ -250,15 +254,18 @@
                 padding: 5px;
                 margin: 5px auto;
                 border-radius: 10px;
-                background: rgba(0,0,255,.3);
-                color:white;
+                background: rgba(138, 138, 138, 0.644);
+                color: white;
             }
             button:hover{
+                cursor: pointer;
                 color:orange;
-                box-shadow: 0px 0px 5px white;
+                box-shadow: 0px 0px 5px gray;
+                text-shadow: 0px 0px 3px black;
+                background: rgba(138, 138, 138, 0.144);
             }
             .col_blue {
-                color: blue;
+                color: gray;
             }
             .col_orange {
                 color: orange;
@@ -295,9 +302,8 @@
     <body id="main">
 
         <div id="nav">
-            <img src="https://affidaty.io/wp-content/uploads/2021/12/LOGO-AFFIDATY-1.png" alt="logo">
-            <h1 class="col_orange">Smart Card </h1>
-            <h2 class="col_red">framework server</h2>
+            <a href="/"><img class="logo" src="https://affidaty.io/wp-content/uploads/2021/12/LOGO-AFFIDATY-1.png" alt="logo"></a>
+            <h1 class="col_orange">SMART CARD server</h1>
         </div>
         <div class="container">
             <div class="frame" hidden>
@@ -371,6 +377,9 @@
                 <label>TRINCI</label><br/>
                 <button onClick="sendBTN('id')">GET ACCOUNT ID</button>
                 <button onClick="sendBTN('tr')">SIGN TX</button>
+                <hr>
+                <label>DEBUG</label><br/>
+                <button onClick="sendBTN('debug')">DEBUG</button>
 
                 <hr>
                 <label>Custom APDU</label><br/>
@@ -439,9 +448,12 @@
                 le = document.getElementById("LE").value;
 
                 let cmdcustom = `${cla}${ins}${p1}${p2}${lc}${datain}${le}`;
-                console.log("CUSTOM APDU:");
-                console.log(cmdcustom);
-                //socket.emit("cmd-custom", cmdcustom);
+                
+                const obj = {
+                    devName: document.getElementById("device_list").value,
+                    apdu: cmdcustom,
+                }
+                socket.emit("cmd-custom",obj);
             }
             function getRSP(data) {
                 terminal = document.getElementById("terminal");
@@ -452,11 +464,11 @@
                 p.appendChild(textnode);
                 li.appendChild(p);
                 terminal.appendChild(li);
-                console.log(`[RSP]: ${data}`);
+                //console.log(`[RSP]: ${data}`);
 
                 let x = document.getElementById("terminal_container");
                 x.scrollTop = terminal.scrollHeight;                
-                console.log(terminal.scrollHeight);          
+                //console.log(terminal.scrollHeight);          
             }
         </script>
     </body>

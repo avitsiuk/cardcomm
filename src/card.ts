@@ -9,6 +9,7 @@ import * as Iso7816Commands from './iso7816/commands';
 const maxTrResLen = 258;
 
 class Card implements ICard {
+    private _isBusy: boolean;
     private _eventEmitter = new EventEmitter();
     private _device: IDevice;
     private _protocol: number;
@@ -23,6 +24,7 @@ class Card implements ICard {
         this._protocol = protocol;
         this._atr = bufferToArray(atr);
         this._atrHex = arrayToHex(this._atr);
+        this._isBusy = false;
     }
 
     get atr(): number[] {
@@ -31,6 +33,10 @@ class Card implements ICard {
 
     get atrHex(): string {
         return this._atrHex;
+    }
+
+    isBusy(): boolean {
+        return this._isBusy;
     }
 
     toString() {
@@ -104,6 +110,7 @@ class Card implements ICard {
         cmd: CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): void {
+        this._isBusy = true;
         let doCommandTransform: boolean = true;
         const respAcc = new Array<number>(0); // response accumulator
         let middleCallback: (err: any, response: Buffer) => void;
@@ -116,6 +123,7 @@ class Card implements ICard {
                     response,
                 });
                 response = this._doResponseTransform(response);
+                this._isBusy = false;
                 callback(err, response);
             }
         } else {
@@ -134,7 +142,7 @@ class Card implements ICard {
                     let cmdToResend: CommandApdu | undefined;
                     switch (response.status[0]) {
                         case 0x61:
-                            cmdToResend = Iso7816Commands.getResponse(response.status[1]).setCla(cmd.getCla());
+                            cmdToResend = Iso7816Commands.getResponse(response.status[1]);
                             doCommandTransform = false;
                             break;
                         case 0x6C:
@@ -145,6 +153,7 @@ class Card implements ICard {
                     }
 
                     if(typeof cmdToResend === 'undefined') {
+                        this._isBusy = false;
                         callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
                     } else {
                         if (doCommandTransform) {
@@ -164,6 +173,7 @@ class Card implements ICard {
                         );
                     }
                 } else {
+                    this._isBusy = false;
                     callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
                 }
             }
