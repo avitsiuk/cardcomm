@@ -120,8 +120,16 @@
                     option.appendChild(textnode);
                     selector.appendChild(option);
                     let ul_li = document.createElement("li");
+                    let ul_btn = document.createElement("button");
                     ul_li.appendChild(textnodeLabel);
-                    selectorUL.appendChild(ul_li);
+                    ul_btn.appendChild(textnodeLabel);
+                    ul_btn.value = devList[i][0];
+                    ul_btn.addEventListener('click',()=>{
+                        console.log("value:",ul_btn.value);
+                        document.getElementById("selected_device").value = ul_btn.value;
+                        checkSelected();
+                    })
+                    selectorUL.appendChild(ul_btn);
                 }
 
             });
@@ -151,7 +159,7 @@
             function trigger(data) {
                 console.log("sending cmd...",data);
                 const obj = {
-                    devName: document.getElementById("device_list").value,
+                    devName: document.getElementById("selected_device").value?document.getElementById("selected_device").value:document.getElementById("device_list").value,
                     //devName: data.devName,
                     //devName: 'ACS ACR39U ICC Reader 00 00',
                     apdu: data,
@@ -159,6 +167,18 @@
                 socket.emit("cmd", obj);
             }
             
+            function checkSelected() {
+                //console.log(document.getElementsByTagName('button'));
+                for (let i = 0; i < document.getElementsByTagName('button').length;i++) {
+                    document.getElementsByTagName('button')[i].classList.remove("active");
+                    if (document.getElementsByTagName('button')[i].value === document.getElementById("selected_device").value) {
+                        document.getElementsByTagName('button')[i].classList.add("active");
+                        //console.log(document.getElementsByTagName('button')[i]);
+                    }
+                    
+                }
+            }
+            //checkSelected()
         </script>
         <style>
             /* html {} */
@@ -264,6 +284,9 @@
                 text-shadow: 0px 0px 3px black;
                 background: rgba(138, 138, 138, 0.144);
             }
+            .active {
+                background: rgba(127,127,0,.3);
+            }
             .col_blue {
                 color: gray;
             }
@@ -350,7 +373,8 @@
 
                 <label>Device List:</label>
                 <ul id="device_list_ul"></ul>
-                <select id="device_list" name="device_list"></select>
+                <select id="device_list" name="device_list" hidden></select>
+                <input id="selected_device" type="text" value="" hidden>
                 <hr>
 
                 <label>Card State</label><br/>
