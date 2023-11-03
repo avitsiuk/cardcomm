@@ -243,7 +243,7 @@ pcscDevices.on('device-activated', (event => {
         kp.privateKey = importedPrivKey;
         kp.publicKey = await importedPrivKey.extractPublic();
 
-        const resp = await card.issueCommand(Iso7816Commands.select('112233445500'));
+        const resp = await card.issueCommand(Iso7816Commands.select('4299999900'));
         if (!resp.isOk()) {
             throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
         }
@@ -565,7 +565,7 @@ pcscDevices.on('device-activated', (event => {
         }
 
         // await card.issueCommand(Iso7816Commands.select('A000000151535041'));
-        // await card.issueCommand(Iso7816Commands.select('112233445500'));
+        // await card.issueCommand(Iso7816Commands.select('4299999900'));
         // await card.issueCommand(Iso7816Commands.select());
 
         // const isdAid = '';
@@ -591,10 +591,10 @@ pcscDevices.on('device-activated', (event => {
         //         console.log('===================================');
 
 
-        //         // await card.issueCommand(Iso7816Commands.select('112233445500'));
+        //         // await card.issueCommand(Iso7816Commands.select('4299999900'));
         //         // let cmd5 = new CommandApdu('80ff000000');
 
-        //         // console.log(Iso7816Commands.select('112233445500').setSecMgsType(1));
+        //         // console.log(Iso7816Commands.select('4299999900').setSecMgsType(1));
         //         // let cmd1 = new CommandApdu('80E60C001A0511223344550611223344550006112233445500010202c9000000'); // install 112233445500
         //         // let cmd2 = new CommandApdu('80E40000084F0611223344550000'); // delete 112233445500
         //         // let cmd3 = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000'); // get status

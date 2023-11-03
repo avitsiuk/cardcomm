@@ -24,7 +24,7 @@ const abs = ( filePath: string ) => {
 const timer = new Utils.TimeMonitor();
 
 const LISTEN_PORT = 3000;
-const TRINCI_AID = '112233445500';
+const TRINCI_AID = '4299999900';
 const nodeUrl = 'https://testnet.trinci.net/';
 const nodeNetwork = 'QmcvHfPC6XYpgxvJSZQCVBd7QAMEHnLbbK1ytA4McWx5UY';
 const trinciClient = new t2lib.Client(nodeUrl, nodeNetwork);
