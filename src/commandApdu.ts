@@ -1,7 +1,5 @@
 import { bufferToArray, hexToArray, arrayToHex } from './utils';
 
-type TCommandType = ''
-
 export class CommandApdu {
     static MAX_DATA_BYTES: number = 255;
 
