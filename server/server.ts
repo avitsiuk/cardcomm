@@ -162,6 +162,8 @@ io.on('connection', (socket)=>{
         kp.privateKey = importedPrivKey;
         kp.publicKey = await importedPrivKey.extractPublic();
 
+        console.log(`AccID: [${await t2lib.getAccountId(kp.publicKey)}]`);
+
         let data = apdu;
 
         console.log("[CMD] APDU data:",data);
@@ -221,14 +223,12 @@ io.on('connection', (socket)=>{
                 // console.log(`Secure session initialized`);
                 // console.log('==========================');
                 socket.emit('rsp',`Secure session initialized in ${elapsedTime} ms`);
-                
                 break;
-                
             case 'PUK':
                 let pukByteArray;
                 try {
                     // pukByteArray = parsePinString(prompt('New PUK: '));
-                    pukByteArray = parsePinString('0123456789');   
+                    pukByteArray = [0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31];   
                 } catch (error) {
                     console.log(`${error}`);
                     break;
@@ -252,7 +252,7 @@ io.on('connection', (socket)=>{
                 let pukByteArray2;
                 try {
                     // pukByteArray2 = parsePinString(prompt('Input PUK: '));
-                    pukByteArray2 = parsePinString('0123456789');
+                    pukByteArray2 = [0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31, 0x31];
                 } catch (error) {
                     console.log(`${error}`);
                     break;
@@ -264,6 +264,15 @@ io.on('connection', (socket)=>{
                     console.log(`Error! Response: [${resp.toString()}]`);
                 }
                 socket.emit('rsp',resp.toString());
+                break;
+            case 'puke':
+                resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, []).setCla(0x80));
+                if (resp.isOk()) {
+                    console.log(`Success! [${resp.toString()}]`);
+                } else {
+                    console.log(`Error! Response: [${resp.toString()}]`);
+                }
+                socket.emit('rsp', resp.toString());
                 break;
             case 'pukw':
                 let pukByteArray3;
@@ -286,7 +295,7 @@ io.on('connection', (socket)=>{
                 let pinByteArray;
                 try {
                     // pinByteArray = parsePinString(prompt('New PIN: '));
-                    pinByteArray = parsePinString('0123');   
+                    pinByteArray = [0x31, 0x31, 0x31, 0x31];
                 } catch (error) {
                     console.log(`${error}`);
                     break;
@@ -309,7 +318,7 @@ io.on('connection', (socket)=>{
                 let pinByteArray2;
                 try {
                     // pinByteArray2 = parsePinString(prompt('Input PIN: '));
-                    pinByteArray2 = parsePinString('0123');
+                    pinByteArray2 = [0x31, 0x31, 0x31, 0x31];
                 } catch (error) {
                     console.log(`${error}`);
                     break;
@@ -331,6 +340,15 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArrayW).setCla(0x80));
+                if (resp.isOk()) {
+                    console.log(`Success! [${resp.toString()}]`);
+                } else {
+                    console.log(`Error! Response: [${resp.toString()}]`);
+                }
+                socket.emit('rsp',resp.toString());
+                break;
+            case 'pine':
+                resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, []).setCla(0x80));
                 if (resp.isOk()) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
