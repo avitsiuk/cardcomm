@@ -1,5 +1,7 @@
-/node_modules
-*.iml
-*.log
-.idea
-/src
+node_modules/
+docs/
+examples/
+src/
+test/
+.*
+tsconfig*.json

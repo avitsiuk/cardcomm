@@ -1,57 +1,78 @@
 {
     "name": "@developer2/smartcard",
     "version": "1.0.47",
-    "author": "tomkp <tom@tomkp.com>",
+    "description": "Backend library for communication with smartcards using PCSC interface",
     "keywords": [
         "pcsc",
+        "pscslite",
+        "nfc",
         "smartcard",
-        "smart-card",
         "iso7816",
-        "iso-7816",
-        "emv",
-        "es6"
+        "globalplatform"
     ],
     "license": "MIT",
+    "author": {
+        "name": "Aliaksei Vitsiuk",
+        "email": "alessio4493@gmail.com",
+        "url": "https://ieskel.link"
+    },
+    "homepage": "https://github.com/avitsiuk/smartcard",
     "repository": {
         "type": "git",
-        "url": "https://github.com/tomkp/smartcard.git"
+        "url": "https://github.com/avitsiuk/smartcard.git"
     },
     "bugs": {
-        "url": "https://github.com/tomkp/smartcard/issues"
+        "url": "https://github.com/avitsiuk/smartcard/issues"
     },
-    "homepage": "https://github.com/tomkp/smartcard",
-    "main": "lib/cjs/index.js",
-    "module": "lib/esm/index.js",
-    "types": "lib/types/index.d.ts",
+    "engines": {
+        "node": ">=10.24.1"
+    },
     "files": [
-        "lib",
-        "LICENSE",
-        "README.MD"
+        "lib/",
+        "!**/*.tsbuildinfo"
     ],
+    "directories": {
+        "doc": "docs/",
+        "example": "examples/",
+        "lib": "lib/",
+        "test": "test/"
+    },
+    "type": "commonjs",
+    "main": "./lib/cjs/index.js",
+    "module": "./lib/esm/index.js",
+    "types": "./lib/types/index.d.ts",
+    "exports": {
+        "require": "./lib/cjs/index.js",
+        "import": "./lib/esm/index.js",
+        "types": "./lib/types/index.d.ts"
+    },
     "scripts": {
         "build-cjs": "tsc -p tsconfig.cjs.json",
         "build-esm": "tsc -p tsconfig.esm.json",
-        "build": "concurrently \"npm:build-cjs\" \"npm:build-esm\"",
-        "prettier": "prettier --write \"{src,demo}/**/*.{js,ts}\"",
-        "demo": "npx ts-node ./demo/demo.ts",
-        "dev": "npx nodemon ./demo/demo.ts",
-        "server": "npx ts-node ./server/server.ts"
+        "build": "rimraf ./lib && concurrently \"npm:build-cjs\" \"npm:build-esm\"",
+        "format:check": "prettier --check \"{src,example}/**/*.{js,ts}\"",
+        "format:fix": "prettier --write \"{src,example}/**/*.{js,ts}\"",
+        "prepack": "npm run build",
+        "demo": "npx ts-node ./example/demo.ts",
+        "demo2": "npx ts-node ./example/demo2.ts",
+        "server": "npx ts-node ./example/webserver/server.ts"
     },
     "dependencies": {
-        "@types/cors": "^2.8.13",
-        "@types/express": "^4.17.17",
-        "cors": "^2.8.5",
-        "express": "^4.18.2",
-        "pcsclite": "1.0.1",
-        "socket.io": "^4.7.2"
+        "pcsclite": "1.0.1"
     },
     "devDependencies": {
         "@affidaty/t2-lib": "^2.3.3",
+        "@affidaty/t2-lib-core": "^2.5.0",
+        "@types/cors": "^2.8.17",
+        "@types/express": "^4.17.21",
         "@types/prompt-sync": "^4.2.0",
         "concurrently": "^8.0.1",
-        "nodemon": "^3.0.1",
-        "prettier": "^2.2.1",
+        "cors": "^2.8.5",
+        "express": "^4.19.2",
+        "prettier": "^3.2.2",
         "prompt-sync": "^4.2.0",
+        "rimraf": "^6.0.1",
+        "socket.io": "^4.7.5",
         "ts-node": "^10.9.1",
         "typescript": "^5.0.4"
     }

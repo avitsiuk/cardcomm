@@ -3,8 +3,6 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "outDir": "./lib/esm",
-        "declaration": true,
-        "declarationMap": false,
-        "declarationDir": "./lib/types"
+        "module": "ES2015",
     }
 }
