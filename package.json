@@ -52,6 +52,7 @@
         "build": "rimraf ./lib && concurrently \"npm:build-cjs\" \"npm:build-esm\"",
         "format:check": "prettier --check \"{src,example}/**/*.{js,ts}\"",
         "format:fix": "prettier --write \"{src,example}/**/*.{js,ts}\"",
+        "docs": "typedoc --options typedoc.json",
         "prepack": "npm run build",
         "demo": "npx ts-node ./example/demo.ts",
         "demo2": "npx ts-node ./example/demo2.ts",
@@ -74,6 +75,9 @@
         "rimraf": "^6.0.1",
         "socket.io": "^4.7.5",
         "ts-node": "^10.9.1",
+        "typedoc": "^0.26.6",
+        "typedoc-plugin-missing-exports": "^3.0.0",
+        "typedoc-plugin-not-exported": "^0.1.6",
         "typescript": "^5.0.4"
     }
 }
