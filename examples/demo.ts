@@ -21,7 +21,7 @@ import t2lib from '@affidaty/t2-lib';
 import {
     Devices,
     Iso7816Commands,
-    gpDefStaticKeys,
+    gpDefaultStaticKeys,
     SCP11,
     CommandApdu,
     Utils,
@@ -245,7 +245,8 @@ pcscDevices.on('device-activated', (event => {
 
         const resp = await card.issueCommand(Iso7816Commands.select('4299999900'));
         if (!resp.isOk()) {
-            throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
+            console.error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
+            // throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
         }
 
         let secureSession = new SCP11(card).setSecurityLevel(0x3C);

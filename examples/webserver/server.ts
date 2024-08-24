@@ -13,7 +13,7 @@ import {
     Utils,
     ResponseApdu,
     Card,
-} from '../src/index';
+} from '../../src/index';
 
 const hexToArray = Utils.hexToArray;
 const arrayToHex = Utils.arrayToHex;
