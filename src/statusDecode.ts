@@ -1,4 +1,4 @@
-import { arrayToHex } from "./utils";
+import { arrayToHex } from './utils';
 
 const NORM_PROC = 'Normal processing';
 const WARN_PROC = 'Warning processing';
@@ -11,7 +11,7 @@ function unkSw2(sw2: number): string {
     return `Unknown SW2: [0x${sw2.toString(16).padStart(2, '0')}]`;
 }
 
-const meanings: {[key: string]: (sw2: number) => string} = {
+const meanings: { [key: string]: (sw2: number) => string } = {
     // NORMAL PROCESSING
     '^9000$': (sw2) => {
         return NORM_PROC;
@@ -33,13 +33,15 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; Part of returned data may be corrupted';
                 break;
             case sw2 == 0x82:
-                msg += '; End of file or record reached before reading Ne bytes, or unsuccessful search';
+                msg +=
+                    '; End of file or record reached before reading Ne bytes, or unsuccessful search';
                 break;
             case sw2 == 0x83:
                 msg += '; Selected file deactivated';
                 break;
             case sw2 == 0x84:
-                msg += '; File or data control information not formatted properly';
+                msg +=
+                    '; File or data control information not formatted properly';
                 break;
             case sw2 == 0x85:
                 msg += '; Selected file in termination state';
@@ -48,7 +50,8 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; No input data available from a sensor on the card';
                 break;
             case sw2 == 0x87:
-                msg += '; At least one of the referenced records is deactivated';
+                msg +=
+                    '; At least one of the referenced records is deactivated';
                 break;
             default:
                 msg += `; ${unkSw2(sw2)}`;
@@ -63,13 +66,14 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; No further info';
                 break;
             case sw2 == 0x40:
-                msg += '; Unsuccessful comparison (exact meaning depends on the command)';
+                msg +=
+                    '; Unsuccessful comparison (exact meaning depends on the command)';
                 break;
             case sw2 == 0x81:
                 msg += '; File filled up by the last write';
                 break;
-            case sw2 >= 0xC0 && sw2 <= 0xCF:
-                msg += `; Counter: ${sw2 & 0x0F} (exact meaning depends on the command)`;
+            case sw2 >= 0xc0 && sw2 <= 0xcf:
+                msg += `; Counter: ${sw2 & 0x0f} (exact meaning depends on the command)`;
                 break;
             default:
                 msg += `; ${unkSw2(sw2)}`;
@@ -239,12 +243,13 @@ const meanings: {[key: string]: (sw2: number) => string} = {
                 msg += '; Nc inconsistent with parameters P1-P2';
                 break;
             case sw2 == 0x88:
-                msg += '; Referenced data or reference data not found (exact meaning depends on the command)';
+                msg +=
+                    '; Referenced data or reference data not found (exact meaning depends on the command)';
                 break;
             case sw2 == 0x89:
                 msg += '; File already exists';
                 break;
-            case sw2 == 0x8A:
+            case sw2 == 0x8a:
                 msg += '; DF name already exists';
                 break;
             default:
@@ -275,8 +280,8 @@ export function statusDecode(status: number[]): string {
     if (status.length === 2) {
         const statusHex = arrayToHex(status, false);
         const regExpList = Object.keys(meanings);
-        for (let i = 0; i < regExpList.length; i = i+1) {
-            if(new RegExp(regExpList[i]).exec(statusHex)) {
+        for (let i = 0; i < regExpList.length; i = i + 1) {
+            if (new RegExp(regExpList[i]).exec(statusHex)) {
                 meaning = meanings[regExpList[i]](status[1]);
             }
         }

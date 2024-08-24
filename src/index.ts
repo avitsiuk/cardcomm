@@ -6,10 +6,12 @@ import CommandApdu from './commandApdu';
 // import * as TypesInternal from './typesInternal';
 import Card from './card';
 
-import  * as Iso7816Commands from './iso7816/commands';
+import * as Iso7816Commands from './iso7816/commands';
 
 import * as GPCommands from './globalPlatform/commands';
-import SCP02, {defaultStaticKeys as gpDefaultStaticKeys} from './globalPlatform/sesureSession/scp02';
+import SCP02, {
+    defaultStaticKeys as gpDefaultStaticKeys,
+} from './globalPlatform/sesureSession/scp02';
 import SCP11 from './globalPlatform/sesureSession/scp11';
 
 import Device from './device';

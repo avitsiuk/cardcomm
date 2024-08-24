@@ -2,8 +2,8 @@ import { hexToArray } from '../utils';
 import CommandApdu from '../commandApdu';
 
 const insByteList = {
-    SELECT: 0xA4,
-    GET_RESPONSE: 0xC0,
+    SELECT: 0xa4,
+    GET_RESPONSE: 0xc0,
     // APPEND_RECORD: 0xe2,
     // ENVELOPE: 0xc2,
     // ERASE_BINARY: 0x0e,
@@ -28,34 +28,46 @@ const insByteList = {
 // SELECT
 
 interface ISelectOptions {
-    /** P1 (Selection method); Default: `name`  
-     * `id_0` - Select MF, DF or EF  
-     * `id_1` - Select child DF  
-     * `id_2` - Select EF under the current DF  
-     * `id_3` - Select parent DF of the current DF  
-     * `name` - Select by DF name  
-     * `path_0` - Select by path  from the MF  
-     * `path_1` - Select by path from the current DF  
-     * `do_0` - Select DO in the current template  
-     * `do_1` - Select parent DO of the constructed DO setting the current template  
-    */
-    selectBy?: 'id_0' | 'id_1' | 'id_2' | 'id_3' | 'name' | 'path_0' | 'path_1' | 'do_0' | 'do_1';
-    /** P2 (File or DO occurrence); Default: `first`  
-     * `first` - First or only occurrence  
-     * `last` - Last occurrence  
-     * `next` - Next occurrence  
-     * `prev` - Previous occurrence  
-    */
+    /** P1 (Selection method); Default: `name`
+     * `id_0` - Select MF, DF or EF
+     * `id_1` - Select child DF
+     * `id_2` - Select EF under the current DF
+     * `id_3` - Select parent DF of the current DF
+     * `name` - Select by DF name
+     * `path_0` - Select by path  from the MF
+     * `path_1` - Select by path from the current DF
+     * `do_0` - Select DO in the current template
+     * `do_1` - Select parent DO of the constructed DO setting the current template
+     */
+    selectBy?:
+        | 'id_0'
+        | 'id_1'
+        | 'id_2'
+        | 'id_3'
+        | 'name'
+        | 'path_0'
+        | 'path_1'
+        | 'do_0'
+        | 'do_1';
+    /** P2 (File or DO occurrence); Default: `first`
+     * `first` - First or only occurrence
+     * `last` - Last occurrence
+     * `next` - Next occurrence
+     * `prev` - Previous occurrence
+     */
     occurence?: 'first' | 'last' | 'next' | 'prev';
-    /** P2 (Response requirements); Default: `fci`  
-     * `fci` - Return FCI template, optional use of FCI tag and length  
-     * `cp` - Return CP template, mandatory use of CP tag and length  
-     * `fmd` - Return FMD template, mandatory use of FMD tag and length; Return the tags belonging to the template set by the selection of a constructed DO as a tag list  
+    /** P2 (Response requirements); Default: `fci`
+     * `fci` - Return FCI template, optional use of FCI tag and length
+     * `cp` - Return CP template, mandatory use of CP tag and length
+     * `fmd` - Return FMD template, mandatory use of FMD tag and length; Return the tags belonging to the template set by the selection of a constructed DO as a tag list
      * `le` - No response data if Le field absent, or proprietary if Le field present  */
     response?: 'fci' | 'cp' | 'fmd' | 'le';
 }
 
-export function select(data?: string | number[] | Buffer, opts: ISelectOptions = {}):CommandApdu {
+export function select(
+    data?: string | number[] | Buffer,
+    opts: ISelectOptions = {},
+): CommandApdu {
     const cmd = new CommandApdu().setIns(insByteList.SELECT);
 
     if (typeof data !== 'undefined' && data.length > 0) {
@@ -108,7 +120,7 @@ export function select(data?: string | number[] | Buffer, opts: ISelectOptions =
     // P2
     let p2 = 0x00; // default, first or only, return fci template
     if (typeof opts.occurence !== 'undefined') {
-        p2 &= 0x0C;
+        p2 &= 0x0c;
         switch (opts.occurence) {
             case 'first':
                 break;
@@ -137,7 +149,7 @@ export function select(data?: string | number[] | Buffer, opts: ISelectOptions =
                 p2 |= 0x08;
                 break;
             case 'le':
-                p2 |= 0x0C;
+                p2 |= 0x0c;
                 break;
             default:
                 break;
@@ -150,7 +162,7 @@ export function select(data?: string | number[] | Buffer, opts: ISelectOptions =
 /**
  * @param le - number of bytes to get
  */
-export function getResponse(le: number):CommandApdu {
+export function getResponse(le: number): CommandApdu {
     if (le < 0 || le > 255) {
         throw new Error('Wrong le value');
     }
@@ -165,18 +177,25 @@ export function getResponse(le: number):CommandApdu {
  * @param reset - (Default: `false`); if true, data must be empty; if `true`, the command shall set the verification status of the relevant reference data as "not verified"
  * @param refIsSpecific - (Default: `true`). If true, `refNum` indicates specific reference data (e.g. DF specific password or key)
 ; otherwise it indicates global reference data (e.g. MF specific password or key) */
-export function verifyRefData(refNum: number, dataToVerify: number[], reset: boolean = false, refIsSpecific: boolean = true):CommandApdu {
-    if ((refNum < 0) || (refNum > 31)) {
-        throw new Error(`Data reference number must be between 0 and 31; received: ${refNum}`);
+export function verifyRefData(
+    refNum: number,
+    dataToVerify: number[],
+    reset: boolean = false,
+    refIsSpecific: boolean = true,
+): CommandApdu {
+    if (refNum < 0 || refNum > 31) {
+        throw new Error(
+            `Data reference number must be between 0 and 31; received: ${refNum}`,
+        );
     }
 
-    if (reset && (dataToVerify.length > 0)) {
+    if (reset && dataToVerify.length > 0) {
         throw new Error(`With reset set to "true", data must be empty`);
     }
 
     const cmd = new CommandApdu().setIns(insByteList.VERIFY_REF_DATA);
 
-    if (reset) cmd.setP1(0xFF);
+    if (reset) cmd.setP1(0xff);
 
     let p2 = refNum;
     if (refIsSpecific) p2 |= 0x80;
@@ -193,13 +212,21 @@ export function verifyRefData(refNum: number, dataToVerify: number[], reset: boo
  * @param data - new data
  * @param refIsSpecific - (Default: `true`). If true, `refNum` indicates specific reference data (e.g. DF specific password or key)
 ; otherwise it indicates global reference data (e.g. MF specific password or key) */
-export function changeRefData(refNum: number, data: number[], refIsSpecific: boolean = true):CommandApdu {
-    if ((refNum < 0) || (refNum > 31)) {
-        throw new Error(`Data reference number must be between 0 and 31; received: ${refNum}`);
+export function changeRefData(
+    refNum: number,
+    data: number[],
+    refIsSpecific: boolean = true,
+): CommandApdu {
+    if (refNum < 0 || refNum > 31) {
+        throw new Error(
+            `Data reference number must be between 0 and 31; received: ${refNum}`,
+        );
     }
 
     // 00 - [verification data][new data]; 01 - [new data]
-    const cmd = new CommandApdu().setIns(insByteList.CHANGE_REF_DATA).setP1(0x01);
+    const cmd = new CommandApdu()
+        .setIns(insByteList.CHANGE_REF_DATA)
+        .setP1(0x01);
 
     let p2 = refNum;
     if (refIsSpecific) p2 |= 0x80;

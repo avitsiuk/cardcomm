@@ -14,14 +14,22 @@ export class Device implements IDevice {
         this.name = reader.name;
         this.card = null;
 
-        const isCardInserted = (changes: number, reader: CardReader, status: Status) => {
+        const isCardInserted = (
+            changes: number,
+            reader: CardReader,
+            status: Status,
+        ) => {
             return (
                 changes & reader.SCARD_STATE_PRESENT &&
                 status.state & reader.SCARD_STATE_PRESENT
             );
         };
 
-        const isCardRemoved = (changes: number, reader: CardReader, status: Status) => {
+        const isCardRemoved = (
+            changes: number,
+            reader: CardReader,
+            status: Status,
+        ) => {
             return (
                 changes & reader.SCARD_STATE_EMPTY &&
                 status.state & reader.SCARD_STATE_EMPTY
@@ -33,8 +41,15 @@ export class Device implements IDevice {
                 if (err) {
                     this._eventEmitter.emit('error', err);
                 } else {
-                    this.card = new Card(this, status.atr ? status.atr : Buffer.from([]) , protocol);
-                    this._eventEmitter.emit('card-inserted', { device: this, card: this.card });
+                    this.card = new Card(
+                        this,
+                        status.atr ? status.atr : Buffer.from([]),
+                        protocol,
+                    );
+                    this._eventEmitter.emit('card-inserted', {
+                        device: this,
+                        card: this.card,
+                    });
                 }
             });
         };
@@ -45,7 +60,10 @@ export class Device implements IDevice {
                 if (err) {
                     this._eventEmitter.emit('error', err);
                 } else {
-                    this._eventEmitter.emit('card-removed', { name, card: this.card });
+                    this._eventEmitter.emit('card-removed', {
+                        name,
+                        card: this.card,
+                    });
                     this.card = null;
                 }
             });
@@ -63,7 +81,12 @@ export class Device implements IDevice {
         });
     }
 
-    transmit(data: Buffer, res_len: number, protocol: number, cb: (err: any, response: Buffer) => void) {
+    transmit(
+        data: Buffer,
+        res_len: number,
+        protocol: number,
+        cb: (err: any, response: Buffer) => void,
+    ) {
         this.reader.transmit(data, res_len, protocol, cb);
     }
 
@@ -76,17 +99,35 @@ export class Device implements IDevice {
     }
 
     on(eventName: 'error', eventHandler: (error: any) => void): Device;
-    on(eventName: 'card-inserted', eventHandler: (event: {device: Device, card: Card}) => void): Device;
-    on(eventName: 'card-removed', eventHandler: (event: {name: string, card: Card}) => void): Device;
-    on(eventName: TDeviceEventName, eventHandler: (event: any) => void): Device {
+    on(
+        eventName: 'card-inserted',
+        eventHandler: (event: { device: Device; card: Card }) => void,
+    ): Device;
+    on(
+        eventName: 'card-removed',
+        eventHandler: (event: { name: string; card: Card }) => void,
+    ): Device;
+    on(
+        eventName: TDeviceEventName,
+        eventHandler: (event: any) => void,
+    ): Device {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
 
     once(eventName: 'error', eventHandler: (error: any) => void): Device;
-    once(eventName: 'card-inserted', eventHandler: (event: {device: Device, card: Card}) => void): Device;
-    once(eventName: 'card-removed', eventHandler: (event: {name: string, card: Card}) => void): Device;
-    once(eventName: TDeviceEventName, eventHandler: (event: any) => void): Device {
+    once(
+        eventName: 'card-inserted',
+        eventHandler: (event: { device: Device; card: Card }) => void,
+    ): Device;
+    once(
+        eventName: 'card-removed',
+        eventHandler: (event: { name: string; card: Card }) => void,
+    ): Device;
+    once(
+        eventName: TDeviceEventName,
+        eventHandler: (event: any) => void,
+    ): Device {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }

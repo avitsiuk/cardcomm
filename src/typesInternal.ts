@@ -11,17 +11,43 @@ export interface ICard {
 
     toString: () => string;
 
-    issueCommand(commandApdu: Buffer | number[] | string | CommandApdu, callback: (err: any, response: ResponseApdu) => void): Promise<ResponseApdu>;
-    issueCommand(commandApdu: Buffer | number[] | string | CommandApdu, callback: (err: any, response: ResponseApdu) => void): void;
+    issueCommand(
+        commandApdu: Buffer | number[] | string | CommandApdu,
+        callback: (err: any, response: ResponseApdu) => void,
+    ): Promise<ResponseApdu>;
+    issueCommand(
+        commandApdu: Buffer | number[] | string | CommandApdu,
+        callback: (err: any, response: ResponseApdu) => void,
+    ): void;
     issueCommand(
         commandApdu: Buffer | number[] | string | CommandApdu,
         callback?: (err: any, response: ResponseApdu) => void,
     ): void | Promise<ResponseApdu>;
 
-    on(eventName: 'command-issued', eventHandler: (event: {card: ICard, command: CommandApdu}) => void): ICard;
-    on(eventName: 'response-received', eventHandler: (event: { card: ICard, command: CommandApdu, response: ResponseApdu }) => void): ICard;
-    once(eventName: 'command-issued', eventHandler: (event: {card: ICard, command: CommandApdu}) => void): ICard;
-    once(eventName: 'response-received', eventHandler: (event: { card: ICard, command: CommandApdu, response: ResponseApdu }) => void): ICard;
+    on(
+        eventName: 'command-issued',
+        eventHandler: (event: { card: ICard; command: CommandApdu }) => void,
+    ): ICard;
+    on(
+        eventName: 'response-received',
+        eventHandler: (event: {
+            card: ICard;
+            command: CommandApdu;
+            response: ResponseApdu;
+        }) => void,
+    ): ICard;
+    once(
+        eventName: 'command-issued',
+        eventHandler: (event: { card: ICard; command: CommandApdu }) => void,
+    ): ICard;
+    once(
+        eventName: 'response-received',
+        eventHandler: (event: {
+            card: ICard;
+            command: CommandApdu;
+            response: ResponseApdu;
+        }) => void,
+    ): ICard;
 }
 
 export type TDeviceEventName = 'error' | 'card-inserted' | 'card-removed';
@@ -32,15 +58,32 @@ export interface IDevice {
     name: string;
     card: ICard | null;
 
-    transmit: (data: Buffer, res_len: number, protocol: number, cb: (err: any, response: Buffer) => void) => void;
+    transmit: (
+        data: Buffer,
+        res_len: number,
+        protocol: number,
+        cb: (err: any, response: Buffer) => void,
+    ) => void;
     getName: () => string;
     toString: () => string;
     on(eventName: 'error', eventHandler: (error: any) => void): IDevice;
-    on(eventName: 'card-inserted', eventHandler: (event: {device: IDevice, card: ICard}) => void): IDevice;
-    on(eventName: 'card-removed', eventHandler: (event: {name: string, card: ICard}) => void): IDevice;
+    on(
+        eventName: 'card-inserted',
+        eventHandler: (event: { device: IDevice; card: ICard }) => void,
+    ): IDevice;
+    on(
+        eventName: 'card-removed',
+        eventHandler: (event: { name: string; card: ICard }) => void,
+    ): IDevice;
     once(eventName: 'error', eventHandler: (error: any) => void): IDevice;
-    once(eventName: 'card-inserted', eventHandler: (event: {device: IDevice, card: ICard}) => void): IDevice;
-    once(eventName: 'card-removed', eventHandler: (event: {name: string, card: ICard}) => void): IDevice;
+    once(
+        eventName: 'card-inserted',
+        eventHandler: (event: { device: IDevice; card: ICard }) => void,
+    ): IDevice;
+    once(
+        eventName: 'card-removed',
+        eventHandler: (event: { name: string; card: ICard }) => void,
+    ): IDevice;
 }
 
 export type TDevicesEventName = 'device-activated' | 'device-deactivated';
@@ -48,16 +91,28 @@ export type TDevicesEventName = 'device-activated' | 'device-deactivated';
 export interface IDevices {
     _eventEmitter: EventEmitter;
     pcsc: PCSCLite;
-    devices: {[key: string]: IDevice};
+    devices: { [key: string]: IDevice };
 
-    onActivated: () => Promise<{ device: IDevice, devices: IDevices }>;
-    onDeactivated: () => Promise<{ device: IDevice, devices: IDevices }>;
+    onActivated: () => Promise<{ device: IDevice; devices: IDevices }>;
+    onDeactivated: () => Promise<{ device: IDevice; devices: IDevices }>;
     listDevices: () => IDevice[];
     lookup: (name: string) => IDevice | null;
     toString: () => string;
 
-    on(eventName: 'device-activated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
-    on(eventName: 'device-deactivated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
-    once(eventName: 'device-activated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
-    once(eventName: 'device-deactivated', eventHandler: (event: { device: IDevice, devices: IDevices }) => void): IDevices;
+    on(
+        eventName: 'device-activated',
+        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
+    ): IDevices;
+    on(
+        eventName: 'device-deactivated',
+        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
+    ): IDevices;
+    once(
+        eventName: 'device-activated',
+        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
+    ): IDevices;
+    once(
+        eventName: 'device-deactivated',
+        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
+    ): IDevices;
 }

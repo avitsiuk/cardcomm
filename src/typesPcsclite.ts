@@ -1,13 +1,13 @@
-import { EventEmitter } from "events";
+import { EventEmitter } from 'events';
 
 export type ConnectOptions = {
-	share_mode?: number;
-	protocol?: number;
+    share_mode?: number;
+    protocol?: number;
 };
 
 export type Status = {
-	atr?: Buffer;
-	state: number;
+    atr?: Buffer;
+    state: number;
 };
 
 export type AnyOrNothing = any | undefined | null;
@@ -45,27 +45,51 @@ export interface CardReader extends EventEmitter {
     name: string;
     state: number;
     connected: boolean;
-    on(type: "error", listener: (this: CardReader, error: any) => void): this;
-    on(type: "end", listener: (this: CardReader) => void): this;
-    on(type: "status", listener: (this: CardReader, status: Status) => void): this;
-    once(type: "error", listener: (this: CardReader, error: any) => void): this;
-    once(type: "end", listener: (this: CardReader) => void): this;
-    once(type: "status", listener: (this: CardReader, status: Status) => void): this;
+    on(type: 'error', listener: (this: CardReader, error: any) => void): this;
+    on(type: 'end', listener: (this: CardReader) => void): this;
+    on(
+        type: 'status',
+        listener: (this: CardReader, status: Status) => void,
+    ): this;
+    once(type: 'error', listener: (this: CardReader, error: any) => void): this;
+    once(type: 'end', listener: (this: CardReader) => void): this;
+    once(
+        type: 'status',
+        listener: (this: CardReader, status: Status) => void,
+    ): this;
     SCARD_CTL_CODE(code: number): number;
-    get_status(cb: (err: AnyOrNothing, state: number, atr?: Buffer) => void): void;
+    get_status(
+        cb: (err: AnyOrNothing, state: number, atr?: Buffer) => void,
+    ): void;
     connect(callback: (err: AnyOrNothing, protocol: number) => void): void;
-    connect(options: ConnectOptions, callback: (err: AnyOrNothing, protocol: number) => void): void;
+    connect(
+        options: ConnectOptions,
+        callback: (err: AnyOrNothing, protocol: number) => void,
+    ): void;
     disconnect(callback: (err: AnyOrNothing) => void): void;
-    disconnect(disposition: number, callback: (err: AnyOrNothing) => void): void;
-    transmit(data: Buffer, res_len: number, protocol: number, cb: (err: AnyOrNothing, response: Buffer) => void): void;
-    control(data: Buffer, control_code: number, res_len: number, cb: (err: AnyOrNothing, response: Buffer) => void): void;
+    disconnect(
+        disposition: number,
+        callback: (err: AnyOrNothing) => void,
+    ): void;
+    transmit(
+        data: Buffer,
+        res_len: number,
+        protocol: number,
+        cb: (err: AnyOrNothing, response: Buffer) => void,
+    ): void;
+    control(
+        data: Buffer,
+        control_code: number,
+        res_len: number,
+        cb: (err: AnyOrNothing, response: Buffer) => void,
+    ): void;
     close(): void;
 }
 
 export interface PCSCLite extends EventEmitter {
-	on(type: "error", listener: (error: any) => void): this;
-	once(type: "error", listener: (error: any) => void): this;
-	on(type: "reader", listener: (reader: CardReader) => void): this;
-	once(type: "reader", listener: (reader: CardReader) => void): this;
-	close(): void;
+    on(type: 'error', listener: (error: any) => void): this;
+    once(type: 'error', listener: (error: any) => void): this;
+    on(type: 'reader', listener: (reader: CardReader) => void): this;
+    once(type: 'reader', listener: (reader: CardReader) => void): this;
+    close(): void;
 }

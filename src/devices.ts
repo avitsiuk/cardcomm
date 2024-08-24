@@ -4,17 +4,19 @@ import { CardReader, PCSCLite } from './typesPcsclite';
 import { IDevices, TDevicesEventName } from './typesInternal';
 import Device from './device';
 
-
 class Devices implements IDevices {
     _eventEmitter = new EventEmitter();
     pcsc: PCSCLite = pcsclite();
-    devices: {[key: string]: Device} = {};
+    devices: { [key: string]: Device } = {};
 
     constructor() {
         this.pcsc.on('reader', (reader: CardReader) => {
             const device = new Device(reader);
             this.devices[reader.name] = device;
-            this._eventEmitter.emit('device-activated', { device, devices: this.listDevices() });
+            this._eventEmitter.emit('device-activated', {
+                device,
+                devices: this.listDevices(),
+            });
             reader.on('end', () => {
                 delete this.devices[reader.name];
                 this._eventEmitter.emit('device-deactivated', {
@@ -32,13 +34,13 @@ class Devices implements IDevices {
         });
     }
 
-    onActivated(): Promise<{ device: Device, devices: IDevices }> {
+    onActivated(): Promise<{ device: Device; devices: IDevices }> {
         return new Promise((resolve, reject) => {
             this.once('device-activated', (event) => resolve(event));
         });
     }
 
-    onDeactivated(): Promise<{ device: Device, devices: IDevices }> {
+    onDeactivated(): Promise<{ device: Device; devices: IDevices }> {
         return new Promise((resolve, reject) => {
             this.once('device-deactivated', (event) => resolve(event));
         });
@@ -59,16 +61,34 @@ class Devices implements IDevices {
         return `Devices('${this.listDevices()}')`;
     }
 
-    on(eventName: 'device-activated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    on(eventName: 'device-deactivated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    on(eventName: TDevicesEventName, eventHandler: (event: any) => void): Devices {
+    on(
+        eventName: 'device-activated',
+        eventHandler: (event: { device: Device; devices: Devices }) => void,
+    ): Devices;
+    on(
+        eventName: 'device-deactivated',
+        eventHandler: (event: { device: Device; devices: Devices }) => void,
+    ): Devices;
+    on(
+        eventName: TDevicesEventName,
+        eventHandler: (event: any) => void,
+    ): Devices {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
 
-    once(eventName: 'device-activated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    once(eventName: 'device-deactivated', eventHandler: (event: { device: Device, devices: Devices }) => void): Devices;
-    once(eventName: TDevicesEventName, eventHandler: (event: any) => void): Devices {
+    once(
+        eventName: 'device-activated',
+        eventHandler: (event: { device: Device; devices: Devices }) => void,
+    ): Devices;
+    once(
+        eventName: 'device-deactivated',
+        eventHandler: (event: { device: Device; devices: Devices }) => void,
+    ): Devices;
+    once(
+        eventName: TDevicesEventName,
+        eventHandler: (event: any) => void,
+    ): Devices {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }

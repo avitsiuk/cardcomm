@@ -3,7 +3,7 @@ const hexRegex = /^[0-9A-Fa-f]*$/g;
 export function isHex(str: string): boolean {
     if (!str.match(hexRegex)) {
         return false;
-    };
+    }
     return true;
 }
 
@@ -21,12 +21,15 @@ export function bufferToArray(buffer: Buffer): number[] {
 /**
  * @param wrapOverflow - if true(default) 256 gets enoded as '00' otherwise '0100'
  */
-export function arrayToHex(array: number[], wrapOverflow: boolean = true): string {
+export function arrayToHex(
+    array: number[],
+    wrapOverflow: boolean = true,
+): string {
     if (array && array.length > 0) {
         let str = '';
         for (let i = 0; i < array.length; i = i + 1) {
             let hex = array[i].toString(16);
-            hex = `${hex.length % 2 ? '0': ''}${hex}`;
+            hex = `${hex.length % 2 ? '0' : ''}${hex}`;
             str += wrapOverflow ? hex.substring(hex.length - 2) : hex;
         }
         return str;
@@ -50,12 +53,9 @@ export function hexToArray(hex: string): number[] {
     return array;
 }
 
-
-
 export class TimeMonitor {
     private s: number = 0;
-    constructor() {
-    }
+    constructor() {}
     start(): number {
         this.s = new Date().getTime();
         return this.s;

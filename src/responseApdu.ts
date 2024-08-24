@@ -24,7 +24,7 @@ export default class ResponseApdu {
 
     fromArray(array: number[]) {
         this._byteArray = array;
-        if(array.length >= 2) {
+        if (array.length >= 2) {
             this._data = this._byteArray.slice(0, -2);
             this._status = this._byteArray.slice(-2);
         } else {
@@ -82,7 +82,8 @@ export default class ResponseApdu {
 
     availableResponseBytes(): number {
         if (this.length >= 2) {
-            if (this.status[0] === 0x61 || this.status[0] === 0x6c) return this.status[1];
+            if (this.status[0] === 0x61 || this.status[0] === 0x6c)
+                return this.status[1];
         }
         return 0;
     }
@@ -90,6 +91,6 @@ export default class ResponseApdu {
 
 export function assertOk(resp: ResponseApdu): void {
     if (!resp.isOk()) {
-        throw new Error(`Error response: [${resp.toString()}]`)
+        throw new Error(`Error response: [${resp.toString()}]`);
     }
 }

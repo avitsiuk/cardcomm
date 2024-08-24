@@ -16,8 +16,12 @@ class Card implements ICard {
     private _atr: number[];
     private _atrHex: string;
     private _autoGetResponse: boolean = false;
-    private _commandTransformer: undefined | ((cmd: CommandApdu) => CommandApdu);
-    private _responseTransformer: undefined | ((rsp: ResponseApdu) => ResponseApdu);
+    private _commandTransformer:
+        | undefined
+        | ((cmd: CommandApdu) => CommandApdu);
+    private _responseTransformer:
+        | undefined
+        | ((rsp: ResponseApdu) => ResponseApdu);
 
     constructor(device: IDevice, atr: Buffer, protocol: number) {
         this._device = device;
@@ -47,19 +51,17 @@ class Card implements ICard {
         return `Card(atr:0x${this.atrHex})`;
     }
 
-    /** Function that transforms each command before sending;  
+    /** Function that transforms each command before sending;
      * Can be used to add secure session authentication
-    */
-    setCommandTransformer(
-        func?: ((cmd: CommandApdu) => CommandApdu),
-    ): this {
+     */
+    setCommandTransformer(func?: (cmd: CommandApdu) => CommandApdu): this {
         this._commandTransformer = func;
         return this;
     }
 
-    /** Function that transforms each command before sending;  
+    /** Function that transforms each command before sending;
      * Can be used to add secure session authentication
-    */
+     */
     get commandTransformer(): undefined | ((cmd: CommandApdu) => CommandApdu) {
         return this._commandTransformer;
     }
@@ -72,20 +74,20 @@ class Card implements ICard {
         }
     }
 
-    /** Function that transforms each response before returning it;  
+    /** Function that transforms each response before returning it;
      * Can be used to add secure session authentication
-    */
-    setResponseTransformer(
-        func?: ((rsp: ResponseApdu) => ResponseApdu),
-    ): this {
+     */
+    setResponseTransformer(func?: (rsp: ResponseApdu) => ResponseApdu): this {
         this._responseTransformer = func;
         return this;
     }
 
-    /** Function that transforms each response before returning it;  
+    /** Function that transforms each response before returning it;
      * Can be used to add secure session authentication
-    */
-    get responseTransformer(): undefined | ((rsp: ResponseApdu) => ResponseApdu) {
+     */
+    get responseTransformer():
+        | undefined
+        | ((rsp: ResponseApdu) => ResponseApdu) {
         return this._responseTransformer;
     }
 
@@ -98,7 +100,7 @@ class Card implements ICard {
     }
 
     /**
-     * If set to true(default), `GET_RESPONSE APDU` gets sent automatically upon receiving `0x61XX` response.  
+     * If set to true(default), `GET_RESPONSE APDU` gets sent automatically upon receiving `0x61XX` response.
      * Also the command `Le` value gets corrected and commands is sent again upon receiving `0x6CXX` response.
      */
     setAutoGetResponse(val: boolean = true): this {
@@ -129,7 +131,7 @@ class Card implements ICard {
                 response = this._doResponseTransform(response);
                 this._isBusy = false;
                 callback(err, response);
-            }
+            };
         } else {
             middleCallback = (err: any, respBuffer: Buffer) => {
                 let response = new ResponseApdu(respBuffer);
@@ -142,23 +144,33 @@ class Card implements ICard {
 
                 const bytesToGet = response.availableResponseBytes();
                 if (bytesToGet > 0) {
-                    if(response.dataLength > 0) respAcc.push(...response.data);
+                    if (response.dataLength > 0) respAcc.push(...response.data);
                     let cmdToResend: CommandApdu | undefined;
                     switch (response.status[0]) {
                         case 0x61:
-                            cmdToResend = Iso7816Commands.getResponse(response.status[1]);
+                            cmdToResend = Iso7816Commands.getResponse(
+                                response.status[1],
+                            );
                             doCommandTransform = false;
                             break;
-                        case 0x6C:
-                            cmdToResend = new CommandApdu(cmd).setLe(response.status[1]);
+                        case 0x6c:
+                            cmdToResend = new CommandApdu(cmd).setLe(
+                                response.status[1],
+                            );
                             break;
                         default:
                             break;
                     }
 
-                    if(typeof cmdToResend === 'undefined') {
+                    if (typeof cmdToResend === 'undefined') {
                         this._isBusy = false;
-                        callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
+                        callback(
+                            err,
+                            new ResponseApdu([
+                                ...respAcc,
+                                ...response.toArray(),
+                            ]),
+                        );
                     } else {
                         if (doCommandTransform) {
                             cmdToResend = this._doCommandTransform(cmdToResend);
@@ -178,9 +190,12 @@ class Card implements ICard {
                     }
                 } else {
                     this._isBusy = false;
-                    callback(err, new ResponseApdu([...respAcc, ...response.toArray()]));
+                    callback(
+                        err,
+                        new ResponseApdu([...respAcc, ...response.toArray()]),
+                    );
                 }
-            }
+            };
         }
 
         let tCmd = cmd;
@@ -202,8 +217,13 @@ class Card implements ICard {
         );
     }
 
-    issueCommand(command: string | number[] | Buffer | CommandApdu, callback: (err: any, response: ResponseApdu) => void): void;
-    issueCommand(command: string | number[] | Buffer | CommandApdu): Promise<ResponseApdu>;
+    issueCommand(
+        command: string | number[] | Buffer | CommandApdu,
+        callback: (err: any, response: ResponseApdu) => void,
+    ): void;
+    issueCommand(
+        command: string | number[] | Buffer | CommandApdu,
+    ): Promise<ResponseApdu>;
     issueCommand(
         command: string | number[] | Buffer | CommandApdu,
         callback?: (err: any, response: ResponseApdu) => void,
@@ -211,22 +231,30 @@ class Card implements ICard {
         let cmd = new CommandApdu(command);
 
         if (cmd.length < 4) {
-            throw new Error(`Command too short; Min: 5 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`);
+            throw new Error(
+                `Command too short; Min: 5 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
+            );
         }
 
         if (cmd.length === 6) {
             if (cmd.getLc() === 0) {
-                throw new Error(`If Lc = 0, it should be omitted; cmd: [${cmd.toString()}]`);
+                throw new Error(
+                    `If Lc = 0, it should be omitted; cmd: [${cmd.toString()}]`,
+                );
             }
-            throw new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`)
+            throw new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
         }
 
         if (cmd.length > CommandApdu.MAX_DATA_BYTES) {
-            throw new Error(`Command too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`);
+            throw new Error(
+                `Command too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
+            );
         }
 
-        if(cmd.getLc() !== cmd.getData().length) {
-            throw new Error(`Lc and actual data length discrepancy; Lc:${cmd.getLc()} actual: ${cmd.getData().length}; cmd: [${cmd.toString()}]`);
+        if (cmd.getLc() !== cmd.getData().length) {
+            throw new Error(
+                `Lc and actual data length discrepancy; Lc:${cmd.getLc()} actual: ${cmd.getData().length}; cmd: [${cmd.toString()}]`,
+            );
         }
 
         if (callback) {
@@ -245,15 +273,35 @@ class Card implements ICard {
         }
     }
 
-    on(eventName: 'command-issued', eventHandler: (event: {card: Card, command: CommandApdu}) => void): Card;
-    on(eventName: 'response-received', eventHandler: (event: { card: Card, command: CommandApdu, response: ResponseApdu }) => void): Card;
+    on(
+        eventName: 'command-issued',
+        eventHandler: (event: { card: Card; command: CommandApdu }) => void,
+    ): Card;
+    on(
+        eventName: 'response-received',
+        eventHandler: (event: {
+            card: Card;
+            command: CommandApdu;
+            response: ResponseApdu;
+        }) => void,
+    ): Card;
     on(eventName: TCardEventName, eventHandler: (event: any) => void): Card {
         this._eventEmitter.on(eventName, eventHandler);
         return this;
     }
 
-    once(eventName: 'command-issued', eventHandler: (event: {card: Card, command: CommandApdu}) => void): Card;
-    once(eventName: 'response-received', eventHandler: (event: { card: Card, command: CommandApdu, response: ResponseApdu }) => void): Card;
+    once(
+        eventName: 'command-issued',
+        eventHandler: (event: { card: Card; command: CommandApdu }) => void,
+    ): Card;
+    once(
+        eventName: 'response-received',
+        eventHandler: (event: {
+            card: Card;
+            command: CommandApdu;
+            response: ResponseApdu;
+        }) => void,
+    ): Card;
     once(eventName: TCardEventName, eventHandler: (event: any) => void): Card {
         this._eventEmitter.once(eventName, eventHandler);
         return this;

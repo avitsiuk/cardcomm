@@ -32,7 +32,7 @@ export class CommandApdu {
     }
 
     fromArray(array: number[]) {
-        if(array.length < 4) {
+        if (array.length < 4) {
             throw new Error(`Command array too short(min 5 bytes): [${array}]`);
         }
         this._byteArray = array;
@@ -99,11 +99,13 @@ export class CommandApdu {
 
     setData(data: number[]): this {
         if (data.length > CommandApdu.MAX_DATA_BYTES) {
-            throw new Error(`Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${data.length} bytes`);
+            throw new Error(
+                `Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${data.length} bytes`,
+            );
         }
         const header = this._byteArray.slice(0, 4);
         let le: number;
-        if(this._byteArray.length > 4) {
+        if (this._byteArray.length > 4) {
             le = this._byteArray[this._byteArray.length - 1];
         } else {
             le = 0;
@@ -122,7 +124,8 @@ export class CommandApdu {
         let data = new Array<number>(0);
         if (this._byteArray.length > 5) {
             const dataWithLc = this._byteArray.slice(4);
-            if (dataWithLc.length > 1) data = dataWithLc.slice(1, 1 + dataWithLc[0]);
+            if (dataWithLc.length > 1)
+                data = dataWithLc.slice(1, 1 + dataWithLc[0]);
         }
         return data;
     }
@@ -133,7 +136,7 @@ export class CommandApdu {
         return lc;
     }
 
-    setLe(le: number = 0): this{
+    setLe(le: number = 0): this {
         if (this._byteArray.length > 4) {
             this._byteArray[this.length - 1] = le;
         } else {
@@ -142,15 +145,13 @@ export class CommandApdu {
         return this;
     }
 
-    getLe(): number{
+    getLe(): number {
         let le = 0;
         if (this._byteArray.length > 4) {
             le = this._byteArray[this.length - 1];
         }
         return le;
     }
-
-
 
     // =========================================================================
 
@@ -164,14 +165,14 @@ export class CommandApdu {
 
     /** Sets m.s.b. of CLA byte to 0, marking command as having interindustry format
      * All newly created commands are set as interindustry by default
-    */
+     */
     setInterindustry(): this {
-        this._byteArray[0] &= 0x7F;
+        this._byteArray[0] &= 0x7f;
         return this;
     }
 
     /** Returns true if CLA bytes indicates a proprietary command format*/
-    isProprietary():boolean {
+    isProprietary(): boolean {
         if (this._byteArray[0] & 0x80) return true;
         return false;
     }
@@ -180,21 +181,25 @@ export class CommandApdu {
     setType(type: 4 | 16): this {
         switch (type) {
             case 4:
-                this._byteArray[0] &= 0x9F;
+                this._byteArray[0] &= 0x9f;
                 break;
             case 16:
                 this._byteArray[0] |= 0x40;
                 break;
             default:
-                throw new Error(`Type must be either 4 or 16. Received: ${type}`);
+                throw new Error(
+                    `Type must be either 4 or 16. Received: ${type}`,
+                );
         }
         return this;
     }
 
     getType(): 4 | 16 {
-        if ((this._byteArray[0] & 0x60) === 0) { // 0XX0 0000
+        if ((this._byteArray[0] & 0x60) === 0) {
+            // 0XX0 0000
             return 4;
-        } else if ((this._byteArray[0] & 0x40) > 0) { // 0X00 0000
+        } else if ((this._byteArray[0] & 0x40) > 0) {
+            // 0X00 0000
             return 16;
         } else {
             throw new Error('Unknown type');
@@ -203,7 +208,7 @@ export class CommandApdu {
 
     /** marks command as the last (or only) command of a chain */
     last(): this {
-        this._byteArray[0] &= 0xEF;
+        this._byteArray[0] &= 0xef;
         return this;
     }
 
@@ -220,30 +225,34 @@ export class CommandApdu {
         return false;
     }
 
-    /** selects logical channel to use  
-     * `Type4` supports channels 0-3  
+    /** selects logical channel to use
+     * `Type4` supports channels 0-3
      * `Type16` supports channels 4-19
      */
     setLogicalChannel(channel: number): this {
         if (this.getType() === 4) {
             if (channel < 0 || channel > 3) {
-                throw new Error(`Type4 supports channels 0-3. Received: ${channel}`);
+                throw new Error(
+                    `Type4 supports channels 0-3. Received: ${channel}`,
+                );
             }
-            this._byteArray[0] &= 0xFC;
+            this._byteArray[0] &= 0xfc;
             this._byteArray[0] |= channel;
             return this;
         } else {
             if (channel < 4 || channel > 19) {
-                throw new Error(`Type16 supports channels 4-19. Received: ${channel}`);
+                throw new Error(
+                    `Type16 supports channels 4-19. Received: ${channel}`,
+                );
             }
-            this._byteArray[0] &= 0xF0;
+            this._byteArray[0] &= 0xf0;
             this._byteArray[0] |= channel - 4;
             return this;
         }
         return this;
     }
 
-    /** Returns command logical channel.  
+    /** Returns command logical channel.
      * 0-3 for `Type4`, 4-19 for `Type16` commands */
     getLogicalChannel(): number {
         const type = this.getType();
@@ -251,38 +260,42 @@ export class CommandApdu {
             case 4:
                 return this._byteArray[0] & 0x03;
             case 16:
-                return (this._byteArray[0] & 0x0F) + 4;
+                return (this._byteArray[0] & 0x0f) + 4;
             default:
-                throw new Error(`Unknown command type: ${type}.`)
+                throw new Error(`Unknown command type: ${type}.`);
         }
     }
 
     /**
-     * Sets secure messaging bits in CLA byte  
-     * `0` - no secure messaging; `Type4` and `Type16` APDUs  
-     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs  
-     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs  
-     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs  
+     * Sets secure messaging bits in CLA byte
+     * `0` - no secure messaging; `Type4` and `Type16` APDUs
+     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs
+     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs
+     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs
      */
     setSecMgsType(type: 0 | 1 | 2 | 3): this {
         const cmdType = this.getType();
-        if(type < 0 || type > 3) throw new Error(`Unsupported secure message type: ${type}`);
+        if (type < 0 || type > 3)
+            throw new Error(`Unsupported secure message type: ${type}`);
         if (cmdType === 4) {
-            this.setCla(this.getCla() & 0xF3 ); // zero both bits
-            this.setCla(this.getCla() | (type << 2) );
+            this.setCla(this.getCla() & 0xf3); // zero both bits
+            this.setCla(this.getCla() | (type << 2));
         } else {
-            if (type > 1) throw new Error('Type16 APDUs support only 0 or 1 for secure message type');
-            this.setCla(this.getCla() | (type << 5) );
+            if (type > 1)
+                throw new Error(
+                    'Type16 APDUs support only 0 or 1 for secure message type',
+                );
+            this.setCla(this.getCla() | (type << 5));
         }
         return this;
     }
 
     /**
-     * Gets secure messaging type from CLA byte  
-     * `0` - no secure messaging; `Type4` and `Type16` APDUs  
-     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs  
-     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs  
-     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs  
+     * Gets secure messaging type from CLA byte
+     * `0` - no secure messaging; `Type4` and `Type16` APDUs
+     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs
+     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs
+     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs
      */
     getSecMgsType(): number {
         const cmdType = this.getType();
@@ -294,7 +307,6 @@ export class CommandApdu {
         }
         return result;
     }
-
 }
 
 export default CommandApdu;
