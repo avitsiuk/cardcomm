@@ -27,6 +27,10 @@ class Card implements ICard {
         this._isBusy = false;
     }
 
+    get protocol(): number {
+        return this._protocol;
+    }
+
     get atr(): number[] {
         return this._atr;
     }
