@@ -1,6 +1,6 @@
 {
-    "name": "@developer2/smartcard",
-    "version": "1.0.47",
+    "name": "@ieskel/smartcard",
+    "version": "0.0.47",
     "description": "Backend library for communication with smartcards using PCSC interface",
     "keywords": [
         "pcsc",
