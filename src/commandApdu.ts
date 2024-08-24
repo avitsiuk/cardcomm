@@ -1,5 +1,11 @@
 import { bufferToArray, hexToArray, arrayToHex } from './utils';
 
+// CASE   CMD-DATA(LC)   RSP-DATA(LE)
+//  1     N             N
+//  2     N             Y
+//  3     Y             N
+//  4     Y             Y
+
 export class CommandApdu {
     static MAX_DATA_BYTES: number = 255;
 
@@ -19,44 +25,6 @@ export class CommandApdu {
                 if (command.length > 0) this.fromArray(command.toArray());
             }
         }
-
-        // if (obj.buffer) {
-        //     if (obj.buffer.length < 4) {
-        //         throw new Error(`Command APDU must be at least 4 bytes long. Received: ${obj.buffer.length}`);
-        //     }
-        //     this.buffer = obj.buffer;
-        // } else {
-        //     let cla = obj.cla;
-        //     let ins = obj.ins;
-        //     let p1 = obj.p1;
-        //     let p2 = obj.p2;
-        //     let data = obj.data;
-        //     let lc = 0;
-        //     let le = obj.le || 0;
-
-        //     if (!size && !data && !le) { // case 1
-        //         size = 4;
-        //     } else if (!size && !data) { // case 2
-        //         size = 4 + 2;
-        //     } else if (!size && !le) { // case 3
-        //         size = data!.length + 5 + 4;
-        //     } else if (!size) { // case 4
-        //         size = data!.length + 5 + 4;
-        //     }
-
-        //     this.bytes = [];
-        //     this.bytes.push(cla!);
-        //     this.bytes.push(ins!);
-        //     this.bytes.push(p1!);
-        //     this.bytes.push(p2!);
-
-        //     if (data) {
-        //         lc = data.length;
-        //         this.bytes.push(lc);
-        //         this.bytes = this.bytes.concat(data);
-        //     }
-        //     this.bytes.push(le);
-        // }
     }
 
     get length(): number {

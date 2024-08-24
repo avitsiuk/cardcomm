@@ -21,7 +21,6 @@ const insByteList = {
     VERIFY_REF_DO: 0x21,
     CHANGE_REF_DATA: 0x24,
     CHANGE_REF_DO: 0x25,
-    // VERIFY_DO: 0x21,
     // WRITE_BINARY: 0xd0,
     // WRITE_RECORD: 0xd2,
 };
@@ -166,12 +165,12 @@ export function getResponse(le: number):CommandApdu {
  * @param reset - (Default: `false`); if true, data must be empty; if `true`, the command shall set the verification status of the relevant reference data as "not verified"
  * @param refIsSpecific - (Default: `true`). If true, `refNum` indicates specific reference data (e.g. DF specific password or key)
 ; otherwise it indicates global reference data (e.g. MF specific password or key) */
-export function verifyRefData(refNum: number, data: number[], reset: boolean = false, refIsSpecific: boolean = true):CommandApdu {
+export function verifyRefData(refNum: number, dataToVerify: number[], reset: boolean = false, refIsSpecific: boolean = true):CommandApdu {
     if ((refNum < 0) || (refNum > 31)) {
         throw new Error(`Data reference number must be between 0 and 31; received: ${refNum}`);
     }
 
-    if (reset && (data.length > 0)) {
+    if (reset && (dataToVerify.length > 0)) {
         throw new Error(`With reset set to "true", data must be empty`);
     }
 
@@ -183,7 +182,7 @@ export function verifyRefData(refNum: number, data: number[], reset: boolean = f
     if (refIsSpecific) p2 |= 0x80;
     cmd.setP2(p2);
 
-    if (data.length > 0) cmd.setData(data);
+    if (dataToVerify.length > 0) cmd.setData(dataToVerify);
 
     return cmd;
 }

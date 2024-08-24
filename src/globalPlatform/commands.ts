@@ -97,12 +97,6 @@ export function intAuth(
     }
 
     const data: number[] = Tlv.berTlvEncode(berObj);
-    // const data1 = '5f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9a612900211049501348001888101418403010203';
-    // const data2 = 'a6129002110495013480018881014184030102035f4941049a914e68fcca0cabc14463af308a8800ff5cb260f217363100f50ac3bac5f7e096ee97e0a6cb194753a1dc83120b266de488fd29fb20bff98d269467266c8ba9';
-
-    // const data = hexToArray(data2);
-
-    // console.log(`DATA: [${arrayToHex(data)}]`);
 
     let cmd = new CommandApdu()
         .setProprietary()

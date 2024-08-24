@@ -293,8 +293,6 @@ export default class SCP11 {
         let authDataLen = BLOCK_BYTE_LEN + plainDataLen + 2;
         const missingPaddingBytes = BLOCK_BYTE_LEN - (authDataLen % BLOCK_BYTE_LEN);
         const dataToAuthenticate = Buffer.alloc(authDataLen + missingPaddingBytes, 0);
-        dataToAuthenticate[authDataLen] = 0x80;
-        authDataLen += missingPaddingBytes;
         dataToAuthenticate.set(this._macChainingValue, 0);
         dataToAuthenticate.set(rsp.data.slice(0, plainDataLen), BLOCK_BYTE_LEN);
         dataToAuthenticate.set(rsp.status, BLOCK_BYTE_LEN + plainDataLen);
