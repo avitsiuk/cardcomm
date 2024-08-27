@@ -84,18 +84,8 @@ pcscDevices.on('device-activated', (event => {
                 console.log('Secure session is active, protocol: SCP02');
                 console.log('===================================');
 
-
-                // await card.issueCommand(Iso7816Commands.select('4299999900'));
-                // let cmd5 = new CommandApdu('80ff000000');
-
-                // console.log(Iso7816Commands.select('4299999900').setSecMgsType(1));
-                // let cmd1 = new CommandApdu('80E60C001A0511223344550611223344550006112233445500010202c9000000'); // install 112233445500
-                // let cmd2 = new CommandApdu('80E40000084F0611223344550000'); // delete 112233445500
-                // let cmd3 = new CommandApdu('80F210000A4F001E3C2FDD87FD86A000'); // get status
-                // let cmd4 = new CommandApdu('80F28002024F0000');
-
-                // cmd = secSession.authenticator(cmd5);
-                await card.issueCommand(cmd3);
+                // await card.issueCommand(Iso7816Commands.select(''));
+                // await card.issueCommand(cmd3);
             })
             .catch((err) => {
                 console.log('===================================');
