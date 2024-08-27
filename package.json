@@ -1,7 +1,7 @@
 {
-    "name": "cardcom",
+    "name": "cardcomm",
     "version": "0.5.0",
-    "description": "Backend library for communication with smartcards using PCSC interface. Plain Iso7816 + GlobalPlatform functionality.",
+    "description": "Backend library for communication with smartcards using system native PCSC interface. Plain Iso7816 + GlobalPlatform functionality.",
     "keywords": [
         "pcsc",
         "pcsclite",

@@ -1,6 +1,6 @@
 ## About
 
-This library is a refactoring with added typings of [`smartcard` library](https://github.com/tomkp/smartcard) by [tomkp](https://github.com/tomkp) and is built around [`pcsclite` library](https://github.com/santigimeno/node-pcsclite) by [Santiago Gimeno](https://github.com/santigimeno)  
+This library expands upon original [`smartcard` library](https://github.com/tomkp/smartcard) by [tomkp](https://github.com/tomkp) and is built around [`pcsclite` library](https://github.com/santigimeno/node-pcsclite) by [Santiago Gimeno](https://github.com/santigimeno)  
 [Original `smartcard` package](https://www.npmjs.com/package/smartcard) on NPM  
 [`pcsclite` package](https://www.npmjs.com/package/pcsclite) on NPM
 
