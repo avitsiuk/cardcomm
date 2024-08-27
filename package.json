@@ -1,12 +1,13 @@
 {
-    "name": "@ieskel/smartcard",
+    "name": "cardcom",
     "version": "0.0.47",
-    "description": "Backend library for communication with smartcards using PCSC interface",
+    "description": "Backend library for communication with smartcards using PCSC interface. Plain Iso7816 + GlobalPlatform functionality.",
     "keywords": [
         "pcsc",
-        "pscslite",
+        "pcsclite",
         "nfc",
         "smartcard",
+        "apdu",
         "iso7816",
         "globalplatform"
     ],
