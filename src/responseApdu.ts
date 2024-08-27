@@ -69,14 +69,27 @@ export default class ResponseApdu {
         return this._status;
     }
 
-    meaning() {
+    meaning(): string {
         return statusDecode(this.status);
     }
 
-    isOk() {
-        if (this.length >= 2) {
-            if (this.status[0] === 0x90 && this.status[1] === 0x00) return true;
-        }
+    isOk(): boolean {
+        if (
+            this.length >= 2 &&
+            this.status[0] === 0x90 &&
+            this.status[1] === 0x00
+        )
+            return true;
+        return false;
+    }
+
+    hasMoreBytesAvailable(): boolean {
+        if (this.length >= 2 && this.status[0] === 0x61) return true;
+        return false;
+    }
+
+    isWrongLe(): boolean {
+        if (this.length >= 2 && this.status[0] === 0x6c) return true;
         return false;
     }
 
