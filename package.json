@@ -17,13 +17,13 @@
         "email": "alessio4493@gmail.com",
         "url": "https://ieskel.link"
     },
-    "homepage": "https://github.com/avitsiuk/cardcom",
+    "homepage": "https://github.com/avitsiuk/cardcomm",
     "repository": {
         "type": "git",
-        "url": "https://github.com/avitsiuk/cardcom.git"
+        "url": "https://github.com/avitsiuk/cardcomm.git"
     },
     "bugs": {
-        "url": "https://github.com/avitsiuk/cardcom/issues"
+        "url": "https://github.com/avitsiuk/cardcomm/issues"
     },
     "engines": {
         "node": ">=10.24.1"
