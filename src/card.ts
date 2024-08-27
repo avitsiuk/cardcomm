@@ -15,7 +15,7 @@ class Card implements ICard {
     private _protocol: number;
     private _atr: number[];
     private _atrHex: string;
-    private _autoGetResponse: boolean = false;
+    private _autoGetResponse: boolean = true;
     private _commandTransformer:
         | undefined
         | ((cmd: CommandApdu) => CommandApdu);
@@ -100,7 +100,7 @@ class Card implements ICard {
     }
 
     /**
-     * If set to true(default), `GET_RESPONSE APDU` gets sent automatically upon receiving `0x61XX` response.
+     * If set to true(default), `GET_RESPONSE` APDU gets sent automatically upon receiving `0x61XX` response.
      * Also the command `Le` value gets corrected and commands is sent again upon receiving `0x6CXX` response.
      */
     setAutoGetResponse(val: boolean = true): this {
