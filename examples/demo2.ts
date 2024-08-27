@@ -65,7 +65,7 @@ pcscDevices.on('device-activated', (event => {
         });
 
         card.on('response-received', ({ card, command, response }) => {
-            console.log(`DEV[${devIdx}]: RSP: [${response}](${response.meaning()})`);
+            console.log(`DEV[${devIdx}]: RSP: [${response}](${response.meaning})`);
         });
 
         console.log('=========================================================');

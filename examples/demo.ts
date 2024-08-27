@@ -93,7 +93,7 @@ pcscDevices.on('device-activated', (event => {
         });
 
         card.on('response-received', ({ card, command, response }) => {
-            console.log(`[${devType}]: RSP: [${response}](${response.meaning()})`);
+            console.log(`[${devType}]: RSP: [${response}](${response.meaning})`);
         });
 
         console.log('=========================================================');
@@ -244,7 +244,7 @@ pcscDevices.on('device-activated', (event => {
         kp.publicKey = await importedPrivKey.extractPublic();
 
         const resp = await card.issueCommand(Iso7816Commands.select('4299999900'));
-        if (!resp.isOk()) {
+        if (!resp.isOk) {
             console.error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
             // throw new Error(`Coult not select TRINCI applet. Response: [${resp.toString()}]`);
         }
@@ -270,7 +270,7 @@ pcscDevices.on('device-activated', (event => {
                     break;
                 case 's': case 'S':
                     resp = await card.issueCommand(new CommandApdu('80F2000000'));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         if (resp.dataLength !== 2) {
                             console.log(`Unknown response: [${resp.toString()}]`);
                         }
@@ -286,8 +286,8 @@ pcscDevices.on('device-activated', (event => {
                 case 'ka':
                     try {
                         await secureSession.initAndAuth();
-                    } catch (error) {
-                        throw new Error(`Error initializing secure session: ${error}`);
+                    } catch (error: any) {
+                        throw new Error(`Error initializing secure session: ${error.message}`);
                     }
                     card.setCommandTransformer(secureSession.commandAuthenticator);
                     card.setResponseTransformer(secureSession.responseAuthenticator);
@@ -306,7 +306,7 @@ pcscDevices.on('device-activated', (event => {
                     // let count = 0;
                     // while(true) {
                     // resp = await card.issueCommand(testCmd);
-                    //     if(!resp.isOk()) {
+                    //     if(!resp.isOk) {
                     //         break;
                     //     }
                     //     count++;
@@ -329,10 +329,10 @@ pcscDevices.on('device-activated', (event => {
                     }
 
                     resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         // // pukByteArray = parsePinString('0123456788');
                         resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
-                        if (resp.isOk()) {
+                        if (resp.isOk) {
                             console.log(`Success! [${resp.toString()}]`);
                         } else {
                             console.log(`Error! Response: [${resp.toString()}]`);
@@ -352,7 +352,7 @@ pcscDevices.on('device-activated', (event => {
                     }
 
                     resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray2).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -368,7 +368,7 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
                     resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray3).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -384,10 +384,10 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
                     resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         // pinByteArray = parsePinString('0122');   
                         resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
-                        if (resp.isOk()) {
+                        if (resp.isOk) {
                             console.log(`Success! [${resp.toString()}]`);
                         } else {
                             console.log(`Error! Response: [${resp.toString()}]`);
@@ -406,7 +406,7 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
                     resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArray2).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -421,7 +421,7 @@ pcscDevices.on('device-activated', (event => {
                         break;
                     }
                     resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArrayW).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -429,7 +429,7 @@ pcscDevices.on('device-activated', (event => {
                     break;
                 case 'gen':
                     resp = await card.issueCommand(new CommandApdu('8002000000'));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log('Success!');
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -449,7 +449,7 @@ pcscDevices.on('device-activated', (event => {
 
                     cmd = new CommandApdu('8003000000').setData(d.concat(pubRaw));
                     resp = await card.issueCommand(cmd);
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log('Success!');
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -457,7 +457,7 @@ pcscDevices.on('device-activated', (event => {
                     break;
                 case 'id':
                     resp = await card.issueCommand(new CommandApdu('8012000000'));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         const accId = await getCardAccountId(resp.data);
                         console.log(`Card Account: ${accId}`);
                     } else {
@@ -468,7 +468,7 @@ pcscDevices.on('device-activated', (event => {
                     resp = await card.issueCommand(new CommandApdu('8012000000'));
                     let pubKey: t2lib.ECDSAKey;
                     let accId: string;
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         pubKey = await importCardPubKey(resp.data);
                         accId = await t2lib.getAccountId(pubKey);
                         console.log('Card public key imported;');
@@ -495,7 +495,7 @@ pcscDevices.on('device-activated', (event => {
                     tx.data.signerPublicKey = pubKey;
                     const txSHA384 = await getTxSHA384(tx);
                     resp = await card.issueCommand(new CommandApdu('8013000000').setData(txSHA384));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         tx.signature = new Uint8Array(processSignature(resp.data));
                         console.log(await tx.toUnnamedObject());
                         if (await tx.verify()) {
@@ -517,7 +517,7 @@ pcscDevices.on('device-activated', (event => {
                     let cmdX = new CommandApdu('8099000000');
                     //let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
                     resp = await card.issueCommand(cmdX);
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log('Success!');
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -549,7 +549,7 @@ pcscDevices.on('device-activated', (event => {
                         timer.start();
                         resp = await card.issueCommand(testCmd);
                         const ms = timer.stop();
-                        if(!resp.isOk()) {
+                        if(!resp.isOk) {
                             break;
                         }
                         count++;

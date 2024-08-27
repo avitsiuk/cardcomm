@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { arrayToHex, hexToArray } from '../../utils';
 import { berTlvDecode } from '../../tlv';
-import ResponseApdu, { assertOk } from '../../responseApdu';
+import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
 import * as Iso7816Commands from '../../iso7816/commands';
 import * as GPCommands from '../commands';
@@ -12,8 +12,8 @@ const BLOCK_BYTE_LEN = 16;
 const MAC_BYTE_LEN = 8;
 
 /**
- * 0x34: C-MAC and R-MAC only
- * 0x3C: C-MAC, C-DECRYPTION, and R-MAC, R-ENCRYPTION
+ * 0x34(52): C-MAC and R-MAC only
+ * 0x3C(60): C-MAC, C-DECRYPTION, and R-MAC, R-ENCRYPTION
  */
 type TSecLvl = 0x34 | 0x3c;
 
@@ -29,7 +29,7 @@ interface ISessionKeys {
 }
 
 interface ISessionInfo {
-    /** Get set to true after a sussessful authorization. */
+    /** Is set to true after a sussessful authorization. */
     isActive: boolean;
     /** Secure channel protocol(SCP) number */
     protocol: number;
@@ -40,17 +40,6 @@ interface ISessionInfo {
     /** */
     id: number[];
 }
-
-// function genSessionKeys(
-//     sequenceNumber: number[],
-//     staticKeys: ISessionKeys,
-// ): ISessionKeys {
-//     return {
-//         enc: genSessionKey('enc', sequenceNumber, staticKeys.enc),
-//         mac: genSessionKey('mac', sequenceNumber, staticKeys.mac),
-//         dek: genSessionKey('dek', sequenceNumber, staticKeys.dek),
-//     }
-// }
 
 export default class SCP11 {
     private _card: Card;
@@ -85,7 +74,7 @@ export default class SCP11 {
             !this.isActive ||
             typeof this._responseAuthenticateFunction === 'undefined' ||
             rsp.dataLength < 1 ||
-            !rsp.isOk()
+            !rsp.isOk
         ) {
             return rsp;
         }
@@ -592,15 +581,23 @@ export default class SCP11 {
         return new Promise(async (resolve, reject) => {
             this.reset();
 
+            const currAutoGetResponse = this._card.autoGetResponse;
+            this._card.setAutoGetResponse(true);
             // getting card static public key
             this._card
                 .issueCommand(new CommandApdu('8087000000'))
                 .then(async (response) => {
+                    try {
+                        assertResponseIsOk(response);
+                    } catch(e: any) {
+                        this.reset();
+                        throw new Error(`Error getting card static public key: ${e.message}`);
+                    }
                     const berObj = berTlvDecode(response.data);
                     const pkSdEcka = berObj['5f49'].value as number[];
                     // generating ephemeral OCE keypair
                     const ecdh = crypto.createECDH('prime256v1');
-                    await ecdh.generateKeys();
+                    ecdh.generateKeys();
                     const ePkOceEcka = ecdh.getPublicKey();
 
                     // sending int_auith command with OCE ephemeral public key and session settings
@@ -613,6 +610,12 @@ export default class SCP11 {
                     this._card
                         .issueCommand(intAuthCmd)
                         .then((response) => {
+                            try {
+                                assertResponseIsOk(response);
+                            } catch(e: any) {
+                                this.reset();
+                                throw new Error(`Error during INT_AUTH: ${e.message}`);
+                            }
                             const berObj = berTlvDecode(response.data);
                             // getting card ephemeral public key
                             const ePkSdEcka = berObj['5f49'].value as number[];
@@ -673,9 +676,7 @@ export default class SCP11 {
                         });
                 })
                 .catch((e) => {
-                    return reject(
-                        new Error(`Error getting card static public key: ${e}`),
-                    );
+                    return reject(e);
                 });
         });
     }

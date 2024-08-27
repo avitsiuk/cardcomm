@@ -11,40 +11,61 @@ export class CommandApdu {
 
     private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00];
 
-    constructor(command?: string | number[] | Buffer | CommandApdu) {
-        this._byteArray = [0x00, 0x00, 0x00, 0x00];
+    static from(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
+        return new CommandApdu(data);
+    }
 
-        if (typeof command !== 'undefined') {
-            if (typeof command === 'string') {
-                this.fromString(command);
-            } else if (Array.isArray(command)) {
-                this.fromArray(command);
-            } else if (Buffer.isBuffer(command)) {
-                this.fromBuffer(command);
-            } else {
-                if (command.length > 0) this.fromArray(command.toArray());
-            }
+    constructor(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu) {
+
+        if (typeof data === 'undefined')
+            return this;
+
+        return this.from(data);
+    }
+
+    from(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
+        if (typeof data === 'undefined')
+            return this;
+
+        let numArray: number[] = [];
+
+        if (typeof data === 'string') {
+            numArray = hexToArray(data);
+        } else if (Buffer.isBuffer(data)) {
+            numArray = [...data];
+        } else if (data instanceof ArrayBuffer) {
+            numArray = [...new Uint8Array(data)];
+        } else if (ArrayBuffer.isView(data)) {
+            numArray = [...new Uint8Array(data.buffer)];
+        } else if (data instanceof CommandApdu) {
+            numArray = data.toArray();
+        } else if (Array.isArray(data)) {
+            numArray = data;
+        } else {
+            throw new TypeError('Accepted CommandApdu constructor types: string, number[], Buffer, BinaryData, CommandApdu');
         }
+        this.fromArray(numArray);
+        return this;
     }
 
     get length(): number {
         return this._byteArray.length;
     }
 
-    fromArray(array: number[]) {
-        if (array.length < 4) {
-            throw new Error(`Command array too short(min 5 bytes): [${array}]`);
+    fromArray(data: number[]) {
+        if (data.length < 4) {
+            throw new Error(`Command array too short(min 4 bytes): [${data}]`);
         }
-        this._byteArray = array;
+        this._byteArray = data;
         return this;
     }
 
-    fromBuffer(buffer: Buffer): this {
-        return this.fromArray(bufferToArray(buffer));
+    fromBuffer(data: Buffer): this {
+        return this.fromArray(bufferToArray(data));
     }
 
-    fromString(str: string): this {
-        return this.fromArray(hexToArray(str));
+    fromString(data: string): this {
+        return this.fromArray(hexToArray(data));
     }
 
     toArray(): number[] {
@@ -66,8 +87,16 @@ export class CommandApdu {
         return this;
     }
 
+    set cla(cla: number) {
+        this.setCla(cla);
+    }
+
     getCla(): number {
         return this._byteArray[0];
+    }
+
+    get cla(): number {
+        return this.getCla();
     }
 
     setIns(ins: number): this {
@@ -75,8 +104,16 @@ export class CommandApdu {
         return this;
     }
 
+    set ins(ins: number) {
+        this.setIns(ins);
+    }
+
     getIns(): number {
         return this._byteArray[1];
+    }
+
+    get ins(): number {
+        return this.getIns();
     }
 
     setP1(p1: number): this {
@@ -84,8 +121,16 @@ export class CommandApdu {
         return this;
     }
 
+    set p1(p1: number) {
+        this.setP1(p1);
+    }
+
     getP1(): number {
         return this._byteArray[2];
+    }
+
+    get p1(): number {
+        return this.getP1();
     }
 
     setP2(p2: number): this {
@@ -93,14 +138,38 @@ export class CommandApdu {
         return this;
     }
 
+    set p2(p2: number) {
+        this.setP2(p2);
+    }
+
     getP2(): number {
         return this._byteArray[3];
     }
 
-    setData(data: number[]): this {
-        if (data.length > CommandApdu.MAX_DATA_BYTES) {
+    get p2(): number {
+        return this.getP2();
+    }
+
+    setData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): this {
+        let numArray: number[] = [];
+
+        if (typeof data === 'string') {
+            numArray = hexToArray(data);
+        } else if (Buffer.isBuffer(data)) {
+            numArray = [...data];
+        } else if (data instanceof ArrayBuffer) {
+            numArray = [...new Uint8Array(data)];
+        } else if (ArrayBuffer.isView(data)) {
+            numArray = [...new Uint8Array(data.buffer)];
+        } else if (Array.isArray(data)) {
+            numArray = data;
+        } else {
+            throw new TypeError('Accepted CommandApdu data types: string, number[], Buffer, BinaryData, ResponseApdu');
+        }
+
+        if (numArray.length > CommandApdu.MAX_DATA_BYTES) {
             throw new Error(
-                `Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${data.length} bytes`,
+                `Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${numArray.length} bytes`,
             );
         }
         const header = this._byteArray.slice(0, 4);
@@ -111,13 +180,17 @@ export class CommandApdu {
             le = 0;
         }
         this._byteArray = new Array<number>(...header);
-        const lc = data.length;
+        const lc = numArray.length;
         if (lc > 0) {
             this._byteArray.push(lc);
-            this._byteArray.push(...data);
+            this._byteArray.push(...numArray);
         }
         this._byteArray.push(le);
         return this;
+    }
+
+    set data(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView) {
+        this.setData(data);
     }
 
     getData(): number[] {
@@ -130,10 +203,18 @@ export class CommandApdu {
         return data;
     }
 
+    get data(): number[] {
+        return this.getData();
+    }
+
     getLc(): number {
         let lc = 0;
         if (this._byteArray.length > 5) lc = this._byteArray[4];
         return lc;
+    }
+
+    get lc(): number {
+        return this.getLc();
     }
 
     setLe(le: number = 0): this {
@@ -145,12 +226,20 @@ export class CommandApdu {
         return this;
     }
 
+    set le(le: number) {
+        this.setLe(le);
+    }
+
     getLe(): number {
         let le = 0;
         if (this._byteArray.length > 4) {
             le = this._byteArray[this.length - 1];
         }
         return le;
+    }
+
+    get le(): number {
+        return this.getLe();
     }
 
     // =========================================================================
@@ -292,10 +381,14 @@ export class CommandApdu {
 
     /**
      * Gets secure messaging type from CLA byte
-     * `0` - no secure messaging; `Type4` and `Type16` APDUs
-     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs
-     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs
-     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs
+     * 
+     * `0` - no secure messaging; `Type4` and `Type16` APDUs;
+     * 
+     * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs;
+     * 
+     * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs;
+     * 
+     * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs;
      */
     getSecMgsType(): number {
         const cmdType = this.getType();

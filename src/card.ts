@@ -142,7 +142,7 @@ class Card implements ICard {
                 });
                 response = this._doResponseTransform(response);
 
-                const bytesToGet = response.availableResponseBytes();
+                const bytesToGet = response.availableResponseBytes;
                 if (bytesToGet > 0) {
                     if (response.dataLength > 0) respAcc.push(...response.data);
                     let cmdToResend: CommandApdu | undefined;

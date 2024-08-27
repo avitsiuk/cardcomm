@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { arrayToHex, hexToArray } from '../../utils';
-import ResponseApdu, { assertOk } from '../../responseApdu';
+import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
 import * as Iso7816Commands from '../../iso7816/commands';
 import * as GPCommands from '../commands';
@@ -402,7 +402,12 @@ export default class SCP02 {
                     GPCommands.initUpdate(hostChallenge, keyVer, keyId),
                 )
                 .then((response) => {
-                    assertOk(response);
+                    try {
+                        assertResponseIsOk(response);
+                    } catch(e: any) {
+                        this.reset();
+                        throw new Error(`Error during INIT_UPDATE: ${e.message}`);
+                    }
                     if (response.dataLength !== 28) {
                         this.reset();
                         return reject(
@@ -459,7 +464,12 @@ export default class SCP02 {
                     this._card
                         .issueCommand(extAuthCmd)
                         .then((response) => {
-                            assertOk(response);
+                            try {
+                                assertResponseIsOk(response);
+                            } catch(e: any) {
+                                this.reset();
+                                throw new Error(`Error during EXT_AUTH: ${e.message}`);
+                            }
                             this._sessionKeys = sessionKeys;
                             this._keyDivData = keyDivData;
                             this._keyVersion = keyVersion;

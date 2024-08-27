@@ -182,7 +182,7 @@ io.on('connection', (socket)=>{
                 break;
             case 's': case 'S':
                 resp = await card.issueCommand(new CommandApdu('80F2000000'));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     if (resp.dataLength !== 2) {
                         console.log(`Unknown response: [${resp.toString()}]`);
                     }
@@ -235,10 +235,10 @@ io.on('connection', (socket)=>{
                 }
 
                 resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     // // pukByteArray = parsePinString('0123456788');
                     resp = await card.issueCommand(Iso7816Commands.changeRefData(0, pukByteArray).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -258,7 +258,7 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray2).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -267,7 +267,7 @@ io.on('connection', (socket)=>{
                 break;
             case 'puke':
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, []).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -284,7 +284,7 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(0, pukByteArray3).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -301,10 +301,10 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     // pinByteArray = parsePinString('0122');   
                     resp = await card.issueCommand(Iso7816Commands.changeRefData(1, pinByteArray).setCla(0x80));
-                    if (resp.isOk()) {
+                    if (resp.isOk) {
                         console.log(`Success! [${resp.toString()}]`);
                     } else {
                         console.log(`Error! Response: [${resp.toString()}]`);
@@ -324,7 +324,7 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArray2).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -340,7 +340,7 @@ io.on('connection', (socket)=>{
                     break;
                 }
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, pinByteArrayW).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -349,7 +349,7 @@ io.on('connection', (socket)=>{
                 break;
             case 'pine':
                 resp = await card.issueCommand(Iso7816Commands.verifyRefData(1, []).setCla(0x80));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log(`Success! [${resp.toString()}]`);
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -358,7 +358,7 @@ io.on('connection', (socket)=>{
                 break;
             case 'gen':
                 resp = await card.issueCommand(new CommandApdu('8002000000'));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log('Success!');
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -379,7 +379,7 @@ io.on('connection', (socket)=>{
 
                 const cmd = new CommandApdu('8003000000').setData(d.concat(pubRaw));
                 resp = await card.issueCommand(cmd);
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     console.log('Success!');
                 } else {
                     console.log(`Error! Response: [${resp.toString()}]`);
@@ -388,7 +388,7 @@ io.on('connection', (socket)=>{
                 break;
             case 'id':
                 resp = await card.issueCommand(new CommandApdu('8012000000'));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     const accId = await getCardAccountId(resp.data);
                     socket.emit('rsp',accId);
                     console.log(`Card Account: ${accId}`);
@@ -401,7 +401,7 @@ io.on('connection', (socket)=>{
                 resp = await card.issueCommand(new CommandApdu('8012000000'));
                 let pubKey: t2lib.ECDSAKey;
                 let accId: string;
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     pubKey = await importCardPubKey(resp.data);
                     accId = await t2lib.getAccountId(pubKey);
                     console.log('Card public key imported;');
@@ -429,7 +429,7 @@ io.on('connection', (socket)=>{
                 tx.data.signerPublicKey = pubKey;
                 const txSHA384 = await getTxSHA384(tx);
                 resp = await card.issueCommand(new CommandApdu('8013000000').setData(txSHA384));
-                if (resp.isOk()) {
+                if (resp.isOk) {
                     tx.signature = new Uint8Array(processSignature(resp.data));
                     console.log(await tx.toUnnamedObject());
                     if (await tx.verify()) {
@@ -497,7 +497,7 @@ io.on('connection', (socket)=>{
             //         timer.start();
             //         resp = await card.issueCommand(testCmd);
             //         const ms = timer.stop();
-            //         if(!resp.isOk()) {
+            //         if(!resp.isOk) {
             //             break;
             //         }
             //         count++;
@@ -519,7 +519,7 @@ io.on('connection', (socket)=>{
         //let cmdX = secureSession.authenticator(new CommandApdu('8099000000'))
         let card = cardList[obj.devName];
         let resp = await card.issueCommand(cmdX);
-        if (resp.isOk()) {
+        if (resp.isOk) {
             console.log('Success!');
         } else {
             console.log(`Error! Response: [${resp.toString()}]`);
