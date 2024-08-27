@@ -275,14 +275,16 @@ const meanings: { [key: string]: (sw2: number) => string } = {
     },
 };
 
+const regexList: string[] = Object.keys(meanings);
+
 export function statusDecode(status: number[]): string {
-    let meaning = `Unknown value: [${arrayToHex(status)}]`;
+    let meaning = `Unknown status: [${arrayToHex(status)}]`;
     if (status.length === 2) {
         const statusHex = arrayToHex(status, false);
-        const regExpList = Object.keys(meanings);
-        for (let i = 0; i < regExpList.length; i = i + 1) {
-            if (new RegExp(regExpList[i]).exec(statusHex)) {
-                meaning = meanings[regExpList[i]](status[1]);
+        for (let i = 0; i < regexList.length; i = i + 1) {
+            if (new RegExp(regexList[i]).exec(statusHex)) {
+                meaning = meanings[regexList[i]](status[1]);
+                break;
             }
         }
     }
