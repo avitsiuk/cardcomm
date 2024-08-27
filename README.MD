@@ -105,6 +105,19 @@ Fri Aug 23 16:47:33 2024
   Card state: Card removed,
 ```
 
+### SCP02 crypto issues
+
+Secure Channel Protocol 02 uses cryptographic functions which are no longer supported on NodeJS v17+  
+Example:  
+`Error: error:0308010C:digital envelope routines::unsupported`  
+
+In order to reenable those functions you need to add `--openssl-legacy-provider` to environment variable `NODE_OPTIONS` (create if missing)
+For example:  
+`export NODE_OPTIONS=--openssl-legacy-provider`  
+or  
+`export NODE_OPTIONS="$NODE_OPTIONS --openssl-legacy-provider"`  
+Multiple options must be separated by a space
+
 ## API
 
     // Under construction
