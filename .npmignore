@@ -1,6 +1,7 @@
 node_modules/
 docs/
 examples/
+scripts/
 src/
 test/
 .*
