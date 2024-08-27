@@ -29,10 +29,7 @@ interface ISessionInfo {
     seqCount: number[];
 }
 
-const defaultKey = [
-    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b,
-    0x4c, 0x4d, 0x4e, 0x4f,
-];
+const defaultKey = [0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f];
 
 export const defaultStaticKeys: ISessionKeys = {
     enc: defaultKey,
@@ -418,8 +415,11 @@ export default class SCP02 {
                     }
 
                     const keyDivData = response.data.slice(0, 10);
+                    // console.log(`keyDivData:      [${arrayToHex(keyDivData)}]`);
                     const keyVersion = response.data[10];
+                    // console.log(`keyVersion:      [${arrayToHex([keyVersion])}]`);
                     const protocolVersion = response.data[11];
+                    // console.log(`protocolVersion: [${arrayToHex([protocolVersion])}]`);
                     if (protocolVersion !== 0x02) {
                         this.reset();
                         return reject(
@@ -429,19 +429,27 @@ export default class SCP02 {
                         );
                     }
                     const sequenceCounter = response.data.slice(12, 14);
+                    // console.log(`sequenceCounter: [${arrayToHex(sequenceCounter)}]`);
                     const cardChallenge = response.data.slice(12, 20);
+                    // console.log(`cardChallenge:   [${arrayToHex(cardChallenge)}]`);
                     const cardCryptogram = response.data.slice(20);
+                    // console.log(`cardCryptogram:  [${arrayToHex(cardCryptogram)}]`);
 
                     const sessionKeys = genSessionKeys(
                         sequenceCounter,
                         this.staticKeys!,
                     );
+                    // console.log('sessionKeys:');
+                    // console.log(`dek: [${arrayToHex(sessionKeys.dek)}`);
+                    // console.log(`enc: [${arrayToHex(sessionKeys.enc)}`);
+                    // console.log(`mac: [${arrayToHex(sessionKeys.mac)}`);
                     const expectedCardCryptogram = genCryptogram(
                         'card',
                         cardChallenge,
                         hostChallenge,
                         sessionKeys.enc,
                     );
+                    // console.log(`expectedCardCryptogram: [${arrayToHex(expectedCardCryptogram)}]`);
                     if (
                         arrayToHex(cardCryptogram) !==
                         arrayToHex(expectedCardCryptogram)
@@ -457,6 +465,7 @@ export default class SCP02 {
                         hostChallenge,
                         sessionKeys.enc,
                     );
+                    // console.log(`hostCryptogram: [${arrayToHex(hostCryptogram)}]`);
                     const extAuthCmd = addMac(
                         GPCommands.extAuth(hostCryptogram, this.securityLevel),
                         sessionKeys,
@@ -492,6 +501,7 @@ export default class SCP02 {
                                 return result;
                             };
                             this._isActive = true;
+                            // console.log('Secure seccion initiated')
                             resolve(response);
                         })
                         .catch((err) => {
