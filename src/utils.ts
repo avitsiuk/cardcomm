@@ -77,7 +77,7 @@ export function binToNumArray(data: string | Buffer | ArrayBuffer | ArrayBufferV
     } else {
         throw new TypeError('Accepted binary data types: hex string, Buffer, ArrayBuffer, ArrayBufferView, number[]');
     }
-    return this;
+    return result;
 }
 
 export class Timer {
