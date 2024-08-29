@@ -230,45 +230,58 @@ class Card implements ICard {
     ): void | Promise<ResponseApdu> {
         let cmd = new CommandApdu(command);
 
+        let checkingErr: Error | undefined;
+
         if (cmd.length < 4) {
-            throw new Error(
+            checkingErr = new Error(
                 `Command too short; Min: 5 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
             );
-        }
-
-        if (cmd.length === 6) {
+        } else if (cmd.length === 6) {
             if (cmd.getLc() === 0) {
-                throw new Error(
+                checkingErr = new Error(
                     `If Lc = 0, it should be omitted; cmd: [${cmd.toString()}]`,
                 );
             }
-            throw new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
-        }
-
-        if (cmd.length > CommandApdu.MAX_DATA_BYTES) {
-            throw new Error(
+            checkingErr = new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
+        } else if (cmd.length > CommandApdu.MAX_DATA_BYTES) {
+            checkingErr = new Error(
                 `Command too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
             );
-        }
-
-        if (cmd.getLc() !== cmd.getData().length) {
-            throw new Error(
+        } else if (cmd.getLc() !== cmd.getData().length) {
+            checkingErr = new Error(
                 `Lc and actual data length discrepancy; Lc:${cmd.getLc()} actual: ${cmd.getData().length}; cmd: [${cmd.toString()}]`,
             );
         }
 
         if (callback) {
-            this._issueCmdInternal(cmd, callback);
+            if (checkingErr) {
+                callback(checkingErr, ResponseApdu.from([]));
+                return;
+            }
+            try {
+                this._issueCmdInternal(cmd, callback);
+            } catch (error: any) {
+                callback(new Error(`Error sending command to card: ${error.message}`), ResponseApdu.from([]));
+                return;
+            }
+            return;
         } else {
             return new Promise((resolve, reject) => {
+                if (checkingErr) {
+                    return reject(checkingErr);
+                }
                 const callback = (err: any, resp: ResponseApdu) => {
                     if (err) {
-                        reject(err);
+                        return reject(err);
                     } else {
-                        resolve(resp);
+                        return resolve(resp);
                     }
                 };
-                this._issueCmdInternal(cmd, callback);
+                try {
+                    this._issueCmdInternal(cmd, callback);
+                } catch (error: any) {
+                    return reject(new Error(`Error sending command to card: ${error.message}`));
+                }
             });
         }
     }
