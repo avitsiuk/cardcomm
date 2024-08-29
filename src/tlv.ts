@@ -281,3 +281,22 @@ export function berTlvEncode(obj: IBerObj): number[] {
     }
     return result;
 }
+
+function innerPrintBerTlvObj(obj: IBerTlvObj, printFunction: (line: string)=>void, spaces: number, indentLevel: number): void {
+    const tagsList = Object.keys(obj);
+    for (let tagIdx = 0; tagIdx < tagsList.length; tagIdx++) {
+        const currTag = tagsList[tagIdx];
+        let currLine = ''.padStart(spaces * indentLevel, ' ').concat(`[${currTag}]:`);
+        if (obj[currTag].constructed) {
+            printFunction(currLine);
+            innerPrintBerTlvObj((obj[currTag].value as IBerTlvObj), printFunction, spaces, (indentLevel + 1))
+        } else {
+            currLine += ` ${arrayToHex((obj[currTag].value as number[]))}`;
+            printFunction(currLine);
+        }
+    }
+}
+
+export function printBerTlvObj(obj: IBerTlvObj, printFunction?: (line: string)=>void | null, spaces?: number): void {
+    innerPrintBerTlvObj(obj, printFunction || console.log, spaces || 2, 0);
+}
