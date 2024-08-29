@@ -2,6 +2,8 @@ import {
     PcscDevicesManager,
     Device,
     Card,
+    Iso7816Commands,
+    Utils,
 } from '../src/index';
 
 const devices: {[key: number]: {device: Device, card: Card | null, name: string}} = {};
@@ -45,20 +47,46 @@ pcscDM.on('device-deactivated', (event) => {
 pcscDM.on('device-activated', (event => {
 
     const device = event.device;
-    const {simpleName, idx} = splitDeviceName(device.name);
+    const {simpleName: devName, idx: devIdx} = splitDeviceName(device.name);
 
-    devices[idx] = {name: simpleName, device: event.device, card: null};
+    devices[devIdx] = {name: devName, device: event.device, card: null};
     printDeviceList();
 
+    device.on('error', (error) => {
+        console.error(`Device error: ${error.message}`);
+    })
+
     device.on('card-removed', (event) => {
-        devices[idx].card = null;
+        devices[devIdx].card = null;
         printDeviceList();
     })
 
-    device.on('card-inserted', (event) => {
-        devices[idx].card = event.card;
+    device.on('card-inserted', async (event) => {
+        devices[devIdx].card = event.card;
         printDeviceList();
 
-        // const selectResponse = event.card.issueCommand()
+        console.log('Selecting default applet...');
+        console.log();
+
+        event.card.on('command-issued', (event) => {
+            console.log(`[${devIdx}] << [${event.command}]`)
+        })
+
+        event.card.on('response-received', (event) => {
+            console.log(`[${devIdx}] >> [${Utils.arrayToHex(event.response.data)}][${Utils.arrayToHex(event.response.status)}](${event.response.meaning})`)
+        })
+
+        event.card.issueCommand(Iso7816Commands.select())
+            .then((selectResponse) => {
+                console.log();
+                console.log('Card response:');
+                console.log(selectResponse.toString());
+                console.log();
+            })
+            .catch((e) => {
+                console.log();
+                console.error(e);
+                console.log();
+            })
     })
 }));
