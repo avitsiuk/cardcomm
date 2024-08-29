@@ -34,10 +34,10 @@ fix_paths() {
 fix_paths
 ##########################################################
 
-echo "Fixing ESM..."
+echo "Fixing ESM files..."
 
 if ! [ -d "$ESM_DIR" ]; then
-    echo "ESM directory not found: \"$ESM_DIR\""
+    echo "ESM files directory not found: \"$ESM_DIR\""
     exit 1
 fi
 
