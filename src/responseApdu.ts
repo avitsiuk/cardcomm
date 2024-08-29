@@ -37,7 +37,7 @@ export default class ResponseApdu {
         } else if (Array.isArray(data)) {
             numArray = data;
         } else {
-            throw new TypeError('Accepted ResponseApdu constructor types: string, number[], Buffer, BinaryData, ResponseApdu');
+            throw new TypeError('Accepted ResponseApdu constructor types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView, ResponseApdu');
         }
         this.fromArray(numArray);
         return this;

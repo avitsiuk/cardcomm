@@ -42,7 +42,7 @@ export class CommandApdu {
         } else if (Array.isArray(data)) {
             numArray = data;
         } else {
-            throw new TypeError('Accepted CommandApdu constructor types: string, number[], Buffer, BinaryData, CommandApdu');
+            throw new TypeError('Accepted CommandApdu constructor types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView, CommandApdu');
         }
         this.fromArray(numArray);
         return this;
