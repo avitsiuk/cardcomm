@@ -55,9 +55,7 @@
         "format:fix": "prettier --write \"{src,example}/**/*.{js,ts}\"",
         "docs": "typedoc --options typedoc.json",
         "prepack": "npm run build",
-        "demo": "npx ts-node ./examples/demo.ts",
-        "demo2": "npx ts-node ./examples/demo2.ts",
-        "server": "npx ts-node ./examples/webserver/server.ts"
+        "demo": "npx ts-node ./examples/demo.ts"
     },
     "dependencies": {
         "pcsclite": "1.0.1"
