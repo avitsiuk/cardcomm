@@ -15,7 +15,7 @@ import SCP02, {
 import SCP11 from './globalPlatform/sesureSession/scp11';
 
 import Device from './device';
-import Devices from './devices';
+import PcscDevicesManager from './devices';
 
 export {
     Tlv,
@@ -30,5 +30,5 @@ export {
     SCP11,
     gpDefaultStaticKeys,
     Device,
-    Devices,
+    PcscDevicesManager,
 };

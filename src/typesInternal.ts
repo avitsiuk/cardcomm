@@ -88,31 +88,31 @@ export interface IDevice {
 
 export type TDevicesEventName = 'device-activated' | 'device-deactivated';
 
-export interface IDevices {
+export interface IDevicesManager {
     _eventEmitter: EventEmitter;
     pcsc: PCSCLite;
     devices: { [key: string]: IDevice };
 
-    onActivated: () => Promise<{ device: IDevice; devices: IDevices }>;
-    onDeactivated: () => Promise<{ device: IDevice; devices: IDevices }>;
+    onActivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
+    onDeactivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
     listDevices: () => IDevice[];
     lookup: (name: string) => IDevice | null;
     toString: () => string;
 
     on(
         eventName: 'device-activated',
-        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
-    ): IDevices;
+        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
     on(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
-    ): IDevices;
+        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
     once(
         eventName: 'device-activated',
-        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
-    ): IDevices;
+        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
     once(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: IDevice; devices: IDevices }) => void,
-    ): IDevices;
+        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
 }
