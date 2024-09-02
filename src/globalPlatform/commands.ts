@@ -1,6 +1,5 @@
 import * as Tlv from '../tlv';
 import CommandApdu from '../commandApdu';
-import { hexToArray, arrayToHex } from '../utils';
 
 const insByteList = {
     INIT_UPDATE: 0x50,

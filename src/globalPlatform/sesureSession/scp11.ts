@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { arrayToHex, hexToArray } from '../../utils';
+import { arrayToHex, hexToArrayBuffer } from '../../utils';
 import { berTlvDecode } from '../../tlv';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
@@ -337,7 +337,7 @@ export default class SCP11 {
 
         // // Do not forget to set original logical channel
         return new CommandApdu(newCmdBytes).setLogicalChannel(
-            cmd.getLogicalChannel(),
+            cmd.logicalChannel,
         );
     }
 

@@ -1,8 +1,7 @@
 import crypto from 'crypto';
-import { arrayToHex, hexToArray } from '../../utils';
+import { arrayToHex } from '../../utils';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
-import * as Iso7816Commands from '../../iso7816/commands';
 import * as GPCommands from '../commands';
 import Card from '../../card';
 
@@ -226,7 +225,7 @@ function addMac(
     newCmd.set(dataMac, paddingIdx);
 
     // Do not forget to set original logical channel
-    return new CommandApdu(newCmd).setLogicalChannel(cmd.getLogicalChannel());
+    return new CommandApdu(newCmd).setLogicalChannel(cmd.logicalChannel);
 }
 
 function encryptCmd(cmd: CommandApdu, sessionKeys: ISessionKeys) {
