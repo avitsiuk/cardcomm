@@ -1,187 +1,71 @@
-const hexRegex = /^[0-9A-Fa-f]*$/g;
+const hexValidationRegex = /^(0[xX])?[0-9A-Fa-f]+$/g; // '0x' prefix allowed
 
-function trimHexPrefix(inStr: string): string {
-    if (inStr.length > 1 && (inStr.substring(0, 2).toLowerCase() === '0x')) {
-        return inStr.substring(2);
-    }
-    return inStr;
+/** Checks if string is a valid hex string. Both with or without '0x' prefix. Case insensitive. Empty string is a valid hex string.*/
+export function isHexString(str: string): boolean {
+    if (str.match(hexValidationRegex)) return true;
+    return false;
 }
 
-export function isHex(str: string): boolean {
-    if (!trimHexPrefix(str).match(hexRegex)) {
-        return false;
-    }
-    return true;
+export function strHasHexPrefix(str: string): boolean {
+    if (str.length < 2) return false;
+    if (str[0] === '0' && (str[1] === 'x' || str[1] === 'X')) return true;
+    return false;
 }
 
-export function bufferToArray(buffer: Buffer): number[] {
-    if (buffer.byteLength > 0) {
-        const array = new Array<number>(buffer.byteLength);
-        for (let i = 0; i < buffer.byteLength; i++) {
-            array[i] = buffer.readUInt8(i);
-        }
-        return array;
-    }
-    return [];
+/** Remove the initial `0x` (if any) from a string and add leading zero if length is odd */
+export function normalizeHexString(str: string): string {
+    return `${(str.length % 2) ? '0' : '' }${ strHasHexPrefix(str) ? str.substring(2) : str}`;
 }
 
-/**
- * @param wrapOverflow - if `false`(default), 256 gets encoded as `0100`; otherwise '00'
- */
-export function arrayToHex(
-    array: number[],
-    wrapOverflow: boolean = false,
-): string {
-    if (array && array.length > 0) {
-        let str = '';
-        for (let i = 0; i < array.length; i = i + 1) {
-            let iHex = array[i].toString(16);
-            iHex = `${iHex.length % 2 ? '0' : ''}${iHex}`;
-            str += wrapOverflow ? iHex.substring(iHex.length - 2) : iHex;
-        }
-        return str;
+export function hexToArrayBuffer(str: string): ArrayBuffer {
+    if (str.length < 1) {
+        return new ArrayBuffer(0);
     }
-    return '';
+    if (typeof str !== 'string') throw new TypeError('Not a string');
+    if (!isHexString(str)) throw new Error(`Not a hex string: [${str}]`);
+    const _str = normalizeHexString(str);
+    const byteLength = _str.length / 2;
+    const res = new ArrayBuffer(byteLength);
+    const resView = new Uint8Array(res);
+    for (let byteIdx = 0; byteIdx < byteLength; byteIdx++) {
+        const strIdx = byteIdx * 2;
+        resView[byteIdx] = parseInt(`${_str[strIdx]}${_str[strIdx+1]}`, 16);
+    }
+    return resView;
 }
 
-export function hexToArray(hex: string): number[] {
-    if (hex.length < 1) {
-        return [];
-    }
-    if (!isHex(hex)) {
-        throw new Error('Not a hex string');
-    }
-    let _hex = trimHexPrefix(hex);
-    _hex = `${_hex.length % 2 ? '0' : ''}${_hex}`;
-    const arrayLen = _hex.length / 2;
-    const array = new Array<number>(arrayLen);
-    for (let i = 0; i < arrayLen; i = i + 1) {
-        array[i] = parseInt(_hex.substring(i * 2, i * 2 + 2), 16);
-    }
-    return array;
+/** Resulting ArrayBuffer is safe to work with, as it contains a copy of data so it does not reference the same memory region as original data */
+export function bufferToArrayBuffer(buf: Buffer): ArrayBuffer {
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }
 
-export function binToNumArray(data: string | Buffer | ArrayBuffer | ArrayBufferView | number[]): number[] {
-    let result: number[] = [];
+/** Converts various binary data representations to an ArrayBuffer. Resulting ArrayBuffer is safe to work with, as it contains a copy of data so it does not reference the same memory region as original data.*/
+export function importBinData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): ArrayBuffer {
+    let result: ArrayBuffer = new ArrayBuffer(0);
 
     if (typeof data === 'string') {
-        result = hexToArray(data);
+        result = hexToArrayBuffer(data);
     } else if (Buffer.isBuffer(data)) {
-        result = [...data];
+        result = bufferToArrayBuffer(data);
     } else if (data instanceof ArrayBuffer) {
-        result = [...new Uint8Array(data)];
+        result = new ArrayBuffer(data.byteLength);
+        new Uint8Array(result).set(new Uint8Array(data));
     } else if (ArrayBuffer.isView(data)) {
-        result = [...new Uint8Array(data.buffer)];
+        result = new ArrayBuffer(data.byteLength);
+        new Uint8Array(result).set(new Uint8Array(data.buffer));
     } else if (Array.isArray(data)) {
-        result = data;
+        let isNumericArray = true;
+        data.reduce((_, val)=>{
+            if (typeof val !== 'number')
+                isNumericArray = false;
+            return null;
+        }, null);
+        if (!isNumericArray)
+            throw new TypeError('Data is not a numeric array');
+        result = new ArrayBuffer(data.length);
+        new Uint8Array(result).set(data);
     } else {
-        throw new TypeError('Accepted binary data types: hex string, Buffer, ArrayBuffer, ArrayBufferView, number[]');
+        throw new TypeError('Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView');
     }
     return result;
-}
-
-export class Timer {
-
-    private static r: boolean = false;
-    private static s: number = 0;
-
-    private r: boolean = false;
-    private s: number = 0;
-
-    /** Returns current Unix timestamp in milliseconds */
-    static get now(): number {
-        return new Date().getTime();
-    }
-
-    static get isRunning(): boolean {
-        return Timer.r;
-    }
-
-    get isRunning(): boolean {
-        return this.r;
-    }
-
-    private static set isRunning(val: boolean) {
-        Timer.r = val;
-    }
-
-    private set isRunning(val: boolean) {
-        this.r = val;
-    }
-
-    /** Returns time at which global timer was started (0 if global timer is not running) */
-    static get startTime(): number {
-        return Timer.isRunning ? Timer.s : 0;
-    }
-
-    /** Returns time at which timer was started (0 if timer is not running) */
-    get startTime(): number {
-        return this.isRunning ? this.s : 0;
-    }
-
-    private static set startTime(val: number) {
-        Timer.s = val;
-    }
-
-    private set startTime(val: number) {
-        this.s = val;
-    }
-
-    /** Starts global timer and returns start time. Does nothing if already running (see `restart()`) */
-    static start(): number {
-        if (Timer.isRunning)
-            return Timer.startTime;
-        Timer.isRunning = true;
-        Timer.startTime = Timer.now;
-        return Timer.startTime;
-    }
-
-    /** Starts timer and returns start time. Does nothing if already running (see `restart()`) */
-    start(): number {
-        if (this.isRunning)
-            return this.startTime;
-        this.isRunning = true;
-        this.startTime = Timer.now;
-        return this.startTime;
-    }
-
-    /** (Re)Starts global timer and returns start time */
-    static restart(): number {
-        Timer.isRunning = true;
-        Timer.startTime = Timer.now;
-        return Timer.startTime;
-    }
-
-    /** (Re)Starts timer and returns start time */
-    restart(): number {
-        this.isRunning = true;
-        this.startTime = Timer.now;
-        return this.startTime;
-    }
-
-    /** Stops global timer and returns elapsed time since start (0 if global timer was not started) */
-    static stop(): number {
-        const result = Timer.startTime;
-        Timer.startTime = 0;
-        Timer.isRunning = false;
-        return result;
-    }
-
-    /** Stops timer and returns elapsed time since start (0 if timer was not started) */
-    stop(): number {
-        const result = this.startTime;
-        this.startTime = 0;
-        this.isRunning = false;
-        return result;
-    }
-
-    /** Returns elapsed time since global timer was started (0 if global timer is not running) */
-    static get elapsed(): number {
-        return Timer.isRunning ? Timer.now - Timer.startTime : 0;
-    }
-
-    /** Returns elapsed time since timer was started (0 if timer is not running) */
-    get elapsed(): number {
-        return this.isRunning ? Timer.now - this.startTime : 0;
-    }
 }
