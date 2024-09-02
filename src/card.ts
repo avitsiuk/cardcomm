@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import { arrayToHex, bufferToArray } from './utils';
 import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
 import { ICard, IDevice, TCardEventName } from './typesInternal';
@@ -13,7 +12,7 @@ class Card implements ICard {
     private _eventEmitter = new EventEmitter();
     private _device: IDevice;
     private _protocol: number;
-    private _atr: number[];
+    private _atr: Buffer;
     private _atrHex: string;
     private _autoGetResponse: boolean = true;
     private _commandTransformer:
@@ -26,8 +25,9 @@ class Card implements ICard {
     constructor(device: IDevice, atr: Buffer, protocol: number) {
         this._device = device;
         this._protocol = protocol;
-        this._atr = bufferToArray(atr);
-        this._atrHex = arrayToHex(this._atr);
+        this._atr = Buffer.alloc(atr.byteLength)
+        atr.copy(this._atr, 0, 0, atr.byteLength);
+        this._atrHex = this._atr.toString('hex');
         this._isBusy = false;
     }
 
@@ -35,7 +35,7 @@ class Card implements ICard {
         return this._protocol;
     }
 
-    get atr(): number[] {
+    get atr(): Buffer {
         return this._atr;
     }
 
@@ -232,20 +232,20 @@ class Card implements ICard {
 
         let checkingErr: Error | undefined;
 
-        if (cmd.length < 4) {
+        if (cmd.byteLength < 4) {
             checkingErr = new Error(
-                `Command too short; Min: 5 bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
+                `Command too short; Min: 5 bytes; Received: ${cmd.byteLength} bytes; cmd: [${cmd.toString()}]`,
             );
-        } else if (cmd.length === 6) {
+        } else if (cmd.byteLength === 6) {
             if (cmd.getLc() === 0) {
                 checkingErr = new Error(
                     `If Lc = 0, it should be omitted; cmd: [${cmd.toString()}]`,
                 );
             }
             checkingErr = new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
-        } else if (cmd.length > CommandApdu.MAX_DATA_BYTES) {
+        } else if (cmd.byteLength > CommandApdu.maxDataBytes) {
             checkingErr = new Error(
-                `Command too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${cmd.length} bytes; cmd: [${cmd.toString()}]`,
+                `Command too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${cmd.byteLength} bytes; cmd: [${cmd.toString()}]`,
             );
         } else if (cmd.getLc() !== cmd.getData().length) {
             checkingErr = new Error(

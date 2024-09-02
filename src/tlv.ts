@@ -1,4 +1,4 @@
-import { isHex, arrayToHex, hexToArray } from './utils';
+import { isHexString as isHex, removeHexPrefix, arrayToHex, hexToArray} from './utils';
 
 interface ItlvObj {
     [key: string]: {

@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import pcsclite from 'pcsclite';
 import { CardReader, PCSCLite } from './typesPcsclite';
-import { IDevicesManager, TDevicesEventName } from './typesInternal';
+import { IDevicesManager, TDevicesManagerEventName } from './typesInternal';
 import Device from './device';
 
 class PcscDevicesManager implements IDevicesManager {
@@ -70,7 +70,7 @@ class PcscDevicesManager implements IDevicesManager {
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
     on(
-        eventName: TDevicesEventName,
+        eventName: TDevicesManagerEventName,
         eventHandler: (event: any) => void,
     ): PcscDevicesManager {
         this._eventEmitter.on(eventName, eventHandler);
@@ -86,7 +86,7 @@ class PcscDevicesManager implements IDevicesManager {
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
     once(
-        eventName: TDevicesEventName,
+        eventName: TDevicesManagerEventName,
         eventHandler: (event: any) => void,
     ): PcscDevicesManager {
         this._eventEmitter.on(eventName, eventHandler);

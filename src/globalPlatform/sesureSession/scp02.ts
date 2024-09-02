@@ -147,9 +147,9 @@ function addMac(
     icv: number[] = new Array<number>(8).fill(0),
 ) {
     const macLength = 8;
-    if (cmd.getLc() + macLength > CommandApdu.MAX_DATA_BYTES) {
+    if (cmd.getLc() + macLength > CommandApdu.maxDataBytes) {
         throw new Error(
-            `Max ${CommandApdu.MAX_DATA_BYTES - macLength} bytes of data`,
+            `Max ${CommandApdu.maxDataBytes - macLength} bytes of data`,
         );
     }
     if (sessionKeys.mac.length !== 16) {
@@ -414,7 +414,7 @@ export default class SCP02 {
                         );
                     }
 
-                    const keyDivData = response.data.slice(0, 10);
+                    const keyDivData = [...response.data.subarray(0, 10)];
                     // console.log(`keyDivData:      [${arrayToHex(keyDivData)}]`);
                     const keyVersion = response.data[10];
                     // console.log(`keyVersion:      [${arrayToHex([keyVersion])}]`);
@@ -428,11 +428,11 @@ export default class SCP02 {
                             ),
                         );
                     }
-                    const sequenceCounter = response.data.slice(12, 14);
+                    const sequenceCounter = [...response.data.subarray(12, 14)];
                     // console.log(`sequenceCounter: [${arrayToHex(sequenceCounter)}]`);
-                    const cardChallenge = response.data.slice(12, 20);
+                    const cardChallenge = [...response.data.subarray(12, 20)];
                     // console.log(`cardChallenge:   [${arrayToHex(cardChallenge)}]`);
-                    const cardCryptogram = response.data.slice(20);
+                    const cardCryptogram = [...response.data.subarray(20)];
                     // console.log(`cardCryptogram:  [${arrayToHex(cardCryptogram)}]`);
 
                     const sessionKeys = genSessionKeys(
@@ -484,9 +484,9 @@ export default class SCP02 {
                             this._keyVersion = keyVersion;
                             this._protocolVersion = protocolVersion;
                             this._sequenceCounter = sequenceCounter;
-                            this._lastCmac = extAuthCmd
+                            this._lastCmac = [...extAuthCmd
                                 .getData()
-                                .slice(extAuthCmd.getLc() - 8);
+                                .subarray(extAuthCmd.getLc() - 8)];
                             this._authenticateFunction = (cmd: CommandApdu) => {
                                 //this._lastCmac
                                 const result = authenticateCmd(
@@ -495,9 +495,9 @@ export default class SCP02 {
                                     this._sessionKeys!,
                                     this._lastCmac,
                                 );
-                                this._lastCmac = result
+                                this._lastCmac = [...result
                                     .getData()
-                                    .slice(result.getLc() - 8);
+                                    .subarray(result.getLc() - 8)];
                                 return result;
                             };
                             this._isActive = true;

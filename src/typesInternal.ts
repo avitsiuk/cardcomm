@@ -1,13 +1,12 @@
 import { EventEmitter } from 'events';
 import { CardReader, PCSCLite } from './typesPcsclite';
-import { CommandApdu } from './commandApdu';
+import CommandApdu from './commandApdu';
 import ResponseApdu from './responseApdu';
 
 export type TCardEventName = 'command-issued' | 'response-received';
 
 export interface ICard {
-    atr: number[];
-    atrHex: string;
+    atr: Buffer;
 
     toString: () => string;
 
@@ -86,7 +85,7 @@ export interface IDevice {
     ): IDevice;
 }
 
-export type TDevicesEventName = 'device-activated' | 'device-deactivated';
+export type TDevicesManagerEventName = 'device-activated' | 'device-deactivated';
 
 export interface IDevicesManager {
     _eventEmitter: EventEmitter;

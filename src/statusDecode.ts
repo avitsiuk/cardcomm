@@ -1,5 +1,3 @@
-import { arrayToHex } from './utils';
-
 const NORM_PROC = 'Normal processing';
 const WARN_PROC = 'Warning processing';
 const EXEC_ERR = 'Execution error';
@@ -8,12 +6,12 @@ const NVM_U = 'State of non-volatile memory is unchanged';
 const NVM_C = 'State of non-volatile memory may have changed';
 
 function unkSw2(sw2: number): string {
-    return `Unknown SW2: [0x${sw2.toString(16).padStart(2, '0')}]`;
+    return `Unknown SW2: [${sw2.toString(16).padStart(2, '0')}]`;
 }
 
 const meanings: { [key: string]: (sw2: number) => string } = {
     // NORMAL PROCESSING
-    '^9000$': (sw2) => {
+    '^9000$': (_) => {
         return NORM_PROC;
     },
     '^61(.{2})$': (sw2) => {
@@ -275,19 +273,27 @@ const meanings: { [key: string]: (sw2: number) => string } = {
     },
 };
 
-const regexList: string[] = Object.keys(meanings);
+const regexStrList: string[] = Object.keys(meanings);
+const compiledRegexList: RegExp[] = new Array<RegExp>(regexStrList.length);
+regexStrList.reduce((_, regexStr, idx) => {
+    compiledRegexList[idx] = new RegExp(regexStr);
+    return null;
+}, null);
 
-export function statusDecode(status: number[]): string {
-    let meaning = `Unknown status: [${arrayToHex(status)}]`;
-    if (status.length === 2) {
-        const statusHex = arrayToHex(status, false);
-        for (let i = 0; i < regexList.length; i = i + 1) {
-            if (new RegExp(regexList[i]).exec(statusHex)) {
-                meaning = meanings[regexList[i]](status[1]);
+export function statusDecode(status: Buffer): string {
+
+    const statusHex = status.toString('hex');
+    let meaning = `Unknown status: [${statusHex}]`;
+
+    if (status.byteLength === 2) {
+        for (let regexIdx = 0; regexIdx < compiledRegexList.length; regexIdx++) {
+            if (compiledRegexList[regexIdx].exec(statusHex)) {
+                meaning = meanings[regexStrList[regexIdx]](status[1]);
                 break;
             }
         }
     }
+
     return meaning;
 }
 

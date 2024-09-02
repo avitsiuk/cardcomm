@@ -73,7 +73,7 @@ pcscDM.on('device-activated', (event => {
         })
 
         event.card.on('response-received', (event) => {
-            console.log(`[${devIdx}] >> [${Utils.arrayToHex(event.response.data)}][${Utils.arrayToHex(event.response.status)}](${event.response.meaning})`)
+            console.log(`[${devIdx}] >> [${Utils.arrayToHex([...event.response.data])}][${Utils.arrayToHex([...event.response.status])}](${event.response.meaning})`)
         })
 
         event.card.issueCommand(Iso7816Commands.select())

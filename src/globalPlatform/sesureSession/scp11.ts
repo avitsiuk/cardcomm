@@ -395,7 +395,7 @@ export default class SCP11 {
 
         if (
             arrayToHex(this._macChainingValue.slice(0, MAC_BYTE_LEN)) ===
-            arrayToHex(expectedMac)
+            arrayToHex([...expectedMac])
         ) {
             return true;
         }
@@ -515,7 +515,7 @@ export default class SCP11 {
         intAuthCmd: CommandApdu,
         intAuthResp: ResponseApdu,
     ): boolean {
-        const rspBerObj = berTlvDecode(intAuthResp.data);
+        const rspBerObj = berTlvDecode([...intAuthResp.data]);
         const missingPaddingBytes =
             BLOCK_BYTE_LEN - ((intAuthCmd.getLc() + 68) % BLOCK_BYTE_LEN);
         const dataToAuthenticate = Buffer.alloc(
@@ -593,7 +593,7 @@ export default class SCP11 {
                         this.reset();
                         throw new Error(`Error getting card static public key: ${e.message}`);
                     }
-                    const berObj = berTlvDecode(response.data);
+                    const berObj = berTlvDecode([...response.data]);
                     const pkSdEcka = berObj['5f49'].value as number[];
                     // generating ephemeral OCE keypair
                     const ecdh = crypto.createECDH('prime256v1');
@@ -616,7 +616,7 @@ export default class SCP11 {
                                 this.reset();
                                 throw new Error(`Error during INT_AUTH: ${e.message}`);
                             }
-                            const berObj = berTlvDecode(response.data);
+                            const berObj = berTlvDecode([...response.data]);
                             // getting card ephemeral public key
                             const ePkSdEcka = berObj['5f49'].value as number[];
                             this.genSessionKeys(
