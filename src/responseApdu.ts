@@ -7,7 +7,7 @@ export default class ResponseApdu {
     private bufferView = new Uint8Array(this.buffer);
     private bLength: number = 2
 
-    static from(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | ResponseApdu): ResponseApdu {
+    static from(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | ResponseApdu): ResponseApdu {
         return new ResponseApdu(data);
     }
 
