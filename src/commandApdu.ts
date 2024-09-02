@@ -1,89 +1,116 @@
-import { bufferToArray, hexToArray, arrayToHex } from './utils';
+import { importBinData } from './utils';
+/*
 
-// CASE   CMD-DATA(LC)   RSP-DATA(LE)
-//  1     N             N
-//  2     N             Y
-//  3     Y             N
-//  4     Y             Y
+CASE   CMD-DATA(LC)   RSP-DATA(LE)
+ 1         N             N         81828384
+ 2         N             Y         81828384 ff
+ 3         Y             N         81828384 03 717273
+ 4         Y             Y         81828384 03 717273 ff
+
+81828384 00 ff
+
+if (bytes.len == 4) {
+    case 1
+} else if (bytes.len == 5) {
+    case 2
+} else {
+    const lc = bytes[4]
+    if (bytes.len == (4 + 1 + lc)) {
+        case 3
+    } else if (bytes.len == (4 + 1 + lc + 1)) {
+        case 4
+    } else {
+        error
+    }
+}
+*/
 
 export class CommandApdu {
-    static MAX_DATA_BYTES: number = 255;
+    static readonly maxDataBytes = 255;
+    static readonly claOff       = 0;
+    static readonly insOff       = 1;
+    static readonly p1Off        = 2;
+    static readonly p2Off        = 3;
+    static readonly lcOff        = 4;
+    static readonly dataOff      = 5;
 
-    private _byteArray: number[] = [0x00, 0x00, 0x00, 0x00];
+    // header(4) + lc(1) + data + le(1)
+    private buffer: ArrayBuffer = new ArrayBuffer(CommandApdu.maxDataBytes + 6);
+    private bufferView: Uint8Array = new Uint8Array(this.buffer);
+    private bLength = 5;
 
     static from(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
         return new CommandApdu(data);
     }
 
     constructor(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu) {
-
         if (typeof data === 'undefined')
             return this;
-
         return this.from(data);
     }
 
+    /** Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this CommandAPDU */
     from(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
-        if (typeof data === 'undefined')
-            return this;
-
-        let numArray: number[] = [];
-
-        if (typeof data === 'string') {
-            numArray = hexToArray(data);
-        } else if (Buffer.isBuffer(data)) {
-            numArray = [...data];
-        } else if (data instanceof ArrayBuffer) {
-            numArray = [...new Uint8Array(data)];
-        } else if (ArrayBuffer.isView(data)) {
-            numArray = [...new Uint8Array(data.buffer)];
-        } else if (data instanceof CommandApdu) {
-            numArray = data.toArray();
-        } else if (Array.isArray(data)) {
-            numArray = data;
+        let inBuffer = new ArrayBuffer(0);
+        if (data instanceof CommandApdu) {
+            inBuffer = data.toBuffer().buffer.slice(0, data.bLength);
         } else {
-            throw new TypeError('Accepted CommandApdu constructor types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView, CommandApdu');
+            try {
+                inBuffer = importBinData(data)
+            } catch (error: any) {
+                throw new Error(`Could not create CommandAPDU from provided data: ${error.message}`);
+            }
         }
-        this.fromArray(numArray);
-        return this;
-    }
-
-    get length(): number {
-        return this._byteArray.length;
-    }
-
-    fromArray(data: number[]) {
-        if (data.length < 4) {
-            throw new Error(`Command array too short(min 4 bytes): [${data}]`);
+        if (inBuffer.byteLength < 4)
+            throw new Error(`Expected at least 4 bytes of input data, received: ${inBuffer.byteLength} bytes`);
+        if (inBuffer.byteLength > (CommandApdu.maxDataBytes + 6))
+            throw new Error(`Expected at most ${CommandApdu.maxDataBytes + 6} bytes of input data, received: ${inBuffer.byteLength} bytes`);
+        const inView = new Uint8Array(inBuffer);
+        if (inBuffer.byteLength <= 5) {
+            this.bLength = 5;
+        } else {
+            const lc = inView[CommandApdu.lcOff];
+            const noLeLength = 5 + lc; // 4(head) + 1(lc) + lc(data)
+            if (noLeLength === 5)
+                throw new Error(`Lc value cannot be 0; received data: [${Buffer.from(inBuffer).toString('hex')}]`);
+            if (inBuffer.byteLength === noLeLength) {
+                this.bLength = inBuffer.byteLength + 1;
+            } else if (inBuffer.byteLength === noLeLength + 1) {
+                this.bLength = inBuffer.byteLength;
+            } else {
+                throw new Error(`Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${Buffer.from(inBuffer).toString('hex')}]`);
+            }
         }
-        this._byteArray = data;
+        this.bufferView.set(inView, 0);
         return this;
-    }
-
-    fromBuffer(data: Buffer): this {
-        return this.fromArray(bufferToArray(data));
-    }
-
-    fromString(data: string): this {
-        return this.fromArray(hexToArray(data));
     }
 
     toArray(): number[] {
-        return this._byteArray;
+        return [...new Uint8Array(this.buffer, 0, this.bLength)];
     }
 
+    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
     toBuffer(): Buffer {
-        return Buffer.from(this.toArray());
+        return Buffer.from(this.buffer, 0, this.bLength);
     }
 
     toString(): string {
-        return arrayToHex(this.toArray());
+        return Buffer.from(this.buffer, 0, this.bLength).toString('hex');
     }
 
-    // raw header bytes
+    // clears this CommandAPDU by setting it's content to "0x0000000000"
+    clear(): this {
+        this.bufferView.set([0,0,0,0,0], 0);
+        this.bLength = 5;
+        return this;
+    }
+
+    get byteLength(): number {
+        return this.bLength;
+    }
 
     setCla(cla: number): this {
-        this._byteArray[0] = cla;
+        this.bufferView.set([cla], CommandApdu.claOff);
         return this;
     }
 
@@ -92,7 +119,7 @@ export class CommandApdu {
     }
 
     getCla(): number {
-        return this._byteArray[0];
+        return this.bufferView[CommandApdu.claOff];
     }
 
     get cla(): number {
@@ -100,7 +127,7 @@ export class CommandApdu {
     }
 
     setIns(ins: number): this {
-        this._byteArray[1] = ins;
+        this.bufferView.set([ins], CommandApdu.insOff);
         return this;
     }
 
@@ -109,7 +136,7 @@ export class CommandApdu {
     }
 
     getIns(): number {
-        return this._byteArray[1];
+        return this.bufferView[CommandApdu.insOff];
     }
 
     get ins(): number {
@@ -117,7 +144,7 @@ export class CommandApdu {
     }
 
     setP1(p1: number): this {
-        this._byteArray[2] = p1;
+        this.bufferView.set([p1], CommandApdu.p1Off);
         return this;
     }
 
@@ -126,7 +153,7 @@ export class CommandApdu {
     }
 
     getP1(): number {
-        return this._byteArray[2];
+        return this.bufferView[CommandApdu.p1Off];
     }
 
     get p1(): number {
@@ -134,7 +161,7 @@ export class CommandApdu {
     }
 
     setP2(p2: number): this {
-        this._byteArray[3] = p2;
+        this.bufferView.set([p2], CommandApdu.p2Off);
         return this;
     }
 
@@ -143,73 +170,19 @@ export class CommandApdu {
     }
 
     getP2(): number {
-        return this._byteArray[3];
+        return this.bufferView[CommandApdu.p2Off];
     }
 
     get p2(): number {
         return this.getP2();
     }
 
-    setData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): this {
-        let numArray: number[] = [];
-
-        if (typeof data === 'string') {
-            numArray = hexToArray(data);
-        } else if (Buffer.isBuffer(data)) {
-            numArray = [...data];
-        } else if (data instanceof ArrayBuffer) {
-            numArray = [...new Uint8Array(data)];
-        } else if (ArrayBuffer.isView(data)) {
-            numArray = [...new Uint8Array(data.buffer)];
-        } else if (Array.isArray(data)) {
-            numArray = data;
-        } else {
-            throw new TypeError('Accepted CommandApdu data types: string, number[], Buffer, BinaryData, ResponseApdu');
-        }
-
-        if (numArray.length > CommandApdu.MAX_DATA_BYTES) {
-            throw new Error(
-                `Data too long; Max: ${CommandApdu.MAX_DATA_BYTES} bytes; Received: ${numArray.length} bytes`,
-            );
-        }
-        const header = this._byteArray.slice(0, 4);
-        let le: number;
-        if (this._byteArray.length > 4) {
-            le = this._byteArray[this._byteArray.length - 1];
-        } else {
-            le = 0;
-        }
-        this._byteArray = new Array<number>(...header);
-        const lc = numArray.length;
-        if (lc > 0) {
-            this._byteArray.push(lc);
-            this._byteArray.push(...numArray);
-        }
-        this._byteArray.push(le);
-        return this;
-    }
-
-    set data(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView) {
-        this.setData(data);
-    }
-
-    getData(): number[] {
-        let data = new Array<number>(0);
-        if (this._byteArray.length > 5) {
-            const dataWithLc = this._byteArray.slice(4);
-            if (dataWithLc.length > 1)
-                data = dataWithLc.slice(1, 1 + dataWithLc[0]);
-        }
-        return data;
-    }
-
-    get data(): number[] {
-        return this.getData();
-    }
+    // no Lc setters as it gets set automatically when command data is set
 
     getLc(): number {
         let lc = 0;
-        if (this._byteArray.length > 5) lc = this._byteArray[4];
+        if (this.bLength > 5)
+            lc = this.bufferView[CommandApdu.lcOff];
         return lc;
     }
 
@@ -217,12 +190,51 @@ export class CommandApdu {
         return this.getLc();
     }
 
-    setLe(le: number = 0): this {
-        if (this._byteArray.length > 4) {
-            this._byteArray[this.length - 1] = le;
-        } else {
-            this._byteArray.push(le);
+    setData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): this {
+        const dataArrayBuffer = importBinData(data);
+
+        if (dataArrayBuffer.byteLength > CommandApdu.maxDataBytes) {
+            throw new Error(
+                `Data too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${dataArrayBuffer.byteLength} bytes`,
+            );
         }
+
+        let le: number = 0;
+        let newLeOffset: number = 4;
+        if (this.bLength > 4) {
+            le = this.bufferView[this.bLength - 1];
+        }
+        const lc = dataArrayBuffer.byteLength;
+        if (lc > 0) {
+            newLeOffset += (1 + lc);
+            this.bufferView.set([lc], CommandApdu.lcOff);
+            this.bufferView.set(new Uint8Array(dataArrayBuffer), CommandApdu.dataOff);
+        }
+        this.bufferView.set([le], newLeOffset);
+        this.bLength = newLeOffset + 1;
+        return this;
+    }
+
+    set data(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView) {
+        this.setData(data);
+    }
+
+    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    getData(): Buffer {
+        if (this.bLength <= 5)
+            return Buffer.from(this.buffer, 4, 0);
+
+        return Buffer.from(this.buffer, CommandApdu.dataOff, this.bufferView[CommandApdu.lcOff]);
+    }
+
+    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    get data(): Buffer {
+        return this.getData();
+    }
+
+    /** If no value is provided, Le is set to "0x00" */
+    setLe(le: number = 0): this {
+        this.bufferView.set([le], this.bLength - 1);
         return this;
     }
 
@@ -231,11 +243,7 @@ export class CommandApdu {
     }
 
     getLe(): number {
-        let le = 0;
-        if (this._byteArray.length > 4) {
-            le = this._byteArray[this.length - 1];
-        }
-        return le;
+        return this.bufferView[this.bLength - 1];
     }
 
     get le(): number {
@@ -248,7 +256,7 @@ export class CommandApdu {
 
     /** Sets m.s.b. of CLA byte to 1, marking command as having proprietary format */
     setProprietary(): this {
-        this._byteArray[0] |= 0x80;
+        this.bufferView[CommandApdu.claOff] |= 0x80;
         return this;
     }
 
@@ -256,13 +264,13 @@ export class CommandApdu {
      * All newly created commands are set as interindustry by default
      */
     setInterindustry(): this {
-        this._byteArray[0] &= 0x7f;
+        this.bufferView[CommandApdu.claOff] &= 0x7f;
         return this;
     }
 
     /** Returns true if CLA bytes indicates a proprietary command format*/
-    isProprietary(): boolean {
-        if (this._byteArray[0] & 0x80) return true;
+    get isProprietary(): boolean {
+        if (this.bufferView[CommandApdu.claOff] & 0x80) return true;
         return false;
     }
 
@@ -270,10 +278,10 @@ export class CommandApdu {
     setType(type: 4 | 16): this {
         switch (type) {
             case 4:
-                this._byteArray[0] &= 0x9f;
+                this.bufferView[CommandApdu.claOff] &= 0x9f;
                 break;
             case 16:
-                this._byteArray[0] |= 0x40;
+                this.bufferView[CommandApdu.claOff] |= 0x40;
                 break;
             default:
                 throw new Error(
@@ -283,11 +291,12 @@ export class CommandApdu {
         return this;
     }
 
-    getType(): 4 | 16 {
-        if ((this._byteArray[0] & 0x60) === 0) {
+    /** Type4 can use 4 logical channels (0-3) while type16 can use 16 logical channels (4-19)*/
+    get type(): 4 | 16 {
+        if ((this.bufferView[CommandApdu.claOff] & 0x60) === 0) { // & 0110 0000
             // 0XX0 0000
             return 4;
-        } else if ((this._byteArray[0] & 0x40) > 0) {
+        } else if ((this.bufferView[CommandApdu.claOff] & 0x40) > 0) { // & 0100 0000
             // 0X00 0000
             return 16;
         } else {
@@ -295,20 +304,21 @@ export class CommandApdu {
         }
     }
 
-    /** marks command as the last (or only) command of a chain */
-    last(): this {
-        this._byteArray[0] &= 0xef;
+    /** Marks command as the last (or only) command of a chain. This is the default state for every new CommandAPDU */
+    setLastOfChain(): this {
+        this.bufferView[CommandApdu.claOff] &= 0xef;
         return this;
     }
 
-    /** marks command as NOT the last command of a chain */
-    notLast(): this {
-        this._byteArray[0] |= 0x10;
+    /** Marks command as NOT the last command of a chain */
+    setNotLastOfChain(): this {
+        this.bufferView[CommandApdu.claOff] |= 0x10;
         return this;
     }
 
-    isLast(): boolean {
-        if ((this._byteArray[0] & 0x10) === 0) {
+    /** Returns true if the CommandAPDU is marked as the last (or only) command of a chain */
+    get isLastOfChain(): boolean {
+        if ((this.bufferView[CommandApdu.claOff] & 0x10) === 0) {
             return true;
         }
         return false;
@@ -319,14 +329,14 @@ export class CommandApdu {
      * `Type16` supports channels 4-19
      */
     setLogicalChannel(channel: number): this {
-        if (this.getType() === 4) {
+        if (this.type === 4) {
             if (channel < 0 || channel > 3) {
                 throw new Error(
                     `Type4 supports channels 0-3. Received: ${channel}`,
                 );
             }
-            this._byteArray[0] &= 0xfc;
-            this._byteArray[0] |= channel;
+            this.bufferView[CommandApdu.claOff] &= 0xfc;
+            this.bufferView[CommandApdu.claOff] |= channel;
             return this;
         } else {
             if (channel < 4 || channel > 19) {
@@ -334,24 +344,21 @@ export class CommandApdu {
                     `Type16 supports channels 4-19. Received: ${channel}`,
                 );
             }
-            this._byteArray[0] &= 0xf0;
-            this._byteArray[0] |= channel - 4;
+            this.bufferView[CommandApdu.claOff] &= 0xf0;
+            this.bufferView[CommandApdu.claOff] |= channel - 4;
             return this;
         }
-        return this;
     }
 
     /** Returns command logical channel.
      * 0-3 for `Type4`, 4-19 for `Type16` commands */
-    getLogicalChannel(): number {
-        const type = this.getType();
+    get logicalChannel(): number {
+        const type = this.type;
         switch (type) {
             case 4:
-                return this._byteArray[0] & 0x03;
+                return this.bufferView[CommandApdu.claOff] & 0x03;
             case 16:
-                return (this._byteArray[0] & 0x0f) + 4;
-            default:
-                throw new Error(`Unknown command type: ${type}.`);
+                return (this.bufferView[CommandApdu.claOff] & 0x0f) + 4;
         }
     }
 
@@ -363,18 +370,23 @@ export class CommandApdu {
      * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs
      */
     setSecMgsType(type: 0 | 1 | 2 | 3): this {
-        const cmdType = this.getType();
         if (type < 0 || type > 3)
             throw new Error(`Unsupported secure message type: ${type}`);
+        const cmdType = this.type;
         if (cmdType === 4) {
             this.setCla(this.getCla() & 0xf3); // zero both bits
             this.setCla(this.getCla() | (type << 2));
         } else {
-            if (type > 1)
-                throw new Error(
-                    'Type16 APDUs support only 0 or 1 for secure message type',
-                );
-            this.setCla(this.getCla() | (type << 5));
+            switch (type) {
+                case 0:
+                    this.setCla(this.getCla() & 0xdf);
+                    break;
+                case 1:
+                    this.setCla(this.getCla() | 0x20);
+                    break;
+                default:
+                    throw new Error('Type16 APDUs support only 0 or 1 for secure message type');
+            }
         }
         return this;
     }
@@ -390,8 +402,8 @@ export class CommandApdu {
      * 
      * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs;
      */
-    getSecMgsType(): number {
-        const cmdType = this.getType();
+    get secMgsType(): number {
+        const cmdType = this.type;
         let result = 0;
         if (cmdType === 4) {
             result = (this.getCla() >> 2) & 0x03;
