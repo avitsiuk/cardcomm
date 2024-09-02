@@ -1,4 +1,4 @@
-import { hexToArray } from '../utils';
+import { hexToArrayBuffer } from '../utils';
 import CommandApdu from '../commandApdu';
 
 const insByteList = {
@@ -72,9 +72,9 @@ export function select(
 
     if (typeof data !== 'undefined' && data.length > 0) {
         if (typeof data === 'string') {
-            cmd.setData(hexToArray(data));
+            cmd.setData(hexToArrayBuffer(data));
         } else if (Buffer.isBuffer(data) && data.length > 0) {
-            cmd.setData([...data]);
+            cmd.setData(data);
         } else if (Array.isArray(data) && data.length > 0) {
             cmd.setData(data);
         }

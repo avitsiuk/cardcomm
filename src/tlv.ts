@@ -1,4 +1,4 @@
-import { isHexString as isHex, removeHexPrefix, arrayToHex, hexToArray} from './utils';
+import { isHexString, hexToArrayBuffer, arrayToHex} from './utils';
 
 interface ItlvObj {
     [key: string]: {
@@ -128,7 +128,7 @@ export function berTlvDecode(data: number[]): IBerTlvObj {
         }
         if (data.length < valueIdx + valueLen) throw new Error(ERR_DATA_END);
         const value = data.slice(valueIdx, valueIdx + valueLen);
-        let tagHex = arrayToHex(data.slice(tagIdx, lenIdx));
+        let tagHex = Buffer.from(data.slice(tagIdx, lenIdx)).toString('hex');
         if (typeof berTvlObj[tagHex] !== 'undefined')
             throw new Error(`Duplicate tag: [${tagHex}]`);
         berTvlObj[tagHex] = {
@@ -200,7 +200,7 @@ function berLengthEncode(length: number): number[] {
     }
     const result: number[] = [length];
     if (result[0] > 127) {
-        const tmp = [...Buffer.from(arrayToHex(result, false), 'hex')];
+        const tmp = [...Buffer.from(arrayToHex(result), 'hex')];
         result[0] = 0x80;
         result[0] |= tmp.length;
         result.push(...tmp);
@@ -219,7 +219,7 @@ export function berTlvEncode(obj: IBerObj): number[] {
     let result: number[] = [];
     const tags = Object.keys(obj);
     for (let i = 0; i < tags.length; i++) {
-        if (tags[i].length < 1 || !isHex(tags[i])) {
+        if (tags[i].length < 1 || !isHexString(tags[i])) {
             throw new Error(`tag "${tags[i]}" is not a hex string`);
         }
 
@@ -230,7 +230,7 @@ export function berTlvEncode(obj: IBerObj): number[] {
         let tagBytes: number[] = [];
         if (typeof obj[tags[i]].class === 'undefined') {
             // no "class" member. interpret tags[i] as ready-to-use tag
-            tagBytes = hexToArray(tags[i]);
+            tagBytes = [...new Uint8Array(hexToArrayBuffer(tags[i]))];
             if (tagBytes.length > 3) {
                 throw new Error(`Tag "${tags[i]}" is too long; max 3 bytes`);
             }

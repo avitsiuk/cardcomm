@@ -5,6 +5,7 @@ import {
     hexToArrayBuffer,
     bufferToArrayBuffer,
     importBinData,
+    arrayToHex,
 } from '../src/utils';
 
 describe('utils', () => {
@@ -93,5 +94,11 @@ describe('utils', () => {
         expect(new Uint8Array(importBinData([1,0,255,10]))).toEqual(new Uint8Array([1,0,255,10]));
         //@ts-ignore
         expect(()=>{importBinData(true)}).toThrow();
+    })
+    test('arrayToHex()', () => {
+        expect(arrayToHex([], true)).toEqual('');
+        expect(arrayToHex([0, 255, 256, 257, 512, 513], true)).toEqual('00ff00010001');
+        expect(arrayToHex([0, 255, 256, 257, 512, 513], false)).toEqual('00ff0100010102000201');
+        expect(arrayToHex([0, 255, 256, 257, 512, 513])).toEqual('00ff0100010102000201');
     })
 })
