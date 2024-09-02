@@ -44,6 +44,7 @@ export class CommandApdu {
     }
 
     constructor(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu) {
+        this.clear();
         if (typeof data === 'undefined')
             return this;
         return this.from(data);
@@ -191,13 +192,15 @@ export class CommandApdu {
     }
 
     setData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): this {
-        const dataArrayBuffer = importBinData(data);
-
-        if (dataArrayBuffer.byteLength > CommandApdu.maxDataBytes) {
-            throw new Error(
-                `Data too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${dataArrayBuffer.byteLength} bytes`,
-            );
+        let dataArrayBuffer: ArrayBuffer = new ArrayBuffer(0);
+        try {
+            dataArrayBuffer = importBinData(data);
+        } catch (error: any) {
+            throw new Error(`Could not set CommandAPDU data field: ${error.message}`);
         }
+
+        if (dataArrayBuffer.byteLength > CommandApdu.maxDataBytes)
+            throw new Error(`Data too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${dataArrayBuffer.byteLength} bytes`);
 
         let le: number = 0;
         let newLeOffset: number = 4;

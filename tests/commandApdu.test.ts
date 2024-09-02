@@ -108,6 +108,8 @@ describe('CommandAPDU', () => {
         expect(cmd.lc).toEqual(3);
 
         expect(()=>{cmd.data = Buffer.alloc(CommandAPDU.maxDataBytes + 1)}).toThrow()
+        //@ts-ignore
+        expect(()=>{cmd.data = true}).toThrow()
 
         cmd.data = '';
         expect(cmd.data).toEqual(Buffer.alloc(0));

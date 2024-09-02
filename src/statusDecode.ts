@@ -142,7 +142,7 @@ const meanings: { [key: string]: (sw2: number) => string } = {
                 msg += '; Command APDU format not compliant with standard';
                 break;
             case sw2 == 0x02:
-                msg += '; The value of Lc is not the one expected';
+                msg += '; The value of Lc is not the expected one';
                 break;
             default:
                 msg += `; ${unkSw2(sw2)}`;
@@ -256,19 +256,19 @@ const meanings: { [key: string]: (sw2: number) => string } = {
         }
         return msg;
     },
-    '^6[B,b]00$': (sw2) => {
+    '^6[B,b]00$': (_) => {
         return `${CHCK_ERR}; Wrong parameters P1-P2`;
     },
     '^6[C,c](.{2})$': (sw2) => {
         return `${CHCK_ERR}; Wrong Le field; ${sw2} data bytes available`;
     },
-    '^6[D,d]00$': (sw2) => {
+    '^6[D,d]00$': (_) => {
         return `${CHCK_ERR}; Instruction code not supported or invalid`;
     },
-    '^6[E,e]00$': (sw2) => {
+    '^6[E,e]00$': (_) => {
         return `${CHCK_ERR}; Class not supported`;
     },
-    '^6[F,f]00$': (sw2) => {
+    '^6[F,f]00$': (_) => {
         return `${CHCK_ERR}; No precise diagnosis`;
     },
 };
