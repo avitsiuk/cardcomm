@@ -2,10 +2,8 @@ import {
     isHexString,
     strHasHexPrefix,
     normalizeHexString,
-    hexToArrayBuffer,
-    bufferToArrayBuffer,
+    hexDecode,
     importBinData,
-    arrayToHex,
 } from '../src/utils';
 
 describe('utils', () => {
@@ -54,51 +52,135 @@ describe('utils', () => {
         expect(normalizeHexString('0ff00ff')).toEqual('00ff00ff');
         expect(normalizeHexString('x0ff00ff')).toEqual('x0ff00ff');
     })
-    test('hexToArrayBuffer()', () => {
+    test('hexDecode()', () => {
         //@ts-ignore
-        expect(()=>{hexToArrayBuffer(true)}).toThrow();
-        expect(Buffer.from(hexToArrayBuffer(''))).toEqual(Buffer.from([]));
-        expect(Buffer.from(hexToArrayBuffer('f'))).toEqual(Buffer.from([15]));
-        expect(Buffer.from(hexToArrayBuffer('F'))).toEqual(Buffer.from([15]));
-        expect(Buffer.from(hexToArrayBuffer('ff'))).toEqual(Buffer.from([255]));
-        expect(Buffer.from(hexToArrayBuffer('fF'))).toEqual(Buffer.from([255]));
-        expect(Buffer.from(hexToArrayBuffer('Ff'))).toEqual(Buffer.from([255]));
-        expect(Buffer.from(hexToArrayBuffer('FF'))).toEqual(Buffer.from([255]));
-        expect(Buffer.from(hexToArrayBuffer('0xff'))).toEqual(Buffer.from([255]));
-        expect(Buffer.from(hexToArrayBuffer('0x0ff'))).toEqual(Buffer.from([0, 255]));
-        expect(Buffer.from(hexToArrayBuffer('0x1ff'))).toEqual(Buffer.from([1, 255]));
-        expect(Buffer.from(hexToArrayBuffer('0ff'))).toEqual(Buffer.from([0, 255]));
-        expect(Buffer.from(hexToArrayBuffer('0xf00ff'))).toEqual(Buffer.from([15, 0, 255]));
-        expect(()=>{hexToArrayBuffer('oxff')}).toThrow();
-        expect(()=>{hexToArrayBuffer(' 0xff')}).toThrow();
-        expect(()=>{hexToArrayBuffer('0xf f')}).toThrow();
-        expect(()=>{hexToArrayBuffer('0xff ')}).toThrow();
-        expect(()=>{hexToArrayBuffer('0xf f ')}).toThrow();
-    })
-    test('bufferToArrayBuffer()', () => {
-        expect(new Uint8Array(bufferToArrayBuffer(Buffer.from([])))).toEqual(new Uint8Array([]));
-        expect(new Uint8Array(bufferToArrayBuffer(Buffer.from([1,2,3])))).toEqual(new Uint8Array([1,2,3]));
-        expect(new Uint8Array(bufferToArrayBuffer(Buffer.from([256])))).toEqual(new Uint8Array([256]));
+        expect(()=>{hexDecode(true)}).toThrow(new TypeError('Not a string'));
+
+        //@ts-ignore
+        expect(()=>{hexDecode('a string')}).toThrow(new TypeError('Not a hex string: [a string]'));
+        expect(hexDecode('')).toEqual(new Uint8Array(0));
+        expect(hexDecode('f')).toEqual(new Uint8Array([15]));
+        expect(hexDecode('0f')).toEqual(new Uint8Array([15]));
+        expect(hexDecode('0x0f')).toEqual(new Uint8Array([15]));
+        expect(hexDecode('0X0f')).toEqual(new Uint8Array([15]));
+        expect(hexDecode('0X0F')).toEqual(new Uint8Array([15]));
+
+        //@ts-ignore
+        expect(()=>{hexDecode('0102', true)}).toThrow(new Error('outBuffer must be an ArrayBuffer or ArrayBufferView'));
+        const ab = new ArrayBuffer(5);
+        expect(()=>{hexDecode('0102', ab, -1)}).toThrow(new Error('outOffset value out of bounds; value: -1'));
+        expect(()=>{hexDecode('0102', ab, 5)}).toThrow(new Error('outOffset value out of bounds; value: 5'));
+        expect(()=>{hexDecode('0102', ab, 4)}).toThrow(new Error('Not enough space in the provided outBuffer'));
+
+        expect(hexDecode('0102', ab)).toEqual(new Uint8Array([1,2]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,2,0,0,0]));
+        expect(hexDecode('0f10', ab, 1)).toEqual(new Uint8Array([15,16]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,15,16,0,0]));
+
+        const u8 = new Uint8Array(ab).subarray(1, 4);
+        expect(hexDecode('feff',u8)).toEqual(new Uint8Array([254,255]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,254,255,0,0]));
+        expect(u8).toEqual(new Uint8Array([254,255,0]));
+        expect(hexDecode('8081',u8, 1)).toEqual(new Uint8Array([128,129]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,254,128,129,0]));
+        expect(u8).toEqual(new Uint8Array([254,128,129]));
+
+        const buf = Buffer.from(ab, 1, 3);
+        expect(hexDecode('a0a',buf)).toEqual(new Uint8Array([10,10]));
+        expect(buf).toEqual(Buffer.from([10,10,129]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,10,10,129,0]));
+        expect(hexDecode('0xb0b',buf, 1)).toEqual(new Uint8Array([11,11]));
+        expect(buf).toEqual(Buffer.from([10,11,11]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([1,10,11,11,0]));
     })
     test('importBinData()', () => {
-        expect(new Uint8Array(importBinData(''))).toEqual(new Uint8Array([]));
-        expect(new Uint8Array(importBinData('0xf00ff'))).toEqual(new Uint8Array([15,0,255]));
-        expect(new Uint8Array(importBinData('f00ff'))).toEqual(new Uint8Array([15,0,255]));
-        expect(()=>{importBinData('f0x0ff')}).toThrow();
-        expect(new Uint8Array(importBinData(Buffer.from([1,2,3])))).toEqual(new Uint8Array([1,2,3]));
-        expect(new Uint8Array(importBinData(new Uint8Array([1,0,255]).buffer))).toEqual(new Uint8Array([1,0,255]));
-        expect(new Uint8Array(importBinData(new Uint8Array([1,0,255])))).toEqual(new Uint8Array([1,0,255]));
-        expect(new Uint8Array(importBinData(new Uint32Array([16842506])))).toEqual(new Uint8Array([0x0a, 0xff, 0x00, 0x01]));
+
         //@ts-ignore
-        expect(()=>{importBinData([1,2,3, 'a'])}).toThrow();
-        expect(new Uint8Array(importBinData([1,0,255,10]))).toEqual(new Uint8Array([1,0,255,10]));
+        expect(()=>{importBinData(true)}).toThrow(new Error('Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
         //@ts-ignore
-        expect(()=>{importBinData(true)}).toThrow();
-    })
-    test('arrayToHex()', () => {
-        expect(arrayToHex([], true)).toEqual('');
-        expect(arrayToHex([0, 255, 256, 257, 512, 513], true)).toEqual('00ff00010001');
-        expect(arrayToHex([0, 255, 256, 257, 512, 513], false)).toEqual('00ff0100010102000201');
-        expect(arrayToHex([0, 255, 256, 257, 512, 513])).toEqual('00ff0100010102000201');
+        expect(()=>{importBinData(['asd'])}).toThrow(new Error('Data is not a numeric array'));
+
+        let ab = new ArrayBuffer(5);
+        let u8 = new Uint8Array(ab).subarray(1, 4);
+        let buf = Buffer.from(ab, 1, 3);
+
+        expect(()=>{importBinData('zz')}).toThrow(new Error('Error decoding hex string: Not a hex string: [zz]'));
+        expect(importBinData('')).toEqual(new Uint8Array(0));
+        expect(importBinData('f')).toEqual(new Uint8Array([15]));
+        expect(importBinData('0xf')).toEqual(new Uint8Array([15]));
+        expect(importBinData('0Xf')).toEqual(new Uint8Array([15]));
+        expect(importBinData('0xF')).toEqual(new Uint8Array([15]));
+        expect(importBinData('0XF')).toEqual(new Uint8Array([15]));
+        expect(importBinData('ff')).toEqual(new Uint8Array([255]));
+        expect(importBinData('f0f')).toEqual(new Uint8Array([15, 15]));
+
+        expect(()=>{importBinData('0f', ab, -1)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: -1'));
+        expect(()=>{importBinData('0f', ab, 5)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: 5'));
+        expect(()=>{importBinData('0faa', ab, 4)}).toThrow(new Error('Error decoding hex string: Not enough space in the provided outBuffer'));
+        expect(importBinData('f', ab)).toEqual(new Uint8Array([15]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,0,0,0,0]));
+        expect(importBinData('10', ab, 1)).toEqual(new Uint8Array([16]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,16,0,0,0]));
+
+        expect(()=>{importBinData('0f', u8, -1)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: -1'));
+        expect(()=>{importBinData('0f', u8, 5)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: 5'));
+        expect(()=>{importBinData('0faa', u8, 2)}).toThrow(new Error('Error decoding hex string: Not enough space in the provided outBuffer'));
+        expect(importBinData('11', u8)).toEqual(new Uint8Array([17]));
+        expect(u8).toEqual(new Uint8Array([17,0,0]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,17,0,0,0]));
+        expect(importBinData('1212', u8, 1)).toEqual(new Uint8Array([18, 18]));
+        expect(u8).toEqual(new Uint8Array([17,18,18]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,17,18,18,0]));
+
+        expect(()=>{importBinData('0f', buf, -1)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: -1'));
+        expect(()=>{importBinData('0f', buf, 5)}).toThrow(new Error('Error decoding hex string: outOffset value out of bounds; value: 5'));
+        expect(()=>{importBinData('0faa', buf, 2)}).toThrow(new Error('Error decoding hex string: Not enough space in the provided outBuffer'));
+        expect(importBinData('13', buf)).toEqual(new Uint8Array([19]));
+        expect(buf).toEqual(Buffer.from([19,18,18]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,19,18,18,0]));
+        expect(importBinData('1414', buf, 1)).toEqual(new Uint8Array([20, 20]));
+        expect(buf).toEqual(Buffer.from([19,20,20]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([15,19,20,20,0]));
+
+        ab = new ArrayBuffer(5);
+        u8 = new Uint8Array(ab).subarray(1, 4);
+        buf = Buffer.from(ab, 1, 3);
+
+        expect(importBinData([1,1], u8, 1)).toEqual(new Uint8Array([1, 1]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([0,0,1,1,0]));
+        expect(u8).toEqual(new Uint8Array([0,1,1]));
+
+        expect(importBinData(new Uint8Array([10,10]), ab, 1)).toEqual(new Uint8Array([10, 10]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([0,10,10,1,0]));
+        expect(u8).toEqual(new Uint8Array([10,10,1]));
+
+        let testData = new Uint8Array(2);
+
+        testData.set([2,3]);
+        expect(importBinData(testData, u8, 1)).toEqual(new Uint8Array([2, 3]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([0,10,2,3,0]));
+        expect(u8).toEqual(new Uint8Array([10,2,3]));
+
+        testData.set([0,0]);
+        expect(importBinData(testData.buffer, u8, 1)).toEqual(new Uint8Array([0, 0]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([0,10,0,0,0]));
+        expect(u8).toEqual(new Uint8Array([10,0,0]));
+
+        testData.set([1,1]);
+        expect(importBinData(Buffer.from(testData), u8, 1)).toEqual(new Uint8Array([1, 1]));
+        expect(new Uint8Array(ab)).toEqual(new Uint8Array([0,10,1,1,0]));
+        expect(u8).toEqual(new Uint8Array([10,1,1]));
+
+        testData.set([5,5]);
+        const result = importBinData(testData);
+        expect(result).toEqual(testData);
+        testData.set([6,6]);
+        expect(result).toEqual(testData);
+        //@ts-ignore
+        expect(()=>{importBinData(testData, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer'));
+        expect(()=>{importBinData(testData, new Uint8Array(5), -1)}).toThrow(new Error('outOffset value out of bounds; value: -1'));
+        expect(()=>{importBinData(testData, new Uint8Array(5), 10)}).toThrow(new Error('outOffset value out of bounds; value: 10'));
+        expect(()=>{importBinData(testData, new Uint8Array(5), 4)}).toThrow(new Error('Not enough space in the provided outBuffer'));
+        
     })
 })
