@@ -57,6 +57,7 @@
         "build": "npm run build:clean && concurrently \"npm:build:cjs\" \"npm:build:esm\" && npm run fix:esm",
         "docs": "typedoc --options typedoc.json",
         "prepack": "npm run build",
+        "wiptlv": "npx ts-node ./examples/wiptlv.ts",
         "demo": "npx ts-node ./examples/demo.ts"
     },
     "dependencies": {
