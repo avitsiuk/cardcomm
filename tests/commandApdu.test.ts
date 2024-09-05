@@ -23,24 +23,21 @@ describe('CommandAPDU', () => {
         expect(cmd.byteLength).toEqual(5);
         expect(cmd.lc).toEqual(0);
         expect(cmd.le).toEqual(0);
-        expect(cmd.toArray()).toEqual([0,0,0,0,0]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,0,0,0,0]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,0,0,0,0]));
         expect(cmd.toString()).toEqual('0000000000');
 
         cmd = CommandAPDU.from(new CommandAPDU());
         expect(cmd.byteLength).toEqual(5);
         expect(cmd.lc).toEqual(0);
         expect(cmd.le).toEqual(0);
-        expect(cmd.toArray()).toEqual([0,0,0,0,0]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,0,0,0,0]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,0,0,0,0]));
         expect(cmd.toString()).toEqual('0000000000');
 
         cmd = CommandAPDU.from('00010203'); // no data, no le (added automatcally)
         expect(cmd.byteLength).toEqual(5);
         expect(cmd.lc).toEqual(0);
         expect(cmd.le).toEqual(0);
-        expect(cmd.toArray()).toEqual([0,1,2,3,0]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,1,2,3,0]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,1,2,3,0]));
         expect(cmd.toString()).toEqual('0001020300');
 
         testData = Buffer.alloc(6);
@@ -49,8 +46,7 @@ describe('CommandAPDU', () => {
         expect(cmd.byteLength).toEqual(7);
         expect(cmd.lc).toEqual(1);
         expect(cmd.le).toEqual(0);
-        expect(cmd.toArray()).toEqual([0,0,0,0,1,0,0]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,0,0,0,1,0,0]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,0,0,0,1,0,0]));
         expect(cmd.toString()).toEqual('00000000010000');
 
         testData = Buffer.alloc(7);
@@ -60,8 +56,7 @@ describe('CommandAPDU', () => {
         expect(cmd.byteLength).toEqual(7);
         expect(cmd.lc).toEqual(1);
         expect(cmd.le).toEqual(255);
-        expect(cmd.toArray()).toEqual([0,0,0,0,1,0,255]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,0,0,0,1,0,255]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,0,0,0,1,0,255]));
         expect(cmd.toString()).toEqual('000000000100ff');
 
         testData = Buffer.from('0000000003010203ff', 'hex');
@@ -69,13 +64,12 @@ describe('CommandAPDU', () => {
         expect(cmd.byteLength).toEqual(9);
         expect(cmd.lc).toEqual(3);
         expect(cmd.le).toEqual(255);
-        expect(cmd.toArray()).toEqual([0,0,0,0,3,1,2,3,255]);
-        expect(cmd.toBuffer()).toEqual(Buffer.from([0,0,0,0,3,1,2,3,255]));
+        expect(cmd.toByteArray()).toEqual(new Uint8Array([0,0,0,0,3,1,2,3,255]));
         expect(cmd.toString()).toEqual('0000000003010203ff');
     })
 
     test('accessors', () => {
-        let testData = Buffer.from('0000000003010203ff', 'hex');
+        let testData: number[] = [0,0,0,0,3,1,2,3,255];
         let cmd = CommandAPDU.from(testData);
 
         expect(cmd.byteLength).toEqual(9);
@@ -107,19 +101,19 @@ describe('CommandAPDU', () => {
 
         expect(cmd.lc).toEqual(3);
 
-        expect(()=>{cmd.data = Buffer.alloc(CommandAPDU.maxDataBytes + 1)}).toThrow()
+        expect(()=>{cmd.data = new Uint8Array(CommandAPDU.maxDataBytes + 1)}).toThrow()
         //@ts-ignore
         expect(()=>{cmd.data = true}).toThrow()
 
         cmd.data = '';
-        expect(cmd.data).toEqual(Buffer.alloc(0));
+        expect(cmd.data).toEqual(new Uint8Array(0));
         expect(cmd.byteLength).toEqual(5);
         expect(cmd.lc).toEqual(0);
         expect(cmd.le).toEqual(255);
         expect(cmd.toString()).toEqual('81828384ff');
 
         cmd.data = '70717273747576777879';
-        expect(cmd.data).toEqual(Buffer.from('70717273747576777879', 'hex'));
+        expect(cmd.data).toEqual(new Uint8Array([112,113,114,115,116,117,118,119,120,121]));
         expect(cmd.byteLength).toEqual(16);
         expect(cmd.lc).toEqual(10);
         expect(cmd.le).toEqual(255);

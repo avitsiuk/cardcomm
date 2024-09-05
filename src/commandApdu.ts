@@ -1,4 +1,8 @@
-import { importBinData } from './utils';
+import {
+    TBinData,
+    importBinData,
+    hexEncode,
+} from './utils';
 /*
 
 CASE   CMD-DATA(LC)   RSP-DATA(LE)
@@ -35,15 +39,14 @@ export class CommandApdu {
     static readonly dataOff      = 5;
 
     // header(4) + lc(1) + data + le(1)
-    private buffer: ArrayBuffer = new ArrayBuffer(CommandApdu.maxDataBytes + 6);
-    private bufferView: Uint8Array = new Uint8Array(this.buffer);
+    private byteArray: Uint8Array = new Uint8Array(CommandApdu.maxDataBytes + 6); // header(4) + Lc(1) + data + Le(1)
     private bLength = 5;
 
-    static from(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
+    static from(data?: TBinData | CommandApdu): CommandApdu {
         return new CommandApdu(data);
     }
 
-    constructor(data?: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu) {
+    constructor(data?: TBinData | CommandApdu) {
         this.clear();
         if (typeof data === 'undefined')
             return this;
@@ -51,13 +54,13 @@ export class CommandApdu {
     }
 
     /** Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this CommandAPDU */
-    from(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView | CommandApdu): CommandApdu {
-        let inBuffer = new ArrayBuffer(0);
-        if (data instanceof CommandApdu) {
-            inBuffer = data.toBuffer().buffer.slice(0, data.bLength);
+    from(inData: TBinData | CommandApdu): CommandApdu {
+        let inBuffer: Uint8Array = new Uint8Array(0);
+        if (inData instanceof CommandApdu) {
+            inBuffer = inData.toByteArray();
         } else {
             try {
-                inBuffer = importBinData(data)
+                inBuffer = importBinData(inData)
             } catch (error: any) {
                 throw new Error(`Could not create CommandAPDU from provided data: ${error.message}`);
             }
@@ -66,11 +69,10 @@ export class CommandApdu {
             throw new Error(`Expected at least 4 bytes of input data, received: ${inBuffer.byteLength} bytes`);
         if (inBuffer.byteLength > (CommandApdu.maxDataBytes + 6))
             throw new Error(`Expected at most ${CommandApdu.maxDataBytes + 6} bytes of input data, received: ${inBuffer.byteLength} bytes`);
-        const inView = new Uint8Array(inBuffer);
         if (inBuffer.byteLength <= 5) {
             this.bLength = 5;
         } else {
-            const lc = inView[CommandApdu.lcOff];
+            const lc = inBuffer[CommandApdu.lcOff];
             const noLeLength = 5 + lc; // 4(head) + 1(lc) + lc(data)
             if (noLeLength === 5)
                 throw new Error(`Lc value cannot be 0; received data: [${Buffer.from(inBuffer).toString('hex')}]`);
@@ -82,26 +84,23 @@ export class CommandApdu {
                 throw new Error(`Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${Buffer.from(inBuffer).toString('hex')}]`);
             }
         }
-        this.bufferView.set(inView, 0);
+        this.byteArray.set(inBuffer, 0);
         return this;
     }
 
-    toArray(): number[] {
-        return [...new Uint8Array(this.buffer, 0, this.bLength)];
+    /** Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    toByteArray(): Uint8Array {
+        return this.byteArray.subarray(0, this.bLength);
     }
 
-    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
-    toBuffer(): Buffer {
-        return Buffer.from(this.buffer, 0, this.bLength);
-    }
-
+    /** Returns hex string */
     toString(): string {
-        return Buffer.from(this.buffer, 0, this.bLength).toString('hex');
+        return hexEncode(this.toByteArray());
     }
 
-    // clears this CommandAPDU by setting it's content to "0x0000000000"
+    // Clears this CommandAPDU by setting it's content to "0x0000000000"
     clear(): this {
-        this.bufferView.set([0,0,0,0,0], 0);
+        this.byteArray.set([0,0,0,0,0], 0);
         this.bLength = 5;
         return this;
     }
@@ -111,7 +110,7 @@ export class CommandApdu {
     }
 
     setCla(cla: number): this {
-        this.bufferView.set([cla], CommandApdu.claOff);
+        this.byteArray.set([cla], CommandApdu.claOff);
         return this;
     }
 
@@ -120,7 +119,7 @@ export class CommandApdu {
     }
 
     getCla(): number {
-        return this.bufferView[CommandApdu.claOff];
+        return this.byteArray[CommandApdu.claOff];
     }
 
     get cla(): number {
@@ -128,7 +127,7 @@ export class CommandApdu {
     }
 
     setIns(ins: number): this {
-        this.bufferView.set([ins], CommandApdu.insOff);
+        this.byteArray.set([ins], CommandApdu.insOff);
         return this;
     }
 
@@ -137,7 +136,7 @@ export class CommandApdu {
     }
 
     getIns(): number {
-        return this.bufferView[CommandApdu.insOff];
+        return this.byteArray[CommandApdu.insOff];
     }
 
     get ins(): number {
@@ -145,7 +144,7 @@ export class CommandApdu {
     }
 
     setP1(p1: number): this {
-        this.bufferView.set([p1], CommandApdu.p1Off);
+        this.byteArray.set([p1], CommandApdu.p1Off);
         return this;
     }
 
@@ -154,7 +153,7 @@ export class CommandApdu {
     }
 
     getP1(): number {
-        return this.bufferView[CommandApdu.p1Off];
+        return this.byteArray[CommandApdu.p1Off];
     }
 
     get p1(): number {
@@ -162,7 +161,7 @@ export class CommandApdu {
     }
 
     setP2(p2: number): this {
-        this.bufferView.set([p2], CommandApdu.p2Off);
+        this.byteArray.set([p2], CommandApdu.p2Off);
         return this;
     }
 
@@ -171,7 +170,7 @@ export class CommandApdu {
     }
 
     getP2(): number {
-        return this.bufferView[CommandApdu.p2Off];
+        return this.byteArray[CommandApdu.p2Off];
     }
 
     get p2(): number {
@@ -183,7 +182,7 @@ export class CommandApdu {
     getLc(): number {
         let lc = 0;
         if (this.bLength > 5)
-            lc = this.bufferView[CommandApdu.lcOff];
+            lc = this.byteArray[CommandApdu.lcOff];
         return lc;
     }
 
@@ -191,53 +190,48 @@ export class CommandApdu {
         return this.getLc();
     }
 
-    setData(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView): this {
-        let dataArrayBuffer: ArrayBuffer = new ArrayBuffer(0);
+    setData(data: TBinData): this {
+        const le = this.le;
+        let importedBytes: Uint8Array;
+        // let inBuffer: Uint8Array = new Uint8Array(0);
         try {
-            dataArrayBuffer = importBinData(data);
+            importedBytes = importBinData(data, this.byteArray.subarray(CommandApdu.dataOff, CommandApdu.dataOff + CommandApdu.maxDataBytes));
         } catch (error: any) {
             throw new Error(`Could not set CommandAPDU data field: ${error.message}`);
         }
 
-        if (dataArrayBuffer.byteLength > CommandApdu.maxDataBytes)
-            throw new Error(`Data too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${dataArrayBuffer.byteLength} bytes`);
+        if (importedBytes.byteLength < 1) {
+            this.byteArray[CommandApdu.lcOff] = le;
+            this.bLength = CommandApdu.lcOff + 1;
+        } else {
+            this.byteArray[CommandApdu.lcOff] = importedBytes.byteLength;
+            this.byteArray[CommandApdu.dataOff + importedBytes.byteLength] = le;
+            this.bLength = CommandApdu.dataOff + importedBytes.byteLength + 1; //(header + lc)(5) + data + le
+        }
 
-        let le: number = 0;
-        let newLeOffset: number = 4;
-        if (this.bLength > 4) {
-            le = this.bufferView[this.bLength - 1];
-        }
-        const lc = dataArrayBuffer.byteLength;
-        if (lc > 0) {
-            newLeOffset += (1 + lc);
-            this.bufferView.set([lc], CommandApdu.lcOff);
-            this.bufferView.set(new Uint8Array(dataArrayBuffer), CommandApdu.dataOff);
-        }
-        this.bufferView.set([le], newLeOffset);
-        this.bLength = newLeOffset + 1;
         return this;
     }
 
-    set data(data: string | number[] | Buffer | ArrayBuffer | ArrayBufferView) {
+    set data(data: TBinData) {
         this.setData(data);
     }
 
     /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
-    getData(): Buffer {
+    getData(): Uint8Array {
         if (this.bLength <= 5)
-            return Buffer.from(this.buffer, 4, 0);
+            return this.byteArray.subarray(CommandApdu.dataOff, CommandApdu.dataOff);
 
-        return Buffer.from(this.buffer, CommandApdu.dataOff, this.bufferView[CommandApdu.lcOff]);
+        return this.byteArray.subarray(CommandApdu.dataOff, CommandApdu.dataOff + this.byteArray[CommandApdu.lcOff]);
     }
 
     /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
-    get data(): Buffer {
+    get data(): Uint8Array {
         return this.getData();
     }
 
-    /** If no value is provided, Le is set to "0x00" */
+    /** If no value is provided, Le is set to 0 */
     setLe(le: number = 0): this {
-        this.bufferView.set([le], this.bLength - 1);
+        this.byteArray[this.bLength - 1] = le;
         return this;
     }
 
@@ -246,7 +240,7 @@ export class CommandApdu {
     }
 
     getLe(): number {
-        return this.bufferView[this.bLength - 1];
+        return this.byteArray[this.bLength - 1];
     }
 
     get le(): number {
@@ -259,7 +253,7 @@ export class CommandApdu {
 
     /** Sets m.s.b. of CLA byte to 1, marking command as having proprietary format */
     setProprietary(): this {
-        this.bufferView[CommandApdu.claOff] |= 0x80;
+        this.byteArray[CommandApdu.claOff] |= 0x80;
         return this;
     }
 
@@ -267,13 +261,13 @@ export class CommandApdu {
      * All newly created commands are set as interindustry by default
      */
     setInterindustry(): this {
-        this.bufferView[CommandApdu.claOff] &= 0x7f;
+        this.byteArray[CommandApdu.claOff] &= 0x7f;
         return this;
     }
 
     /** Returns true if CLA bytes indicates a proprietary command format*/
     get isProprietary(): boolean {
-        if (this.bufferView[CommandApdu.claOff] & 0x80) return true;
+        if (this.byteArray[CommandApdu.claOff] & 0x80) return true;
         return false;
     }
 
@@ -281,10 +275,10 @@ export class CommandApdu {
     setType(type: 4 | 16): this {
         switch (type) {
             case 4:
-                this.bufferView[CommandApdu.claOff] &= 0x9f;
+                this.byteArray[CommandApdu.claOff] &= 0x9f;
                 break;
             case 16:
-                this.bufferView[CommandApdu.claOff] |= 0x40;
+                this.byteArray[CommandApdu.claOff] |= 0x40;
                 break;
             default:
                 throw new Error(
@@ -296,10 +290,10 @@ export class CommandApdu {
 
     /** Type4 can use 4 logical channels (0-3) while type16 can use 16 logical channels (4-19)*/
     get type(): 4 | 16 {
-        if ((this.bufferView[CommandApdu.claOff] & 0x60) === 0) { // & 0110 0000
+        if ((this.byteArray[CommandApdu.claOff] & 0x60) === 0) { // & 0110 0000
             // 0XX0 0000
             return 4;
-        } else if ((this.bufferView[CommandApdu.claOff] & 0x40) > 0) { // & 0100 0000
+        } else if ((this.byteArray[CommandApdu.claOff] & 0x40) > 0) { // & 0100 0000
             // 0X00 0000
             return 16;
         } else {
@@ -309,19 +303,19 @@ export class CommandApdu {
 
     /** Marks command as the last (or only) command of a chain. This is the default state for every new CommandAPDU */
     setLastOfChain(): this {
-        this.bufferView[CommandApdu.claOff] &= 0xef;
+        this.byteArray[CommandApdu.claOff] &= 0xef;
         return this;
     }
 
     /** Marks command as NOT the last command of a chain */
     setNotLastOfChain(): this {
-        this.bufferView[CommandApdu.claOff] |= 0x10;
+        this.byteArray[CommandApdu.claOff] |= 0x10;
         return this;
     }
 
     /** Returns true if the CommandAPDU is marked as the last (or only) command of a chain */
     get isLastOfChain(): boolean {
-        if ((this.bufferView[CommandApdu.claOff] & 0x10) === 0) {
+        if ((this.byteArray[CommandApdu.claOff] & 0x10) === 0) {
             return true;
         }
         return false;
@@ -338,8 +332,8 @@ export class CommandApdu {
                     `Type4 supports channels 0-3. Received: ${channel}`,
                 );
             }
-            this.bufferView[CommandApdu.claOff] &= 0xfc;
-            this.bufferView[CommandApdu.claOff] |= channel;
+            this.byteArray[CommandApdu.claOff] &= 0xfc;
+            this.byteArray[CommandApdu.claOff] |= channel;
             return this;
         } else {
             if (channel < 4 || channel > 19) {
@@ -347,8 +341,8 @@ export class CommandApdu {
                     `Type16 supports channels 4-19. Received: ${channel}`,
                 );
             }
-            this.bufferView[CommandApdu.claOff] &= 0xf0;
-            this.bufferView[CommandApdu.claOff] |= channel - 4;
+            this.byteArray[CommandApdu.claOff] &= 0xf0;
+            this.byteArray[CommandApdu.claOff] |= channel - 4;
             return this;
         }
     }
@@ -359,9 +353,9 @@ export class CommandApdu {
         const type = this.type;
         switch (type) {
             case 4:
-                return this.bufferView[CommandApdu.claOff] & 0x03;
+                return this.byteArray[CommandApdu.claOff] & 0x03;
             case 16:
-                return (this.bufferView[CommandApdu.claOff] & 0x0f) + 4;
+                return (this.byteArray[CommandApdu.claOff] & 0x0f) + 4;
         }
     }
 
