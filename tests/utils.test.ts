@@ -3,6 +3,7 @@ import {
     strHasHexPrefix,
     normalizeHexString,
     hexDecode,
+    hexEncode,
     importBinData,
 } from '../src/utils';
 
@@ -181,6 +182,10 @@ describe('utils', () => {
         expect(()=>{importBinData(testData, new Uint8Array(5), -1)}).toThrow(new Error('outOffset value out of bounds; value: -1'));
         expect(()=>{importBinData(testData, new Uint8Array(5), 10)}).toThrow(new Error('outOffset value out of bounds; value: 10'));
         expect(()=>{importBinData(testData, new Uint8Array(5), 4)}).toThrow(new Error('Not enough space in the provided outBuffer'));
-        
+    })
+    test('hexEncode()', () => {
+        //@ts-ignore
+        expect(()=>{hexEncode(['str'])}).toThrow(new TypeError('Error hexencoding value: Data is not a numeric array'));
+        expect(hexEncode([0,1,2,3, 255])).toEqual('00010203ff');
     })
 })
