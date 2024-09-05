@@ -100,7 +100,7 @@ export class CommandApdu {
 
     // Clears this CommandAPDU by setting it's content to "0x0000000000"
     clear(): this {
-        this.byteArray.set([0,0,0,0,0], 0);
+        this.byteArray.set([0,0,0,0,0]);
         this.bLength = 5;
         return this;
     }
