@@ -1,3 +1,12 @@
+/** Importable binary data. Can be one of following types:
+ * - Valid hex string. With or without `0x` prefix. Case insensitive. Empty string is a valid hex string.
+ * - Array of numbers
+ * - ArrayBuffer
+ * - ArrayBufferView
+ * - Buffer
+*/
+export type TBinData = string | number[] | Buffer | ArrayBuffer | ArrayBufferView;
+
 const hexValidationRegex = /^(0[xX])?[0-9A-Fa-f]+$/g; // '0x' prefix allowed
 
 /** Checks if string is a valid hex string. Both with or without `0x` prefix. Case insensitive. Empty string is a valid hex string.
@@ -91,7 +100,7 @@ export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView
  * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the ijmport will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
  */
 export function importBinData(
-    inData: string | number[] | Buffer | ArrayBuffer | ArrayBufferView,
+    inData: TBinData,
     outBuffer?: ArrayBuffer | ArrayBufferView | Buffer,
     outOffset: number = 0,
 ): Uint8Array {
