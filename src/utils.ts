@@ -70,6 +70,21 @@ export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView
     return res.subarray(0, requiredByteLength);
 }
 
+export function hexEncode(data: number[] | ArrayBuffer | ArrayBufferView | Buffer): string {
+    let result = '';
+    let byteArray: Uint8Array;
+    try {
+        byteArray = importBinData(data);
+    } catch (error: any) {
+        throw new Error(`Error hexencoding value: ${error.message}`);
+    }
+    for (let i = 0; i < byteArray.byteLength; i++) {
+        const byteHex = byteArray[i].toString(16);
+        result += `${byteHex.length % 2 ? '0' : ''}${byteHex}`
+    }
+    return result;
+}
+
 // /**
 //  * @param wrapOverflow - if `false`(default), 256 gets encoded as `0100`; otherwise '00'
 //  */
