@@ -1,3 +1,8 @@
+import {
+    TBinData,
+    importBinData,
+    hexEncode,
+} from './utils';
 const NORM_PROC = 'Normal processing';
 const WARN_PROC = 'Warning processing';
 const EXEC_ERR = 'Execution error';
@@ -6,7 +11,7 @@ const NVM_U = 'State of non-volatile memory is unchanged';
 const NVM_C = 'State of non-volatile memory may have changed';
 
 function unkSw2(sw2: number): string {
-    return `Unknown SW2: [${sw2.toString(16).padStart(2, '0')}]`;
+    return `Unknown SW2: [${hexEncode([sw2])}]`;
 }
 
 const meanings: { [key: string]: (sw2: number) => string } = {
@@ -280,15 +285,21 @@ regexStrList.reduce((_, regexStr, idx) => {
     return null;
 }, null);
 
-export function statusDecode(status: Buffer): string {
+export function statusDecode(status: TBinData): string {
+    let statusByteArray: Uint8Array;
+    try {
+        statusByteArray = importBinData(status);
+    } catch (error: any) {
+        return `Could not decode status: ${error.message}`;
+    }
 
-    const statusHex = status.toString('hex');
+    const statusHex = hexEncode(statusByteArray);
     let meaning = `Unknown status: [${statusHex}]`;
 
-    if (status.byteLength === 2) {
-        for (let regexIdx = 0; regexIdx < compiledRegexList.length; regexIdx++) {
-            if (compiledRegexList[regexIdx].exec(statusHex)) {
-                meaning = meanings[regexStrList[regexIdx]](status[1]);
+    if (statusByteArray.byteLength === 2) {
+        for (let i = 0; i < compiledRegexList.length; i++) {
+            if (compiledRegexList[i].exec(statusHex)) {
+                meaning = meanings[regexStrList[i]](statusByteArray[1]);
                 break;
             }
         }
