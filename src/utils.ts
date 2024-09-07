@@ -29,6 +29,14 @@ export function normalizeHexString(str: string): string {
     return `${(str.length % 2) ? '0' : '' }${ strHasHexPrefix(str) ? str.substring(2) : str}`;
 }
 
+/** Given a numeric value and a word length in bits, returns the minimum number of words needed to represent that value
+ * @param value - numeric value
+ * @param wordBitLen - length of word in bits. Default: `8`
+*/
+export function getMinWordNum(value: number, wordBitLen: number = 8): number {
+    return Math.max(1,Math.ceil(Math.log2(value+1)/wordBitLen));
+}
+
 /** Decodes a hex string. Case insensitive. Strings can have `0x` prefix. Throws if `outBuffer` is defined, but does not have enough space (considering `outOffset`, if any).
  * @param str - hex string to decode
  * @param outBuffer - if defined, the result of the decoding will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.

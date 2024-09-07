@@ -5,6 +5,7 @@ import {
     hexDecode,
     hexEncode,
     importBinData,
+    getMinWordNum,
 } from '../src/utils';
 
 describe('utils', () => {
@@ -187,5 +188,35 @@ describe('utils', () => {
         //@ts-ignore
         expect(()=>{hexEncode(['str'])}).toThrow(new TypeError('Error hexencoding value: Data is not a numeric array'));
         expect(hexEncode([0,1,2,3, 255])).toEqual('00010203ff');
+    })
+    test('getMinWordNum()', () => {
+        expect(getMinWordNum(0, 7)).toEqual(1);
+        expect(getMinWordNum(1, 7)).toEqual(1);
+        expect(getMinWordNum(127, 7)).toEqual(1);
+        expect(getMinWordNum(128, 7)).toEqual(2);
+        expect(getMinWordNum(16383, 7)).toEqual(2);
+        expect(getMinWordNum(16384, 7)).toEqual(3);
+        expect(getMinWordNum(2097151, 7)).toEqual(3);
+        expect(getMinWordNum(2097152, 7)).toEqual(4);
+        expect(getMinWordNum(268435455, 7)).toEqual(4);
+        expect(getMinWordNum(268435456, 7)).toEqual(5);
+        expect(getMinWordNum(34359738367, 7)).toEqual(5);
+        expect(getMinWordNum(34359738368, 7)).toEqual(6);
+        expect(getMinWordNum(0, 8)).toEqual(1);
+        expect(getMinWordNum(1, 8)).toEqual(1);
+        expect(getMinWordNum(127, 8)).toEqual(1);
+        expect(getMinWordNum(128, 8)).toEqual(1);
+        expect(getMinWordNum(16383, 8)).toEqual(2);
+        expect(getMinWordNum(16384, 8)).toEqual(2);
+        expect(getMinWordNum(2097151, 8)).toEqual(3);
+        expect(getMinWordNum(2097152, 8)).toEqual(3);
+        expect(getMinWordNum(268435455, 8)).toEqual(4);
+        expect(getMinWordNum(268435456, 8)).toEqual(4);
+        expect(getMinWordNum(34359738367, 8)).toEqual(5);
+        expect(getMinWordNum(34359738368, 8)).toEqual(5);
+ 
+        // default value
+        expect(getMinWordNum(34359738367)).toEqual(5);
+        expect(getMinWordNum(34359738368)).toEqual(5);
     })
 })
