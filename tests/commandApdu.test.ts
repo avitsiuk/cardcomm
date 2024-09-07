@@ -13,7 +13,7 @@ describe('CommandAPDU', () => {
         // 00 00 00 00 00 00 - if lc is 0 then it must be removed
         let testData = Buffer.alloc(6)
         expect(()=>{CommandAPDU.from(Buffer.alloc(6))}).toThrow(new Error('Lc value cannot be 0; received data: [000000000000]'));
-        testData.set([3], CommandAPDU.lcOff) // 00 00 00 00 03 00 - data is expected to be 3 bytes long
+        testData.set([3], CommandAPDU.LC_OFFSET) // 00 00 00 00 03 00 - data is expected to be 3 bytes long
         expect(()=>{CommandAPDU.from(testData)}).toThrow(new Error('Based on input Lc value(3), input data was expected to be 8(no Le value) or 9(with Le value) bytes long. Received 6 bytes: [000000000300]'));
 
 
@@ -41,7 +41,7 @@ describe('CommandAPDU', () => {
         expect(cmd.toString()).toEqual('0001020300');
 
         testData = Buffer.alloc(6);
-        testData.set([1], CommandAPDU.lcOff)
+        testData.set([1], CommandAPDU.LC_OFFSET)
         cmd = CommandAPDU.from(testData); // 00 00 00 00 01 00 - 1 byte of data (last 0), no le (added automatically)
         expect(cmd.byteLength).toEqual(7);
         expect(cmd.lc).toEqual(1);
@@ -50,7 +50,7 @@ describe('CommandAPDU', () => {
         expect(cmd.toString()).toEqual('00000000010000');
 
         testData = Buffer.alloc(7);
-        testData.set([1], CommandAPDU.lcOff)
+        testData.set([1], CommandAPDU.LC_OFFSET)
         testData.set([255], 6)
         cmd = CommandAPDU.from(testData); // 00 00 00 00 01 00 ff - 1 byte of data, with le (ff)
         expect(cmd.byteLength).toEqual(7);
@@ -101,7 +101,7 @@ describe('CommandAPDU', () => {
 
         expect(cmd.lc).toEqual(3);
 
-        expect(()=>{cmd.data = new Uint8Array(CommandAPDU.maxDataBytes + 1)}).toThrow()
+        expect(()=>{cmd.data = new Uint8Array(CommandAPDU.MAX_DATA_BYTE_LENGTH + 1)}).toThrow()
         //@ts-ignore
         expect(()=>{cmd.data = true}).toThrow()
 

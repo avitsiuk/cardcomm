@@ -6,8 +6,8 @@ import {
 import statusDecode from './statusDecode';
 
 export class ResponseApdu {
-    static readonly defaultDataBytes = 256; // no hard limit, but most of the responses will be within 256 bytes of data
-    private byteArray: Uint8Array = new Uint8Array(ResponseApdu.defaultDataBytes + 2); // data + status(2)
+    private static readonly DEF_DATA_BYTES_LENGTH = 256; // no hard limit, but most of the responses will be within 256 bytes of data
+    private byteArray: Uint8Array = new Uint8Array(ResponseApdu.DEF_DATA_BYTES_LENGTH + 2); // data + status(2)
     private bLength: number = 2
 
     static from(data?: TBinData | ResponseApdu): ResponseApdu {
