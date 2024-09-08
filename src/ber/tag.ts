@@ -8,7 +8,6 @@ import {
 const MAX_TAG_BYTE_LENGTH = 4;
 const MAX_TAG_SAFE_NUMBER = Math.max(30, (2 ** ((MAX_TAG_BYTE_LENGTH - 1) * 7) - 1));
 
-
 export type TTlvTagClassNumber = 0 | 1 | 2 | 3;
 export type TTlvTagClassName = 'universal' | 'application' | 'context-specific' | 'private';
 
@@ -68,7 +67,7 @@ interface TDecodeTagResult extends ITagInfo {
  * @param inBuffer - BER Tlv bytes
  * @param start - offset at which to start decoding process (inclusive); default: 0
  */
-export function decodeTag(inData: TBinData, startOffset: number = 0): TDecodeTagResult {
+export function parseTag(inData: TBinData, startOffset: number = 0): TDecodeTagResult {
     let inBuffer: Uint8Array;
     try {
         inBuffer = importBinData(inData);
@@ -122,7 +121,7 @@ export function decodeTag(inData: TBinData, startOffset: number = 0): TDecodeTag
     return result;
 }
 
-export function encodeTag(
+export function serializeTag(
     tagInfo : ITagInfo,
     outBuffer?: ArrayBuffer | ArrayBufferView | Buffer,
     outOffset: number = 0,
@@ -190,18 +189,21 @@ export class Tag implements ITagInfo {
     private _number: number            = 0;
 
 
-    static from(input?: ITagInfo | TBinData, startOffset: number = 0): Tag {
+    static from(input?: ITagInfo | TBinData | Tag, startOffset: number = 0): Tag {
         return new Tag(input, startOffset);
     };
 
-    constructor(input?: ITagInfo | TBinData, startOffset: number = 0) {
+    constructor(input?: ITagInfo | TBinData | Tag, startOffset: number = 0) {
         if (typeof input === 'undefined') {
             return this;
         }
         return this.from(input, startOffset);
     }
 
-    from(input: ITagInfo | TBinData, startOffset: number = 0): this {
+    from(input: ITagInfo | TBinData | Tag, startOffset: number = 0): this {
+        if (input instanceof Tag) {
+            return this.from(input.toByteArray());
+        }
         if (isTagInfo(input)) {
             if (input.number > Tag.MAX_NUMBER) {
                 throw new Error(`Number exceeds max allowed value of ${Tag.MAX_NUMBER}; received: ${input.number}`);
@@ -211,7 +213,7 @@ export class Tag implements ITagInfo {
             this._constructed = input.isConstructed;
             this._number = Math.floor(input.number);
 
-            const encodeResult = encodeTag(input, this.byteArray);
+            const encodeResult = serializeTag(input, this.byteArray);
             this.bLength = encodeResult.byteLength;
             this._hex = hexEncode(encodeResult);
 
@@ -225,7 +227,7 @@ export class Tag implements ITagInfo {
 
             let decodeResult: TDecodeTagResult;
             try {
-                decodeResult = decodeTag(inBuffer, startOffset);
+                decodeResult = parseTag(inBuffer, startOffset);
             } catch (error: any) {
                 throw new Error(`Error decoding tag: ${error.message}`);
             }
