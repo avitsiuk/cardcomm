@@ -6,46 +6,47 @@ import {
     hexEncode,
     importBinData,
     getMinWordNum,
+    isBinData,
 } from '../src/utils';
 
 describe('utils', () => {
     test('isHexString()', () => {
-        expect(isHexString('')).toBeFalsy;
-        expect(isHexString('f')).toBeTruthy;
-        expect(isHexString('F')).toBeTruthy;
-        expect(isHexString('ff')).toBeTruthy;
-        expect(isHexString('fF')).toBeTruthy;
-        expect(isHexString('Ff')).toBeTruthy;
-        expect(isHexString('FF')).toBeTruthy;
-        expect(isHexString('oxff')).toBeFalsy;
-        expect(isHexString('0xff')).toBeTruthy;
-        expect(isHexString('0ff')).toBeTruthy;
-        expect(isHexString('xff')).toBeFalsy;
-        expect(isHexString(' 0xff')).toBeFalsy;
-        expect(isHexString('0xff ')).toBeFalsy;
-        expect(isHexString('0xf f')).toBeFalsy;
-        expect(isHexString(' 0xff ')).toBeFalsy;
-        expect(isHexString(' 0xf f ')).toBeFalsy;
-        expect(isHexString('f f')).toBeFalsy;
+        expect(isHexString('')).toBeTruthy();
+        expect(isHexString('f')).toBeTruthy();
+        expect(isHexString('F')).toBeTruthy();
+        expect(isHexString('ff')).toBeTruthy();
+        expect(isHexString('fF')).toBeTruthy();
+        expect(isHexString('Ff')).toBeTruthy();
+        expect(isHexString('FF')).toBeTruthy();
+        expect(isHexString('oxff')).toBeFalsy();
+        expect(isHexString('0xff')).toBeTruthy();
+        expect(isHexString('0ff')).toBeTruthy();
+        expect(isHexString('xff')).toBeFalsy();
+        expect(isHexString(' 0xff')).toBeFalsy();
+        expect(isHexString('0xff ')).toBeFalsy();
+        expect(isHexString('0xf f')).toBeFalsy();
+        expect(isHexString(' 0xff ')).toBeFalsy();
+        expect(isHexString(' 0xf f ')).toBeFalsy();
+        expect(isHexString('f f')).toBeFalsy();
     })
     test('strHasHexPrefix()', () => {
-        expect(strHasHexPrefix('')).toBeFalsy;
-        expect(strHasHexPrefix('f')).toBeFalsy;
-        expect(strHasHexPrefix('F')).toBeFalsy;
-        expect(strHasHexPrefix('ff')).toBeFalsy;
-        expect(strHasHexPrefix('fF')).toBeFalsy;
-        expect(strHasHexPrefix('Ff')).toBeFalsy;
-        expect(strHasHexPrefix('FF')).toBeFalsy;
-        expect(strHasHexPrefix('oxff')).toBeFalsy;
-        expect(strHasHexPrefix('0xff')).toBeTruthy;
-        expect(strHasHexPrefix('0ff')).toBeFalsy;
-        expect(strHasHexPrefix('xff')).toBeFalsy;
-        expect(strHasHexPrefix(' 0xff')).toBeFalsy;
-        expect(strHasHexPrefix('0xff ')).toBeTruthy;
-        expect(strHasHexPrefix('0xf f')).toBeTruthy;
-        expect(strHasHexPrefix(' 0xff ')).toBeFalsy;
-        expect(strHasHexPrefix(' 0xf f ')).toBeFalsy;
-        expect(strHasHexPrefix('f f')).toBeFalsy;
+        expect(strHasHexPrefix('')).toBeFalsy();
+        expect(strHasHexPrefix('f')).toBeFalsy();
+        expect(strHasHexPrefix('F')).toBeFalsy();
+        expect(strHasHexPrefix('ff')).toBeFalsy();
+        expect(strHasHexPrefix('fF')).toBeFalsy();
+        expect(strHasHexPrefix('Ff')).toBeFalsy();
+        expect(strHasHexPrefix('FF')).toBeFalsy();
+        expect(strHasHexPrefix('oxff')).toBeFalsy();
+        expect(strHasHexPrefix('0xff')).toBeTruthy();
+        expect(strHasHexPrefix('0ff')).toBeFalsy();
+        expect(strHasHexPrefix('xff')).toBeFalsy();
+        expect(strHasHexPrefix(' 0xff')).toBeFalsy();
+        expect(strHasHexPrefix('0xff ')).toBeTruthy();
+        expect(strHasHexPrefix('0xf f')).toBeTruthy();
+        expect(strHasHexPrefix(' 0xff ')).toBeFalsy();
+        expect(strHasHexPrefix(' 0xf f ')).toBeFalsy();
+        expect(strHasHexPrefix('f f')).toBeFalsy();
     })
     test('normalizeHexString()', () => {
         expect(normalizeHexString('ff00ff')).toEqual('ff00ff');
@@ -218,5 +219,21 @@ describe('utils', () => {
         // default value
         expect(getMinWordNum(34359738367)).toEqual(5);
         expect(getMinWordNum(34359738368)).toEqual(5);
+    })
+    test('isBinData()', () => {
+        expect(isBinData('z')).toBeFalsy();
+        expect(isBinData('')).toBeTruthy();
+        expect(isBinData('0x')).toBeFalsy();
+        expect(isBinData('0xf')).toBeTruthy();
+        expect(isBinData('0xf')).toBeTruthy();
+        expect(isBinData('0xF')).toBeTruthy();
+        expect(isBinData('0Xf')).toBeTruthy();
+        expect(isBinData([])).toBeTruthy();
+        expect(isBinData([0, 1, true])).toBeFalsy();
+        expect(isBinData([0])).toBeTruthy();
+        expect(isBinData(new ArrayBuffer(0))).toBeTruthy();
+        expect(isBinData(new Uint8Array(0))).toBeTruthy();
+        expect(isBinData(new Uint32Array(0))).toBeTruthy();
+        expect(isBinData(Buffer.from([]))).toBeTruthy();
     })
 })

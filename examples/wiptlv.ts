@@ -1,19 +1,50 @@
+import { hexEncode, importBinData, TBinData } from '../src/utils';
 import {
     Tag,
 } from '../src/ber/tag';
+import {
+    BerObject,
+} from '../src/ber/berObject';
 
-function printTag(tag: Tag): void {
-    console.log(`${tag.toString()} ${tag.className}:${tag.number} ${tag.isConstructed ? 'constructed' : 'primitive'}`);
+// function printTag(tag: Tag): void {
+//     console.log(`${tag.toString()} (${tag.className}:${tag.number} ${tag.isConstructed ? 'constructed' : 'primitive'})`);
+// }
+
+// export class Ber implements IBerObj {
+//     static from(input?: TBinData | IBerObjInfo | Ber): Ber {
+//         return new Ber(input);
+//     }
+
+//     constructor(input?: TBinData | IBerObjInfo | Ber) {
+//         if (typeof input === 'undefined') {
+//             return this;
+//         }
+//         return this.from(input);
+//     }
+
+//     from(input: TBinData | IBerObjInfo | Ber): this {
+//         return this;
+//     }
+// }
+
+// export default Ber;
+
+const tlvHex = '6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F1A840E315041592E5359532E4444463031A5088801025F2D02656E';
+const berObj = BerObject.create({tag: new Tag(), value: [
+    {tag: '6f', value: '840E315041592E5359532E4444463031A5088801025F2D02656E'}
+]});
+
+console.log(berObj);
+
+if (berObj.isConstructed()) {
+    console.log(berObj.value[0].tag);
 }
-
-const tlvHex = '6f5c8408a000000151000000a550734a06072a864886fc6b01600c060a2a864886fc6b02020201630906072a864886fc6b03640b06092a864886fc6b040255650b06092a864886fc6b020103660c060a2b060104012a026e01039f6501ff';
-
-printTag(Tag.from('001f81c07f01ff', 1));
-printTag(Tag.from('1fbffe7f01ff'));
-printTag(Tag.from('6f00'));
-printTag(Tag.from('7f8001'));
-printTag(Tag.from('0000'));
-printTag(Tag.from({class: 'application', isConstructed: true, number: 1}));
+// printTag(Tag.from('001f81c07f01ff', 1));
+// printTag(Tag.from('1fbffe7f01ff'));
+// printTag(Tag.from('6f00'));
+// printTag(Tag.from('7f8001'));
+// printTag(Tag.from('0000'));
+// printTag(Tag.from({class: 'application', isConstructed: true, number: 1}));
 /*
 1000000
 */

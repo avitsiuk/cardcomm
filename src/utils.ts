@@ -57,7 +57,7 @@ export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView
     } else {
         if (outBuffer instanceof ArrayBuffer) {
             res = new Uint8Array(outBuffer);
-        } else if (ArrayBuffer.isView(outBuffer) || Buffer.isBuffer(outBuffer)) {
+        } else if (ArrayBuffer.isView(outBuffer)) {
             res = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
         } else {
             throw new TypeError('outBuffer must be an ArrayBuffer or ArrayBufferView');
@@ -117,6 +117,22 @@ export function hexEncode(data: number[] | ArrayBuffer | ArrayBufferView | Buffe
 //     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 // }
 
+export function isBinData(input: any): input is TBinData {
+    if (typeof input === 'string' && isHexString(input)) {
+        return true;
+    } else if (input instanceof ArrayBuffer){
+        return true;
+    } else if (ArrayBuffer.isView(input)) {
+        return true;
+    } else if (Array.isArray(input)) {
+        for (let i = 0; i < input.length; i++) {
+            if (typeof input[i] !== 'number') return false;
+        }
+        return true;
+    }
+    return false;
+}
+
 /** Converts various binary data representations to an Uint8Array. Where possible, the returned Uint8Array will reference the same memory region as input data. In case of hex strings and number arrays a new memory region will be allocated. If a copy of data is needed in any case, see the `outBuffer` parameter below. Throws if `outBuffer` is defined, but does not have enough space (considering `outOffset`, if any).
  * @param inData - input binary data. Strings must contain a valid hex value. If type is a numeric array, all values should be in the range 0-255, otherwise they will be wrapped around. For example -1 = 255 and 256/512 = 0
  * @param outBuffer - if defined, the result of the import will be copied to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
@@ -143,7 +159,7 @@ export function importBinData(
     if (inData instanceof ArrayBuffer) {
         inByteArray = new Uint8Array(inData);
         requiredByteLength = inByteArray.byteLength;
-    } else if (ArrayBuffer.isView(inData) || Buffer.isBuffer(inData)) {
+    } else if (ArrayBuffer.isView(inData)) {
         inByteArray = new Uint8Array(inData.buffer).subarray(inData.byteOffset, inData.byteOffset + inData.byteLength);
         requiredByteLength = inByteArray.byteLength;
     } else if (Array.isArray(inData)) {
@@ -165,7 +181,7 @@ export function importBinData(
     } else {
         if (outBuffer instanceof ArrayBuffer) {
             outByteArray = new Uint8Array(outBuffer);
-        } else if (ArrayBuffer.isView(outBuffer) || Buffer.isBuffer(outBuffer)) {
+        } else if (ArrayBuffer.isView(outBuffer)) {
             outByteArray = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
         } else {
             throw new TypeError('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer');
