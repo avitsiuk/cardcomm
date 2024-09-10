@@ -3,8 +3,8 @@ import {
     isBinData,
     TBinData,
     getMinWordNum,
+    hexEncode,
 } from '../utils';
-import { isTagInfo } from './berUtils';
 import Tag from './tag';
 import { IBerObjInfo, IBerObj, parseBer } from './parser';
 
@@ -20,14 +20,14 @@ export interface IBerObjConstructed extends IBerObj {
     value: IBerObj[]
 }
 
-export class BerObject implements IBerObj {
+export class BerObject {
 
     private _tag: Tag = new Tag();
     private _len: number = 0;
     private _val: Uint8Array | BerObject[] = [];
 
-    static parse(input: TBinData): BerObject {
-        return new BerObject().parse(input);
+    static parse(input: TBinData, startOffset: number = 0): BerObject {
+        return new BerObject().parse(input, startOffset);
     }
 
     static create(input?: IBerObjInfo): BerObject {
@@ -39,11 +39,11 @@ export class BerObject implements IBerObj {
     }
 
     isPrimitive(): this is IBerObjPrimitive {
-        return this._tag.isPrimitive;
+        return this._tag.isPrimitive && !this.isRoot();
     }
 
     isConstructed(): this is IBerObjConstructed {
-        return this.isRoot() || this._tag.isConstructed;
+        return this._tag.isConstructed || this.isRoot();
     }
 
     get tag(): Tag {
@@ -65,18 +65,14 @@ export class BerObject implements IBerObj {
         return this.create(input);
     }
 
-    parse(input: TBinData): this {
+    parse(input: TBinData, startOffset: number = 0): this {
         let parseResult: IBerObj[];
         try {
-            parseResult = parseBer(input);
+            parseResult = parseBer(input, startOffset);
         } catch (error: any) {
             throw new Error(`Error parsing ber data: ${error.message}`)
         }
-        this._val = [];
-        for (let i = 0; i < parseResult.length; i++) {
-            this._val.push(new BerObject(parseResult[i]));
-        }
-        return this;
+        return this.setConstructedValue(parseResult);
     }
 
     create(input: IBerObjInfo): this {
@@ -137,6 +133,24 @@ export class BerObject implements IBerObj {
         this._len = length;
         this._val = berObjArray;
         return this;
+    }
+
+    private printInternal(printFn?: (line: string) => void, spaces: number = 4, level: number = 0): void {
+        const f: (line: string) => void = printFn ? printFn : console.log;
+        let line: string = `${''.padEnd(level * spaces, ' ')}${this._tag.hex} (${this._len} bytes):`;
+        if (this.isPrimitive()) {
+            line += ` ${hexEncode(this.value)}`;
+            f(line);
+        } else if (this.isConstructed()) {
+            f(line);
+            for (let i = 0; i < this.value.length; i++) {
+                (this.value[i] as BerObject).printInternal(printFn, spaces, level + 1);
+            }
+        }
+    }
+
+    print(printFn?: (line: string) => void, spaces: number = 4): void {
+        this.printInternal(printFn, spaces, 0)
     }
 }
 
