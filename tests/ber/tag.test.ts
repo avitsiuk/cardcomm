@@ -7,9 +7,9 @@ describe('BER TAG', () => {
         //@ts-ignore
         expect(()=>{Tag.from([0,1,2,'ff'])}).toThrow(new Error('Error parsing tag: Data is not a numeric array'));
         //@ts-ignore
-        expect(()=>{Tag.from({class: -1, isConstructed: false, number: 0})}).toThrow(new Error('Error parsing tag: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(()=>{Tag.from({class: -1, isConstructed: false, number: 0})}).toThrow(new Error('Error parsing tag: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         //@ts-ignore
-        expect(()=>{Tag.from({class: 0, isConstructed: 'asd', number: 0})}).toThrow(new Error('Error parsing tag: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(()=>{Tag.from({class: 0, isConstructed: 'asd', number: 0})}).toThrow(new Error('Error parsing tag: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         //@ts-ignore
         expect(()=>{Tag.from({class: 0, isConstructed: false, number: -1})}).toThrow(new Error('Tag number value not allowed. Min: 0, max: 2097151, received: -1'));
         //@ts-ignore

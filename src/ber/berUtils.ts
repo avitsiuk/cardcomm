@@ -128,7 +128,7 @@ export function parseTag(inData: TBinData, startOffset: number = 0): TParseTagRe
 
 export function serializeTag(
     tagInfo : ITagInfo,
-    outBuffer?: ArrayBuffer | ArrayBufferView | Buffer,
+    outBuffer?: ArrayBuffer | ArrayBufferView,
     outOffset: number = 0,
 ): Uint8Array {
     if (!isTagInfo(tagInfo))
@@ -150,7 +150,7 @@ export function serializeTag(
         } else if (ArrayBuffer.isView(outBuffer)) {
             outByteArray = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
         } else {
-            throw new TypeError('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer');
+            throw new TypeError('outBuffer must be an ArrayBuffer or ArrayBufferView');
         }
 
         if ((outOffset < 0) || (outOffset >= outBuffer.byteLength))
@@ -232,7 +232,7 @@ export function parseLength(input: TBinData, startOffset: number = 0): ILengthPa
 
 export function serializeLength(
     lengthValue: number,
-    outBuffer?: ArrayBuffer | ArrayBufferView | Buffer,
+    outBuffer?: ArrayBuffer | ArrayBufferView,
     outOffset: number = 0,
 ): Uint8Array {
     if (lengthValue < 0 || lengthValue > MAX_LEN_SAFE_NUMBER)
@@ -251,7 +251,7 @@ export function serializeLength(
         } else if (ArrayBuffer.isView(outBuffer)) {
             outByteArray = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
         } else {
-            throw new TypeError('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer');
+            throw new TypeError('outBuffer must be an ArrayBuffer or ArrayBufferView');
         }
 
         if (outByteArray.byteLength < 1)

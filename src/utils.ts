@@ -3,9 +3,8 @@
  * - Array of numbers
  * - ArrayBuffer
  * - ArrayBufferView
- * - Buffer
 */
-export type TBinData = string | number[] | Buffer | ArrayBuffer | ArrayBufferView;
+export type TBinData = string | number[] | ArrayBuffer | ArrayBufferView;
 
 const hexValidationRegex = /^(0[xX])?[0-9A-Fa-f]+$/g; // '0x' prefix allowed
 
@@ -42,7 +41,7 @@ export function getMinWordNum(value: number, wordBitLen: number = 8): number {
  * @param outBuffer - if defined, the result of the decoding will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
  * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the decoding will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
  */
-export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView | Buffer, outOffset: number = 0): Uint8Array {
+export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView, outOffset: number = 0): Uint8Array {
     if (typeof str !== 'string')
         throw new TypeError('Not a string');
 
@@ -78,7 +77,7 @@ export function hexDecode(str: string, outBuffer?: ArrayBuffer | ArrayBufferView
     return res.subarray(0, requiredByteLength);
 }
 
-export function hexEncode(data: number[] | ArrayBuffer | ArrayBufferView | Buffer): string {
+export function hexEncode(data: number[] | ArrayBuffer | ArrayBufferView): string {
     let result = '';
     let byteArray: Uint8Array;
     try {
@@ -140,7 +139,7 @@ export function isBinData(input: any): input is TBinData {
  */
 export function importBinData(
     inData: TBinData,
-    outBuffer?: ArrayBuffer | ArrayBufferView | Buffer,
+    outBuffer?: ArrayBuffer | ArrayBufferView,
     outOffset: number = 0,
 ): Uint8Array {
 
@@ -166,7 +165,7 @@ export function importBinData(
         dataIsNumArray = true;
         requiredByteLength = inData.length;
     } else {
-        throw new TypeError('Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView');
+        throw new TypeError('Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView');
     }
 
     let outByteArray: Uint8Array = new Uint8Array(0);
@@ -184,7 +183,7 @@ export function importBinData(
         } else if (ArrayBuffer.isView(outBuffer)) {
             outByteArray = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
         } else {
-            throw new TypeError('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer');
+            throw new TypeError('outBuffer must be an ArrayBuffer or ArrayBufferView');
         }
 
         if ((outOffset < 0) || (outOffset >= outBuffer.byteLength)) throw new Error(`outOffset value out of bounds; value: ${outOffset}`);

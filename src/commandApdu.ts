@@ -75,13 +75,13 @@ export class CommandApdu {
             const lc = inBuffer[CommandApdu.LC_OFFSET];
             const noLeLength = 5 + lc; // 4(head) + 1(lc) + lc(data)
             if (noLeLength === 5)
-                throw new Error(`Lc value cannot be 0; received data: [${Buffer.from(inBuffer).toString('hex')}]`);
+                throw new Error(`Lc value cannot be 0; received data: [${hexEncode(inBuffer)}]`);
             if (inBuffer.byteLength === noLeLength) {
                 this.bLength = inBuffer.byteLength + 1;
             } else if (inBuffer.byteLength === noLeLength + 1) {
                 this.bLength = inBuffer.byteLength;
             } else {
-                throw new Error(`Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${Buffer.from(inBuffer).toString('hex')}]`);
+                throw new Error(`Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${hexEncode(inBuffer)}]`);
             }
         }
         this.byteArray.set(inBuffer, 0);
@@ -193,7 +193,6 @@ export class CommandApdu {
     setData(data: TBinData): this {
         const le = this.le;
         let importedBytes: Uint8Array;
-        // let inBuffer: Uint8Array = new Uint8Array(0);
         try {
             importedBytes = importBinData(data, this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET + CommandApdu.MAX_DATA_BYTE_LENGTH));
         } catch (error: any) {
@@ -216,7 +215,7 @@ export class CommandApdu {
         this.setData(data);
     }
 
-    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    /** Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
     getData(): Uint8Array {
         if (this.bLength <= 5)
             return this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET);
@@ -224,7 +223,7 @@ export class CommandApdu {
         return this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET + this.byteArray[CommandApdu.LC_OFFSET]);
     }
 
-    /** Returned Buffer will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    /** Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
     get data(): Uint8Array {
         return this.getData();
     }

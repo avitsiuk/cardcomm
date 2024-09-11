@@ -99,7 +99,7 @@ describe('utils', () => {
     test('importBinData()', () => {
 
         //@ts-ignore
-        expect(()=>{importBinData(true)}).toThrow(new Error('Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(()=>{importBinData(true)}).toThrow(new Error('Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         //@ts-ignore
         expect(()=>{importBinData(['asd'])}).toThrow(new Error('Data is not a numeric array'));
 
@@ -180,7 +180,7 @@ describe('utils', () => {
         testData.set([6,6]);
         expect(result).toEqual(testData);
         //@ts-ignore
-        expect(()=>{importBinData(testData, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer'));
+        expect(()=>{importBinData(testData, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer or ArrayBufferView'));
         expect(()=>{importBinData(testData, new Uint8Array(5), -1)}).toThrow(new Error('outOffset value out of bounds; value: -1'));
         expect(()=>{importBinData(testData, new Uint8Array(5), 10)}).toThrow(new Error('outOffset value out of bounds; value: 10'));
         expect(()=>{importBinData(testData, new Uint8Array(5), 4)}).toThrow(new Error('Not enough space in the provided outBuffer'));

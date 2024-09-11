@@ -58,7 +58,7 @@ describe('ResponseApdu', () => {
         expect(rsp.toString()).toEqual('0000');
 
         //@ts-ignore
-        expect(() => {rsp.data = true}).toThrow(new Error('Could not set ResponseAPDU data field: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(() => {rsp.data = true}).toThrow(new Error('Could not set ResponseAPDU data field: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         rsp.data = '8182838485';
         expect(rsp.byteLength).toEqual(7);
         expect(rsp.dataLength).toEqual(5);
@@ -73,7 +73,7 @@ describe('ResponseApdu', () => {
         expect(rsp.toString()).toEqual('0000');
 
         //@ts-ignore
-        expect(() => {rsp.status = true}).toThrow(new Error('Could not set ResponseAPDU status field: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(() => {rsp.status = true}).toThrow(new Error('Could not set ResponseAPDU status field: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         expect(() => {rsp.status = '010203'}).toThrow(new Error('Could not set ResponseAPDU status field. Expected exactly 2 bytes of data; Received: 3 bytes'));
         rsp.data = '8182838485';
         rsp.status = '9000';
@@ -93,7 +93,7 @@ describe('ResponseApdu', () => {
         rsp.data = new Uint8Array(3);
         rsp.status = '9000';
         //@ts-ignore
-        expect(()=>{rsp.addData(true)}).toThrow(new Error('Could not add data to ResponseAPDU: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(()=>{rsp.addData(true)}).toThrow(new Error('Could not add data to ResponseAPDU: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         rsp.addData([1,2]);
         expect(rsp.byteLength).toEqual(7);
         expect(rsp.dataLength).toEqual(5);

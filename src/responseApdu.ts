@@ -10,6 +10,7 @@ export class ResponseApdu {
     private byteArray: Uint8Array = new Uint8Array(ResponseApdu.DEF_DATA_BYTES_LENGTH + 2); // data + status(2)
     private bLength: number = 2
 
+
     static from(data?: TBinData | ResponseApdu): ResponseApdu {
         return new ResponseApdu(data);
     }
@@ -49,6 +50,7 @@ export class ResponseApdu {
         return this.byteArray.subarray(0, this.bLength);
     }
 
+    /** Returns hexadecimal string representing this response apdu */
     toString(): string {
         return hexEncode(this.toByteArray());
     }
@@ -60,25 +62,28 @@ export class ResponseApdu {
         return this;
     }
 
+    /** Full length in bytes of this response apdu */
     get byteLength(): number {
         return this.bLength;
     }
 
+    /** Length in bytes of the data part of this response apdu. 0 if no data */
     get dataLength(): number {
         if (this.bLength <= 2) return 0;
         return this.bLength - 2;
     }
 
-    /** Returned Buffer will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
+    /** Returned byte array will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
     getData(): Uint8Array {
         return this.toByteArray().subarray(0, this.dataLength);
     }
 
-    /** Returned Buffer will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
+    /** Returned byte array will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
     get data(): Uint8Array {
         return this.getData();
     }
 
+    /** Overwrites current data with new data */
     setData(inData: TBinData): this {
         const sw1 = this.byteArray[this.bLength-2];
         const sw2 = this.byteArray[this.bLength-1];
@@ -106,10 +111,12 @@ export class ResponseApdu {
         return this;
     }
 
+    /** Overwrites current data with new data */
     set data(data: TBinData) {
         this.setData(data);
     }
 
+    /** Appends new data to the end of the existing data */
     addData(inData: TBinData): this {
         let inByteArray: Uint8Array;
         try {
@@ -139,16 +146,17 @@ export class ResponseApdu {
         return this;
     }
 
-    /** Returned Buffer will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
+    /** Returned byte array will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
     getStatus(): Uint8Array {
         return this.byteArray.subarray(this.dataLength, this.bLength);
     }
 
-    /** Returned Buffer will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
+    /** Returned byte array will reference same memory as this ResponseAPDU, meaning that any change made to it will reflect on this ResponseAPDU */
     get status(): Uint8Array {
         return this.getStatus();
     }
 
+    /** Overwrites current status bytes with new status bytes */
     setStatus(inData: TBinData): this {
         let inByteArray: Uint8Array;
         try {
@@ -164,6 +172,7 @@ export class ResponseApdu {
         return this;
     }
 
+    /** Overwrites current status bytes with new status bytes */
     set status(data: TBinData) {
         this.setStatus(data);
     }
@@ -206,6 +215,7 @@ export class ResponseApdu {
     }
 }
 
+/** Thrown if response status bytes are different from "0x9000" */
 export function assertResponseIsOk(resp: ResponseApdu): void {
     if (!resp.isOk) {
         throw new Error(`Error response: [${resp.toString()}](${resp.meaning})`);

@@ -47,7 +47,7 @@ describe('BER utils', () => {
         //@ts-ignore
         expect(()=>{serializeTag({class: 1, isConstructed: true, number: Number.MAX_SAFE_INTEGER})}).toThrow(new Error(`Tag number value not allowed. Min: 0, max: ${MAX_TAG_SAFE_NUMBER}, received: ${Number.MAX_SAFE_INTEGER}`));
         //@ts-ignore
-        expect(()=>{serializeTag({class: 0, isConstructed: false, number: 0}, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer'));
+        expect(()=>{serializeTag({class: 0, isConstructed: false, number: 0}, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer or ArrayBufferView'));
 
         expect(()=>{serializeTag({class: 0, isConstructed: false, number: MAX_TAG_SAFE_NUMBER}, new Uint8Array(2))}).toThrow(new Error('Not enough space in the provided outBuffer'));
         expect(()=>{serializeTag({class: 0, isConstructed: false, number: MAX_TAG_SAFE_NUMBER}, new Uint8Array(10), 9)}).toThrow(new Error('Not enough space in the provided outBuffer'));
@@ -85,7 +85,7 @@ describe('BER utils', () => {
     })
     test('parseLength()', () => {
         //@ts-ignore
-        expect(()=>{parseLength(true)}).toThrow(new Error('Error decoding binary data: Accepted binary data types: hex string, number[], Buffer, ArrayBuffer, ArrayBufferView'));
+        expect(()=>{parseLength(true)}).toThrow(new Error('Error decoding binary data: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
         //@ts-ignore
         expect(()=>{parseLength('')}).toThrow(new Error('Unexpected end of data'));
         expect(()=>{parseLength('00', -1)}).toThrow(new Error('Start offset "-1" is outside of byte array range. Received byte array length: 1'));
@@ -107,7 +107,7 @@ describe('BER utils', () => {
     })
     test('serializeTag()', () => {
         //@ts-ignore
-        expect(()=>{serializeLength(0, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer, ArrayBufferView or Buffer'));
+        expect(()=>{serializeLength(0, true)}).toThrow(new Error('outBuffer must be an ArrayBuffer or ArrayBufferView'));
         expect(()=>{serializeLength(-2)}).toThrow(new Error(`Length value not allowed. Min: 0, max: ${MAX_LEN_SAFE_NUMBER}, received: -2`));
         expect(()=>{serializeLength(MAX_LEN_SAFE_NUMBER + 1)}).toThrow(new Error(`Length value not allowed. Min: 0, max: ${MAX_LEN_SAFE_NUMBER}, received: ${MAX_LEN_SAFE_NUMBER + 1}`));
         expect(()=>{serializeLength(0, new Uint8Array(0))}).toThrow(new Error('Not enough space in the provided outBuffer'));
