@@ -32,6 +32,7 @@ export function parseBer(input: TBinData, startOffset: number = 0): IBerObj[] {
     } catch (error: any) {
         throw new Error(`Error decoding binary data: ${error.message}`);
     }
+    if (inBuffer.byteLength === 0) return [];
 
     if(startOffset < 0 || (startOffset >= inBuffer.byteLength))
         throw new RangeError(`Start offset "${startOffset}" is outside of byte array range. Received byte array length: ${inBuffer.byteLength}`);
@@ -67,12 +68,20 @@ export function parseBer(input: TBinData, startOffset: number = 0): IBerObj[] {
         let parsedValue: Uint8Array | IBerObj[]
 
         if (parsedTag.isPrimitive) {
-            parsedValue = inBuffer.subarray(currInOffset, currInOffset + parsedLen.value);
+            if (parsedLen.value === 0) {
+                parsedValue = new Uint8Array(0);
+            } else {
+                parsedValue = inBuffer.subarray(currInOffset, currInOffset + parsedLen.value);
+            }
         } else {
-            try {
-                parsedValue = parseBer(inBuffer.subarray(currInOffset, currInOffset + parsedLen.value));
-            } catch (error: any) {
-                throw error;
+            if (parsedLen.value === 0) {
+                parsedValue = [];
+            } else {
+                try {
+                    parsedValue = parseBer(inBuffer.subarray(currInOffset, currInOffset + parsedLen.value));
+                } catch (error: any) {
+                    throw error;
+                }
             }
         }
 
