@@ -21,6 +21,22 @@ export interface IBerObjConstructed extends IBerObj {
     value: BerObject[]
 }
 
+/** Path to a tag inside a ber object */
+type TBerObjectPath = {
+    /** Path that uses tag hex names as it's nodes. This can be used for string-based search (e.g. regex). However it's possible to have same named paths for two or more distinct values. For this reason the corresponding indexed path must be used for the actual access. */
+    hex: string;
+    /** Path that uses tag numerical indexes as it's nodes. Indicates the exact value that the corresponding named path refers to. */
+    indexes: number[];
+};
+
+const berSearchQueryValidationRegex = /^(\/[0-9a-fA-F]+|\/\*|\/\*\*)+$/g;
+
+export function isValidBerSearchQuery(str: string): boolean {
+    if (str.length < 1) return false;
+    if (str.match(berSearchQueryValidationRegex)) return true;
+    return false;
+}
+
 export class BerObject implements IBerObj {
 
     private _tag: Tag = new Tag();
@@ -203,6 +219,78 @@ export class BerObject implements IBerObj {
 
     print(printFn?: (line: string) => void, spaces: number = 4): void {
         this.printInternal(printFn, spaces, 0)
+    }
+
+    /** This method will return an array of all possible paths in two formats: named and indexed.
+     * @example BerObject.parse('6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F12840E315041592E5359532E4444463031A500').genPathList()  
+     * ```
+     *[
+     *  { named: '/6f', indexed: [ 0 ] },
+     *  { named: '/6f/84', indexed: [ 0, 0 ] },
+     *  { named: '/6f/a5', indexed: [ 0, 1 ] },
+     *  { named: '/6f/a5/88', indexed: [ 0, 1, 0 ] },
+     *  { named: '/6f/a5/5f2d', indexed: [ 0, 1, 1 ] },
+     *  { named: '/6f', indexed: [ 1 ] },
+     *  { named: '/6f/84', indexed: [ 1, 0 ] },
+     *  { named: '/6f/a5', indexed: [ 1, 1 ] },
+     *  { named: '/6f/a5/88', indexed: [ 1, 1, 0 ] },
+     *  { named: '/6f/a5/5f2d', indexed: [ 1, 1, 1 ] },
+     *  { named: '/6f', indexed: [ 2 ] },
+     *  { named: '/6f/84', indexed: [ 2, 0 ] },
+     *  { named: '/6f/a5', indexed: [ 2, 1 ] }
+     *]
+    */
+    genPathList(): TBerObjectPath[] {
+        const result: TBerObjectPath[] = [];
+        if (this.isConstructed()) {
+            for (let childIdx = 0; childIdx < this.value.length; childIdx++) {
+                result.push({hex: `/${this.value[childIdx].tag.hex}`, indexes: [childIdx]});
+                this.value[childIdx].genPathList().reduce((_, childPath) => {
+                    result.push({
+                        hex: `/${this.value[childIdx].tag.hex}${childPath.hex}`,
+                        indexes: [childIdx, ...childPath.indexes],
+                    });
+                    return null;
+                }, null)
+            }
+        }
+        return result;
+    }
+
+    search(query: string): BerObject[] {
+        if (!isValidBerSearchQuery(query))
+            throw new Error('Invalid search query');
+    
+        let regexString = query
+            .replace(/\/\*\*/g, '(\\/[0-9a-fA-F]*)*')
+            .replace(/\/\*/g, '(\\/[0-9a-fA-F]*)')
+            .replace(/(\/)([0-9a-fA-F])/g, '\\/$2');
+    
+        regexString = `^${regexString}$`;
+    
+        const matchingPaths = this.genPathList().filter((path) => {
+            if (path.hex.match(regexString)) {
+                return true;
+            } else {
+                return false;
+            }
+        });
+
+        const result: BerObject[] = new Array<BerObject>(matchingPaths.length);
+
+        matchingPaths.reduce((_, currentPath, currentPathIdx)=>{
+            let currBerObj: BerObject = this;
+            currentPath.indexes.reduce((_, currPathNodeValue, currPathNodeIdx) => {
+                if (!currBerObj.isConstructed() || (currBerObj.value.length <= currPathNodeValue))
+                    throw new Error(`Error examining path "${currentPath.hex}"("/${currentPath.indexes.join('/')}"); BER object "${this._tag.hex}" does not have internal object with index "${currPathNodeValue}".`)
+                currBerObj = currBerObj.value[currPathNodeValue];
+                return null;
+            }, null);
+            result[currentPathIdx] = currBerObj;
+            return null;
+        }, null);
+
+        return result;
     }
 }
 
