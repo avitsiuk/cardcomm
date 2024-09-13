@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { arrayToHex } from '../../utils';
+import { hexEncode } from '../../utils';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
 import * as GPCommands from '../commands';
@@ -146,9 +146,9 @@ function addMac(
     icv: number[] = new Array<number>(8).fill(0),
 ) {
     const macLength = 8;
-    if (cmd.getLc() + macLength > CommandApdu.maxDataBytes) {
+    if (cmd.getLc() + macLength > CommandApdu.MAX_DATA_BYTE_LENGTH) {
         throw new Error(
-            `Max ${CommandApdu.maxDataBytes - macLength} bytes of data`,
+            `Max ${CommandApdu.MAX_DATA_BYTE_LENGTH - macLength} bytes of data`,
         );
     }
     if (sessionKeys.mac.length !== 16) {
@@ -167,7 +167,7 @@ function addMac(
     const newHeader = new CommandApdu(cmd)
         .setSecMgsType(1)
         .setLogicalChannel(0)
-        .toArray()
+        .toByteArray()
         .slice(0, 4);
 
     // data: [header] + [Lc(data+mac)] + [data] + [8000...]
@@ -450,8 +450,8 @@ export default class SCP02 {
                     );
                     // console.log(`expectedCardCryptogram: [${arrayToHex(expectedCardCryptogram)}]`);
                     if (
-                        arrayToHex(cardCryptogram) !==
-                        arrayToHex(expectedCardCryptogram)
+                        hexEncode(cardCryptogram) !==
+                        hexEncode(expectedCardCryptogram)
                     ) {
                         this.reset();
                         return reject(

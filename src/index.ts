@@ -1,4 +1,4 @@
-import * as Tlv from './tlv';
+import * as BER from './ber/index';
 import * as Utils from './utils';
 import statusDecode from './statusDecode';
 import ResponseApdu from './responseApdu';
@@ -18,7 +18,7 @@ import Device from './device';
 import PcscDevicesManager from './devices';
 
 export {
-    Tlv,
+    BER,
     Utils,
     statusDecode,
     ResponseApdu,

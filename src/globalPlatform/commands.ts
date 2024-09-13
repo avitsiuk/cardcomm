@@ -1,5 +1,6 @@
-import * as Tlv from '../tlv';
+import { BerObject, Tag, IBerObjInfo } from '../ber/index';
 import CommandApdu from '../commandApdu';
+import { importBinData, TBinData } from '../utils';
 
 const insByteList = {
     INIT_UPDATE: 0x50,
@@ -12,13 +13,10 @@ const insByteList = {
 };
 
 export function initUpdate(
-    hostChallenge: number[],
+    hostChallenge: TBinData,
     keyVer: number = 0,
     keyId: number = 0,
 ) {
-    if (hostChallenge.length !== 8) {
-        throw new Error('Wrong host challenge length');
-    }
     let cmd = new CommandApdu()
         .setProprietary()
         .setIns(insByteList.INIT_UPDATE)
@@ -37,10 +35,7 @@ export function initUpdate(
  * `1` - C-MAC
  * `3` - C-DECRYPTION and C-MAC
  */
-export function extAuth(hostCryptogram: number[], secLvl: 0 | 1 | 3 = 0) {
-    if (hostCryptogram.length !== 8) {
-        throw new Error('Wrong host cryptogram length');
-    }
+export function extAuth(hostCryptogram: TBinData, secLvl: 0 | 1 | 3 = 0) {
     let cmd = new CommandApdu()
         .setProprietary()
         .setType(4)
@@ -63,40 +58,40 @@ export function extAuth(hostCryptogram: number[], secLvl: 0 | 1 | 3 = 0) {
  * @param id - id to include if `includeId` parameter has been set to `true`
  */
 export function intAuth(
-    key: number[],
+    key: TBinData,
     secLvl: 0x34 | 0x3c = 0x34,
     includeId: boolean = false,
-    id: number[] = [],
+    id: TBinData = new Uint8Array(0),
 ) {
-    let berObj: Tlv.IBerObj = {
-        A6: {
-            value: {
-                '90': {
-                    value: [0x11, includeId ? 0x04 : 0x00],
-                },
-                '95': {
-                    value: [secLvl],
-                },
-                '80': {
-                    value: [0x88],
-                },
-                '81': {
-                    value: [Math.floor(key.length / 2)],
-                },
+
+    let _key: Uint8Array;
+    try {
+        _key = importBinData(key)
+    } catch (error: any) {
+        throw new Error(`Key error: ${error.message}`);
+    }
+
+    let berObjInfo: IBerObjInfo = {
+        tag: Tag.root,
+        value: [
+            {
+                tag: 'A6',
+                value: [
+                    {tag: '90', value: [0x11, includeId ? 0x04 : 0x00]},
+                    {tag: '95', value: [secLvl]},
+                    {tag: '80', value: [0x88]},
+                    {tag: '81', value: [Math.floor(_key.byteLength / 2)]},
+                ],
             },
-        },
-        '5F49': {
-            value: key,
-        },
+            {tag: '5F49', value: _key},
+        ]
     };
 
     if (includeId) {
-        (berObj['06'].value as Tlv.IBerObj)['84'] = {
-            value: id,
-        };
+        ((berObjInfo.value as IBerObjInfo[])[0].value as IBerObjInfo[]).push(
+            {tag: '84', value: id}
+        );
     }
-
-    const data: number[] = Tlv.berTlvEncode(berObj);
 
     let cmd = new CommandApdu()
         .setProprietary()
@@ -105,6 +100,6 @@ export function intAuth(
         .setIns(insByteList.INT_AUTH)
         .setP1(0x00) // key version
         .setP2(0x00) // key identifier
-        .setData(data);
+        .setData(BerObject.create(berObjInfo).serialize());
     return cmd;
 }

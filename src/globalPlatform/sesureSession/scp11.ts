@@ -1,6 +1,6 @@
 import crypto from 'crypto';
-import { arrayToHex, hexToArrayBuffer } from '../../utils';
-import { berTlvDecode } from '../../tlv';
+import { hexEncode, hexDecode } from '../../utils';
+import { BerObject } from '../../ber/index';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
 import * as Iso7816Commands from '../../iso7816/commands';
@@ -273,7 +273,7 @@ export default class SCP11 {
         const newHeader = new CommandApdu(cmd)
             .setSecMgsType(1)
             .setLogicalChannel(0)
-            .toArray()
+            .toByteArray()
             .slice(0, 4);
 
         // data: [macChainingValue](BLOCK_BYTE_LEN) + [newHeader](4) + [Lc(data+mac)](1) + [data](Lc) + [8000...00](missingPaddingBytes)
@@ -394,8 +394,8 @@ export default class SCP11 {
         ];
 
         if (
-            arrayToHex(this._macChainingValue.slice(0, MAC_BYTE_LEN)) ===
-            arrayToHex([...expectedMac])
+            hexEncode(this._macChainingValue.slice(0, MAC_BYTE_LEN)) ===
+            hexEncode([...expectedMac])
         ) {
             return true;
         }
@@ -515,7 +515,7 @@ export default class SCP11 {
         intAuthCmd: CommandApdu,
         intAuthResp: ResponseApdu,
     ): boolean {
-        const rspBerObj = berTlvDecode([...intAuthResp.data]);
+        const rspBerObj = BerObject.parse(intAuthResp.data);
         const missingPaddingBytes =
             BLOCK_BYTE_LEN - ((intAuthCmd.getLc() + 68) % BLOCK_BYTE_LEN);
         const dataToAuthenticate = Buffer.alloc(
@@ -532,7 +532,7 @@ export default class SCP11 {
                 0x5f,
                 0x49,
                 0x41,
-                ...(rspBerObj['5f49'].value as number[]),
+                ...(rspBerObj.search('/5f49')[0].value as Uint8Array),
                 0x80,
             ],
             0,
@@ -567,7 +567,7 @@ export default class SCP11 {
         );
 
         if (
-            arrayToHex(rspBerObj['86'].value as number[]) ===
+            hexEncode(rspBerObj.search('/86')[0].value as Uint8Array) ===
             newMacChainingValue.toString('hex')
         ) {
             this._macChainingValue = [...newMacChainingValue];
@@ -593,8 +593,8 @@ export default class SCP11 {
                         this.reset();
                         throw new Error(`Error getting card static public key: ${e.message}`);
                     }
-                    const berObj = berTlvDecode([...response.data]);
-                    const pkSdEcka = berObj['5f49'].value as number[];
+                    const berObj = BerObject.parse(response.data);
+                    const pkSdEcka = berObj.search('/5f49')[0].value as Uint8Array;
                     // generating ephemeral OCE keypair
                     const ecdh = crypto.createECDH('prime256v1');
                     ecdh.generateKeys();
@@ -616,13 +616,13 @@ export default class SCP11 {
                                 this.reset();
                                 throw new Error(`Error during INT_AUTH: ${e.message}`);
                             }
-                            const berObj = berTlvDecode([...response.data]);
+                            const berObj = BerObject.parse(response.data);
                             // getting card ephemeral public key
-                            const ePkSdEcka = berObj['5f49'].value as number[];
+                            const ePkSdEcka = berObj.search('/5f49')[0].value as Uint8Array;
                             this.genSessionKeys(
                                 [...ecdh.getPrivateKey()],
-                                pkSdEcka,
-                                ePkSdEcka,
+                                [...pkSdEcka],
+                                [...ePkSdEcka],
                             );
                             // validating receipt from intAuthCmd response
                             // if receipt is valid, it gets set as new mac chaining value

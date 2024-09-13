@@ -1,4 +1,4 @@
-import { hexToArrayBuffer } from '../utils';
+import { hexDecode, TBinData } from '../utils';
 import CommandApdu from '../commandApdu';
 
 const insByteList = {
@@ -65,20 +65,15 @@ interface ISelectOptions {
 }
 
 export function select(
-    data?: string | number[] | Buffer,
+    data?: TBinData,
     opts: ISelectOptions = {},
 ): CommandApdu {
     const cmd = new CommandApdu().setIns(insByteList.SELECT);
 
-    if (typeof data !== 'undefined' && data.length > 0) {
-        if (typeof data === 'string') {
-            cmd.setData(hexToArrayBuffer(data));
-        } else if (Buffer.isBuffer(data) && data.length > 0) {
-            cmd.setData(data);
-        } else if (Array.isArray(data) && data.length > 0) {
-            cmd.setData(data);
-        }
-    }
+
+
+    if (typeof data !== 'undefined')
+        cmd.setData(data);
 
     // P1
     let p1 = 0x04; // default, select by name
@@ -179,7 +174,7 @@ export function getResponse(le: number): CommandApdu {
 ; otherwise it indicates global reference data (e.g. MF specific password or key) */
 export function verifyRefData(
     refNum: number,
-    dataToVerify: number[],
+    dataToVerify: TBinData | null,
     reset: boolean = false,
     refIsSpecific: boolean = true,
 ): CommandApdu {
@@ -189,8 +184,8 @@ export function verifyRefData(
         );
     }
 
-    if (reset && dataToVerify.length > 0) {
-        throw new Error(`With reset set to "true", data must be empty`);
+    if (reset && dataToVerify) {
+        throw new Error(`With reset set to "true", data must be null`);
     }
 
     const cmd = new CommandApdu().setIns(insByteList.VERIFY_REF_DATA);
@@ -201,7 +196,7 @@ export function verifyRefData(
     if (refIsSpecific) p2 |= 0x80;
     cmd.setP2(p2);
 
-    if (dataToVerify.length > 0) cmd.setData(dataToVerify);
+    if (dataToVerify) cmd.setData(dataToVerify);
 
     return cmd;
 }
@@ -214,7 +209,7 @@ export function verifyRefData(
 ; otherwise it indicates global reference data (e.g. MF specific password or key) */
 export function changeRefData(
     refNum: number,
-    data: number[],
+    data: TBinData,
     refIsSpecific: boolean = true,
 ): CommandApdu {
     if (refNum < 0 || refNum > 31) {
@@ -232,7 +227,7 @@ export function changeRefData(
     if (refIsSpecific) p2 |= 0x80;
     cmd.setP2(p2);
 
-    if (data.length > 0) cmd.setData(data);
+    cmd.setData(data);
 
     return cmd;
 }

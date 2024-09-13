@@ -28,6 +28,10 @@ export class Tag implements ITagInfo {
     private _constructed: boolean      = false;
     private _number: number            = 0;
 
+    static get root(): Tag {
+        return new Tag()
+    }
+
     static from(input?: ITagInfo | TBinData | Tag, startOffset: number = 0): Tag {
         return new Tag(input, startOffset);
     };

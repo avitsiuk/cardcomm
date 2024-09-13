@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { CardReader, Status } from './typesPcsclite';
 import { IDevice, TDeviceEventName } from './typesInternal';
+import { importBinData } from './utils';
 import Card from './card';
 
 export class Device implements IDevice {
@@ -43,7 +44,7 @@ export class Device implements IDevice {
                 } else {
                     this.card = new Card(
                         this,
-                        status.atr ? status.atr : Buffer.from([]),
+                        status.atr ? importBinData(status.atr) : new Uint8Array(0),
                         protocol,
                     );
                     this._eventEmitter.emit('card-inserted', {
@@ -82,12 +83,19 @@ export class Device implements IDevice {
     }
 
     transmit(
-        data: Buffer,
+        data: Uint8Array,
         res_len: number,
         protocol: number,
-        cb: (err: any, response: Buffer) => void,
+        cb: (err: any, response: Uint8Array) => void,
     ) {
-        this.reader.transmit(data, res_len, protocol, cb);
+        this.reader.transmit(Buffer.from(data), res_len, protocol, (err: any, response: Buffer) => {
+            const u8Arr = new Uint8Array(response.buffer)
+                .subarray(
+                    response.byteOffset,
+                    response.byteOffset + response.byteLength,
+            );
+            cb(err, u8Arr);
+        });
     }
 
     getName() {

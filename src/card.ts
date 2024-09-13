@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { hexEncode, importBinData, TBinData } from './utils';
 import { CommandApdu } from './commandApdu';
 import ResponseApdu from './responseApdu';
 import { ICard, IDevice, TCardEventName } from './typesInternal';
@@ -12,7 +13,7 @@ class Card implements ICard {
     private _eventEmitter = new EventEmitter();
     private _device: IDevice;
     private _protocol: number;
-    private _atr: Buffer;
+    private _atr: Uint8Array;
     private _atrHex: string;
     private _autoGetResponse: boolean = true;
     private _commandTransformer:
@@ -22,12 +23,12 @@ class Card implements ICard {
         | undefined
         | ((rsp: ResponseApdu) => ResponseApdu);
 
-    constructor(device: IDevice, atr: Buffer, protocol: number) {
+    constructor(device: IDevice, atr: Uint8Array, protocol: number) {
         this._device = device;
         this._protocol = protocol;
-        this._atr = Buffer.alloc(atr.byteLength)
-        atr.copy(this._atr, 0, 0, atr.byteLength);
-        this._atrHex = this._atr.toString('hex');
+        this._atr = new Uint8Array(atr.byteLength);
+        importBinData(atr, this._atr);
+        this._atrHex = hexEncode(this._atr);
         this._isBusy = false;
     }
 
@@ -35,7 +36,7 @@ class Card implements ICard {
         return this._protocol;
     }
 
-    get atr(): Buffer {
+    get atr(): Uint8Array {
         return this._atr;
     }
 
@@ -118,10 +119,10 @@ class Card implements ICard {
     ): void {
         this._isBusy = true;
         let doCommandTransform: boolean = true;
-        const respAcc = new Array<number>(0); // response accumulator
-        let middleCallback: (err: any, response: Buffer) => void;
+        const respAcc = new ResponseApdu();; // response accumulator
+        let middleCallback: (err: any, response: Uint8Array) => void;
         if (!this.autoGetResponse) {
-            middleCallback = (err: any, respBuffer: Buffer) => {
+            middleCallback = (err: any, respBuffer: Uint8Array) => {
                 let response = new ResponseApdu(respBuffer);
                 this._eventEmitter.emit('response-received', {
                     card: this,
@@ -133,7 +134,7 @@ class Card implements ICard {
                 callback(err, response);
             };
         } else {
-            middleCallback = (err: any, respBuffer: Buffer) => {
+            middleCallback = (err: any, respBuffer: Uint8Array) => {
                 let response = new ResponseApdu(respBuffer);
                 this._eventEmitter.emit('response-received', {
                     card: this,
@@ -144,18 +145,18 @@ class Card implements ICard {
 
                 const bytesToGet = response.availableResponseBytes;
                 if (bytesToGet > 0) {
-                    if (response.dataLength > 0) respAcc.push(...response.data);
+                    if (response.dataLength > 0) respAcc.addData(response.data);
                     let cmdToResend: CommandApdu | undefined;
-                    switch (response.status[0]) {
-                        case 0x61:
+                    switch (true) {
+                        case response.hasMoreBytesAvailable:
                             cmdToResend = Iso7816Commands.getResponse(
-                                response.status[1],
+                                response.availableResponseBytes,
                             );
                             doCommandTransform = false;
                             break;
-                        case 0x6c:
+                        case response.isWrongLe:
                             cmdToResend = new CommandApdu(cmd).setLe(
-                                response.status[1],
+                                response.availableResponseBytes,
                             );
                             break;
                         default:
@@ -166,10 +167,7 @@ class Card implements ICard {
                         this._isBusy = false;
                         callback(
                             err,
-                            new ResponseApdu([
-                                ...respAcc,
-                                ...response.toArray(),
-                            ]),
+                            respAcc.addData(response.data).setStatus(response.status),
                         );
                     } else {
                         if (doCommandTransform) {
@@ -182,7 +180,7 @@ class Card implements ICard {
                             command: cmdToResend,
                         });
                         this._device.transmit(
-                            cmdToResend.toBuffer(),
+                            cmdToResend.toByteArray(),
                             maxTrResLen,
                             this._protocol,
                             middleCallback,
@@ -192,7 +190,7 @@ class Card implements ICard {
                     this._isBusy = false;
                     callback(
                         err,
-                        new ResponseApdu([...respAcc, ...response.toArray()]),
+                        respAcc.addData(response.data).setStatus(response.status),
                     );
                 }
             };
@@ -210,7 +208,7 @@ class Card implements ICard {
         });
 
         this._device.transmit(
-            tCmd.toBuffer(),
+            tCmd.toByteArray(),
             maxTrResLen,
             this._protocol,
             middleCallback,
@@ -218,17 +216,26 @@ class Card implements ICard {
     }
 
     issueCommand(
-        command: string | number[] | Buffer | CommandApdu,
+        command: TBinData | CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): void;
     issueCommand(
-        command: string | number[] | Buffer | CommandApdu,
+        command: TBinData | CommandApdu,
     ): Promise<ResponseApdu>;
     issueCommand(
-        command: string | number[] | Buffer | CommandApdu,
+        command: TBinData | CommandApdu,
         callback?: (err: any, response: ResponseApdu) => void,
     ): void | Promise<ResponseApdu> {
-        let cmd = new CommandApdu(command);
+        let cmd: CommandApdu;
+        if (command instanceof CommandApdu) {
+            cmd = command;
+        } else {
+            try {
+                cmd = new CommandApdu(command);
+            } catch (error: any) {
+                throw new Error(`Command APDU error: ${error.message}`)
+            }
+        }
 
         let checkingErr: Error | undefined;
 
@@ -243,9 +250,9 @@ class Card implements ICard {
                 );
             }
             checkingErr = new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
-        } else if (cmd.byteLength > CommandApdu.maxDataBytes) {
+        } else if (cmd.byteLength > CommandApdu.MAX_DATA_BYTE_LENGTH) {
             checkingErr = new Error(
-                `Command too long; Max: ${CommandApdu.maxDataBytes} bytes; Received: ${cmd.byteLength} bytes; cmd: [${cmd.toString()}]`,
+                `Command too long; Max: ${CommandApdu.MAX_DATA_BYTE_LENGTH} bytes; Received: ${cmd.byteLength} bytes; cmd: [${cmd.toString()}]`,
             );
         } else if (cmd.getLc() !== cmd.getData().length) {
             checkingErr = new Error(

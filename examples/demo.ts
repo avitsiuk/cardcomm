@@ -4,6 +4,7 @@ import {
     Card,
     Iso7816Commands,
     Utils,
+    BER,
 } from '../src/index';
 
 const devices: {[key: number]: {device: Device, card: Card | null, name: string}} = {};
@@ -73,14 +74,16 @@ pcscDM.on('device-activated', (event => {
         })
 
         event.card.on('response-received', (event) => {
-            console.log(`[${devIdx}] >> [${Utils.arrayToHex([...event.response.data])}][${Utils.arrayToHex([...event.response.status])}](${event.response.meaning})`)
+            console.log(`[${devIdx}] >> [${Utils.hexEncode([...event.response.data])}][${Utils.hexEncode([...event.response.status])}](${event.response.meaning})`)
         })
 
         event.card.issueCommand(Iso7816Commands.select())
             .then((selectResponse) => {
                 console.log();
                 console.log('Card response:');
-                console.log(selectResponse.toString());
+                BER.BerObject.parse(selectResponse.data).print((line: string) => {
+                    console.log(`>>${line}`);
+                });
                 console.log();
             })
             .catch((e) => {

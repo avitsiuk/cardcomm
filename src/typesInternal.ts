@@ -1,25 +1,26 @@
 import { EventEmitter } from 'events';
 import { CardReader, PCSCLite } from './typesPcsclite';
+import { TBinData } from './utils';
 import CommandApdu from './commandApdu';
 import ResponseApdu from './responseApdu';
 
 export type TCardEventName = 'command-issued' | 'response-received';
 
 export interface ICard {
-    atr: Buffer;
+    atr: Uint8Array;
 
     toString: () => string;
 
     issueCommand(
-        commandApdu: Buffer | number[] | string | CommandApdu,
+        commandApdu: TBinData | CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): Promise<ResponseApdu>;
     issueCommand(
-        commandApdu: Buffer | number[] | string | CommandApdu,
+        commandApdu: TBinData | CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): void;
     issueCommand(
-        commandApdu: Buffer | number[] | string | CommandApdu,
+        commandApdu: TBinData | CommandApdu,
         callback?: (err: any, response: ResponseApdu) => void,
     ): void | Promise<ResponseApdu>;
 
@@ -58,10 +59,10 @@ export interface IDevice {
     card: ICard | null;
 
     transmit: (
-        data: Buffer,
+        data: Uint8Array,
         res_len: number,
         protocol: number,
-        cb: (err: any, response: Buffer) => void,
+        cb: (err: any, response: Uint8Array) => void,
     ) => void;
     getName: () => string;
     toString: () => string;
