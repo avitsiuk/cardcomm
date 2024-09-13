@@ -19,5 +19,5 @@ export {
 export {
     BerObject,
     IBerObjConstructed,
-    IBerObjPrimitive
+    IBerObjPrimitive,
 } from './berObject';
