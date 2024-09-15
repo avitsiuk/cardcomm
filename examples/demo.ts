@@ -5,6 +5,9 @@ import {
     Iso7816Commands,
     Utils,
     BER,
+    SCP11,
+    SCP02,
+    gpDefaultStaticKeys,
 } from '../src/index';
 
 const devices: {[key: number]: {device: Device, card: Card | null, name: string}} = {};
@@ -70,21 +73,36 @@ pcscDM.on('device-activated', (event => {
         console.log();
 
         event.card.on('command-issued', (event) => {
-            console.log(`[${devIdx}] << [${event.command}]`)
+            console.log(`[${devIdx}][CMD]<< [${event.command}]`)
         })
 
         event.card.on('response-received', (event) => {
-            console.log(`[${devIdx}] >> [${Utils.hexEncode([...event.response.data])}][${Utils.hexEncode([...event.response.status])}](${event.response.meaning})`)
+            console.log(`[${devIdx}][RSP]>> [${Utils.hexEncode([...event.response.data])}][${Utils.hexEncode([...event.response.status])}](${event.response.meaning})`)
         })
 
+        // event.card.issueCommand(Iso7816Commands.select('429999990000'))
         event.card.issueCommand(Iso7816Commands.select())
             .then((selectResponse) => {
                 console.log();
                 console.log('Card response:');
+                // console.log(selectResponse.toString());
                 BER.BerObject.parse(selectResponse.data).print((line: string) => {
                     console.log(`>>${line}`);
                 });
+
                 console.log();
+                console.log(`Initiating SCP02 session`);
+
+                const scp = new SCP02(event.card).setSecurityLevel(3).setStaticKeys(gpDefaultStaticKeys).initAndAuth()
+                    .then(()=>{
+                        console.log('Secure session established');
+                        console.log();
+                    })
+                    .catch((error) => {
+                        console.error('SCP02 error:');
+                        console.error(error);
+                        console.log();
+                    })
             })
             .catch((e) => {
                 console.log();
