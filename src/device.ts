@@ -89,11 +89,15 @@ export class Device implements IDevice {
         cb: (err: any, response: Uint8Array) => void,
     ) {
         this.reader.transmit(Buffer.from(data), res_len, protocol, (err: any, response: Buffer) => {
-            const u8Arr = new Uint8Array(response.buffer)
+
+            let u8Arr: Uint8Array = new Uint8Array(0);
+            if (response) {
+                u8Arr = new Uint8Array(response.buffer)
                 .subarray(
                     response.byteOffset,
                     response.byteOffset + response.byteLength,
-            );
+                );
+            }
             cb(err, u8Arr);
         });
     }
