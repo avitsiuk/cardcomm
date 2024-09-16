@@ -109,6 +109,10 @@ class Card implements ICard {
         return this;
     }
 
+    set autoGetResponse(val: boolean) {
+        this._autoGetResponse = val;
+    }
+
     get autoGetResponse(): boolean {
         return this._autoGetResponse;
     }
