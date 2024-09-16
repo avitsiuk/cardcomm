@@ -286,18 +286,19 @@ export default class SCP02 {
 
     private _lastCmac: number[] = [];
 
-    private _authenticateFunction:
+    private _cmdAuthenticateFunction:
         | ((cmd: CommandApdu) => CommandApdu)
         | undefined;
-    private _doAuthenticate = (cmd: CommandApdu) => {
+
+    private _doCmdAuthenticate = (cmd: CommandApdu) => {
         if (
             !this.isActive ||
             this.securityLevel < 1 ||
-            typeof this._authenticateFunction === 'undefined'
+            typeof this._cmdAuthenticateFunction === 'undefined'
         ) {
             return cmd;
         }
-        return this._authenticateFunction(cmd);
+        return this._cmdAuthenticateFunction(cmd);
     };
 
     constructor(card: Card) {
@@ -376,8 +377,8 @@ export default class SCP02 {
         };
     }
 
-    get authenticator(): (cmd: CommandApdu) => CommandApdu {
-        return this._doAuthenticate;
+    get cmdAuthenticator(): (cmd: CommandApdu) => CommandApdu {
+        return this._doCmdAuthenticate;
     }
 
     /** Sends INITIALIZE_UPDATE and EXTERNAL AUTHENTICATE commands. Sets session as active on success */
@@ -486,7 +487,7 @@ export default class SCP02 {
                             this._lastCmac = [...extAuthCmd
                                 .getData()
                                 .subarray(extAuthCmd.getLc() - 8)];
-                            this._authenticateFunction = (cmd: CommandApdu) => {
+                            this._cmdAuthenticateFunction = (cmd: CommandApdu) => {
                                 //this._lastCmac
                                 const result = authenticateCmd(
                                     this.securityLevel,
@@ -499,8 +500,8 @@ export default class SCP02 {
                                     .subarray(result.getLc() - 8)];
                                 return result;
                             };
+                            this._card.setCommandTransformer(this._cmdAuthenticateFunction);
                             this._isActive = true;
-                            // console.log('Secure seccion initiated')
                             resolve(response);
                         })
                         .catch((err) => {
@@ -515,7 +516,7 @@ export default class SCP02 {
 
     reset() {
         this._isActive = false;
-        this._authenticateFunction = undefined;
+        this._cmdAuthenticateFunction = undefined;
         this._sessionKeys = undefined;
         this._keyDivData = [];
         this._keyVersion = 0;
