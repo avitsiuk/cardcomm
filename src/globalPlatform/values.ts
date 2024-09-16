@@ -2,11 +2,11 @@
 
 enum ins {
     INIT_UPDATE = 0x50,
-    EXT_AUTH    = 0x82,
-    INT_AUTH    = 0x88,
-    DELETE      = 0xE4,
-    GET_DATA    = 0xCA,
-    GET_STATUS  = 0xF2,
+    EXT_AUTH = 0x82,
+    INT_AUTH = 0x88,
+    DELETE = 0xe4,
+    GET_DATA = 0xca,
+    GET_STATUS = 0xf2,
 }
 
 // const insByteList = {

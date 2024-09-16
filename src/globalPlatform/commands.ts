@@ -7,9 +7,9 @@ const insByteList = {
     EXT_AUTH: 0x82,
     INT_AUTH: 0x88,
 
-    DELETE: 0xE4,
-    GET_DATA: 0xCA,
-    GET_STATUS: 0xF2,
+    DELETE: 0xe4,
+    GET_DATA: 0xca,
+    GET_STATUS: 0xf2,
 };
 
 export function initUpdate(
@@ -63,10 +63,9 @@ export function intAuth(
     includeId: boolean = false,
     id: TBinData = new Uint8Array(0),
 ) {
-
     let _key: Uint8Array;
     try {
-        _key = importBinData(key)
+        _key = importBinData(key);
     } catch (error: any) {
         throw new Error(`Key error: ${error.message}`);
     }
@@ -77,20 +76,21 @@ export function intAuth(
             {
                 tag: 'A6',
                 value: [
-                    {tag: '90', value: [0x11, includeId ? 0x04 : 0x00]},
-                    {tag: '95', value: [secLvl]},
-                    {tag: '80', value: [0x88]},
-                    {tag: '81', value: [Math.floor(_key.byteLength / 2)]},
+                    { tag: '90', value: [0x11, includeId ? 0x04 : 0x00] },
+                    { tag: '95', value: [secLvl] },
+                    { tag: '80', value: [0x88] },
+                    { tag: '81', value: [Math.floor(_key.byteLength / 2)] },
                 ],
             },
-            {tag: '5F49', value: _key},
-        ]
+            { tag: '5F49', value: _key },
+        ],
     };
 
     if (includeId) {
-        ((berObjInfo.value as IBerObjInfo[])[0].value as IBerObjInfo[]).push(
-            {tag: '84', value: id}
-        );
+        ((berObjInfo.value as IBerObjInfo[])[0].value as IBerObjInfo[]).push({
+            tag: '84',
+            value: id,
+        });
     }
 
     let cmd = new CommandApdu()

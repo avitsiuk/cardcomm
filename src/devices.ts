@@ -41,7 +41,7 @@ class PcscDevicesManager implements IDevicesManager {
     /** List of all currently connected devices */
     get devices(): { [key: string]: Device } {
         return this._devices;
-    };
+    }
 
     /** Resolved upon `device-activated` event */
     onActivated(): Promise<{ device: Device; devManager: IDevicesManager }> {
@@ -70,16 +70,25 @@ class PcscDevicesManager implements IDevicesManager {
     /** Emitted when a new device is detected */
     on(
         eventName: 'device-activated',
-        eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            device: Device;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     /** Emitted when a device gets disconnected */
     on(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            device: Device;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     on(
         eventName: 'error',
-        eventHandler: (event: { error: any; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            error: any;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     on(
         eventName: TDevicesManagerEventName,
@@ -92,16 +101,25 @@ class PcscDevicesManager implements IDevicesManager {
     /** Emitted when a new device is detected */
     once(
         eventName: 'device-activated',
-        eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            device: Device;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     /** Emitted when a device gets disconnected */
     once(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            device: Device;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     once(
         eventName: 'error',
-        eventHandler: (event: { error: any; devManager: PcscDevicesManager }) => void,
+        eventHandler: (event: {
+            error: any;
+            devManager: PcscDevicesManager;
+        }) => void,
     ): PcscDevicesManager;
     once(
         eventName: TDevicesManagerEventName,

@@ -589,12 +589,15 @@ export default class SCP11 {
                 .then(async (response) => {
                     try {
                         assertResponseIsOk(response);
-                    } catch(e: any) {
+                    } catch (e: any) {
                         this.reset();
-                        throw new Error(`Error getting card static public key: ${e.message}`);
+                        throw new Error(
+                            `Error getting card static public key: ${e.message}`,
+                        );
                     }
                     const berObj = BerObject.parse(response.data);
-                    const pkSdEcka = berObj.search('/5f49')[0].value as Uint8Array;
+                    const pkSdEcka = berObj.search('/5f49')[0]
+                        .value as Uint8Array;
                     // generating ephemeral OCE keypair
                     const ecdh = crypto.createECDH('prime256v1');
                     ecdh.generateKeys();
@@ -612,13 +615,16 @@ export default class SCP11 {
                         .then((response) => {
                             try {
                                 assertResponseIsOk(response);
-                            } catch(e: any) {
+                            } catch (e: any) {
                                 this.reset();
-                                throw new Error(`Error during INT_AUTH: ${e.message}`);
+                                throw new Error(
+                                    `Error during INT_AUTH: ${e.message}`,
+                                );
                             }
                             const berObj = BerObject.parse(response.data);
                             // getting card ephemeral public key
-                            const ePkSdEcka = berObj.search('/5f49')[0].value as Uint8Array;
+                            const ePkSdEcka = berObj.search('/5f49')[0]
+                                .value as Uint8Array;
                             this.genSessionKeys(
                                 [...ecdh.getPrivateKey()],
                                 [...pkSdEcka],

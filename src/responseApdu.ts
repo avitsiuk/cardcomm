@@ -1,14 +1,12 @@
-import {
-    TBinData,
-    importBinData,
-    hexEncode,
-} from './utils';
+import { TBinData, importBinData, hexEncode } from './utils';
 import statusDecode from './statusDecode';
 
 export class ResponseApdu {
     private static readonly DEF_DATA_BYTES_LENGTH = 256; // no hard limit, but most of the responses will be within 256 bytes of data
-    private byteArray: Uint8Array = new Uint8Array(ResponseApdu.DEF_DATA_BYTES_LENGTH + 2); // data + status(2)
-    private bLength: number = 2
+    private byteArray: Uint8Array = new Uint8Array(
+        ResponseApdu.DEF_DATA_BYTES_LENGTH + 2,
+    ); // data + status(2)
+    private bLength: number = 2;
 
     /** Creates a new ResponseAPDU from input
      * @param data - optional; binary data or another ResponseAPDU. All data is copied.
@@ -22,8 +20,7 @@ export class ResponseApdu {
      */
     constructor(data?: TBinData | ResponseApdu) {
         this.clear();
-        if (typeof data === 'undefined')
-            return this;
+        if (typeof data === 'undefined') return this;
 
         return this.from(data);
     }
@@ -37,19 +34,23 @@ export class ResponseApdu {
             inBuffer = inData.toByteArray();
         } else {
             try {
-                inBuffer = importBinData(inData)
+                inBuffer = importBinData(inData);
             } catch (error: any) {
-                throw new Error(`Could not create ResponseAPDU from provided data: ${error.message}`);
+                throw new Error(
+                    `Could not create ResponseAPDU from provided data: ${error.message}`,
+                );
             }
         }
         if (inBuffer.byteLength < 2) {
-            throw new Error(`Expected at least 2 bytes of input data, received: ${inBuffer.byteLength} bytes`);
+            throw new Error(
+                `Expected at least 2 bytes of input data, received: ${inBuffer.byteLength} bytes`,
+            );
         }
         if (this.byteArray.byteLength < inBuffer.byteLength) {
             this.byteArray = new Uint8Array(inBuffer.byteLength);
         }
         this.byteArray.set(inBuffer);
-        this.bLength = inBuffer.byteLength
+        this.bLength = inBuffer.byteLength;
         return this;
     }
 
@@ -65,7 +66,7 @@ export class ResponseApdu {
 
     // clears this ResponseAPDU by setting it's content to "0x0000"
     clear(): this {
-        this.byteArray.set([0,0]);
+        this.byteArray.set([0, 0]);
         this.bLength = 2;
         return this;
     }
@@ -93,14 +94,16 @@ export class ResponseApdu {
 
     /** Overwrites current data with new data */
     setData(inData: TBinData): this {
-        const sw1 = this.byteArray[this.bLength-2];
-        const sw2 = this.byteArray[this.bLength-1];
+        const sw1 = this.byteArray[this.bLength - 2];
+        const sw2 = this.byteArray[this.bLength - 1];
 
         let inByteArray: Uint8Array;
         try {
             inByteArray = importBinData(inData);
         } catch (error: any) {
-            throw new Error(`Could not set ResponseAPDU data field: ${error.message}`);
+            throw new Error(
+                `Could not set ResponseAPDU data field: ${error.message}`,
+            );
         }
         const requiredByteLength = inByteArray.byteLength + 2;
 
@@ -111,7 +114,7 @@ export class ResponseApdu {
         }
 
         if (this.byteArray.byteLength < requiredByteLength)
-            this.byteArray = new Uint8Array(requiredByteLength)
+            this.byteArray = new Uint8Array(requiredByteLength);
 
         this.byteArray.set(inByteArray);
         this.byteArray.set([sw1, sw2], inByteArray.byteLength);
@@ -130,7 +133,9 @@ export class ResponseApdu {
         try {
             inByteArray = importBinData(inData);
         } catch (error: any) {
-            throw new Error(`Could not add data to ResponseAPDU: ${error.message}`);
+            throw new Error(
+                `Could not add data to ResponseAPDU: ${error.message}`,
+            );
         }
 
         if (inByteArray.byteLength <= 0) {
@@ -139,8 +144,8 @@ export class ResponseApdu {
 
         const requiredByteLength = inByteArray.byteLength + this.bLength;
 
-        const sw1 = this.byteArray[this.bLength-2];
-        const sw2 = this.byteArray[this.bLength-1];
+        const sw1 = this.byteArray[this.bLength - 2];
+        const sw2 = this.byteArray[this.bLength - 1];
 
         if (this.byteArray.byteLength < requiredByteLength) {
             const newByteArray = new Uint8Array(requiredByteLength);
@@ -170,11 +175,15 @@ export class ResponseApdu {
         try {
             inByteArray = importBinData(inData);
         } catch (error: any) {
-            throw new Error(`Could not set ResponseAPDU status field: ${error.message}`);
+            throw new Error(
+                `Could not set ResponseAPDU status field: ${error.message}`,
+            );
         }
 
         if (inByteArray.byteLength !== 2)
-            throw new Error(`Could not set ResponseAPDU status field. Expected exactly 2 bytes of data; Received: ${inByteArray.byteLength} bytes`);
+            throw new Error(
+                `Could not set ResponseAPDU status field. Expected exactly 2 bytes of data; Received: ${inByteArray.byteLength} bytes`,
+            );
 
         this.byteArray.set(inByteArray, this.dataLength);
         return this;
@@ -192,32 +201,29 @@ export class ResponseApdu {
 
     /** Returns `true` if resporse status(SW1+SW2) is `0x9000` */
     get isOk(): boolean {
-        if((this.status[0] === 0x90) && (this.status[1] === 0x00))
-            return true;
+        if (this.status[0] === 0x90 && this.status[1] === 0x00) return true;
         return false;
     }
 
     /** Returns `true` if resporse SW1 is `0x61` */
     get hasMoreBytesAvailable(): boolean {
-        if ((this.status[0] === 0x61))
-            return true;
+        if (this.status[0] === 0x61) return true;
         return false;
     }
 
     /** Returns `true` if resporse SW1 is `0x6C` */
     get isWrongLe(): boolean {
-        if ((this.status[0] === 0x6c))
-            return true;
+        if (this.status[0] === 0x6c) return true;
         return false;
     }
 
     /**
      * In case response status SW1 is `0x61` or `0x6CXX`, returns SW2.
-     * 
+     *
      * `0` otherwise.
      */
     get availableResponseBytes(): number {
-        if ((this.status[0] === 0x61) || (this.status[0] === 0x6c))
+        if (this.status[0] === 0x61 || this.status[0] === 0x6c)
             return this.status[1];
         return 0;
     }
@@ -226,7 +232,9 @@ export class ResponseApdu {
 /** Thrown if response status bytes are different from "0x9000" */
 export function assertResponseIsOk(resp: ResponseApdu): void {
     if (!resp.isOk) {
-        throw new Error(`Error response: [${resp.toString()}](${resp.meaning})`);
+        throw new Error(
+            `Error response: [${resp.toString()}](${resp.meaning})`,
+        );
     }
 }
 

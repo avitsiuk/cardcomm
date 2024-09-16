@@ -70,10 +70,7 @@ export function select(
 ): CommandApdu {
     const cmd = new CommandApdu().setIns(insByteList.SELECT);
 
-
-
-    if (typeof data !== 'undefined')
-        cmd.setData(data);
+    if (typeof data !== 'undefined') cmd.setData(data);
 
     // P1
     let p1 = 0x04; // default, select by name

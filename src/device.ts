@@ -47,7 +47,9 @@ export class Device implements IDevice {
                 } else {
                     this.card = new Card(
                         this,
-                        status.atr ? importBinData(status.atr) : new Uint8Array(0),
+                        status.atr
+                            ? importBinData(status.atr)
+                            : new Uint8Array(0),
                         protocol,
                     );
                     this._eventEmitter.emit('card-inserted', {
@@ -91,18 +93,21 @@ export class Device implements IDevice {
         protocol: number,
         cb: (err: any, response: Uint8Array) => void,
     ) {
-        this.reader.transmit(Buffer.from(data), res_len, protocol, (err: any, response: Buffer) => {
-
-            let u8Arr: Uint8Array = new Uint8Array(0);
-            if (response) {
-                u8Arr = new Uint8Array(response.buffer)
-                .subarray(
-                    response.byteOffset,
-                    response.byteOffset + response.byteLength,
-                );
-            }
-            cb(err, u8Arr);
-        });
+        this.reader.transmit(
+            Buffer.from(data),
+            res_len,
+            protocol,
+            (err: any, response: Buffer) => {
+                let u8Arr: Uint8Array = new Uint8Array(0);
+                if (response) {
+                    u8Arr = new Uint8Array(response.buffer).subarray(
+                        response.byteOffset,
+                        response.byteOffset + response.byteLength,
+                    );
+                }
+                cb(err, u8Arr);
+            },
+        );
     }
 
     getName() {

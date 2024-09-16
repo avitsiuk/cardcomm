@@ -1,8 +1,4 @@
-import {
-    TBinData,
-    importBinData,
-    hexEncode,
-} from './utils';
+import { TBinData, importBinData, hexEncode } from './utils';
 const NORM_PROC = 'Normal processing';
 const WARN_PROC = 'Warning processing';
 const EXEC_ERR = 'Execution error';

@@ -28,7 +28,10 @@ interface ISessionInfo {
     seqCount: number[];
 }
 
-const defaultKey = [0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f];
+const defaultKey = [
+    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b,
+    0x4c, 0x4d, 0x4e, 0x4f,
+];
 
 export const defaultStaticKeys: ISessionKeys = {
     enc: defaultKey,
@@ -401,9 +404,11 @@ export default class SCP02 {
                 .then((response) => {
                     try {
                         assertResponseIsOk(response);
-                    } catch(e: any) {
+                    } catch (e: any) {
                         this.reset();
-                        throw new Error(`Error during INIT_UPDATE: ${e.message}`);
+                        throw new Error(
+                            `Error during INIT_UPDATE: ${e.message}`,
+                        );
                     }
                     if (response.dataLength !== 28) {
                         this.reset();
@@ -475,19 +480,25 @@ export default class SCP02 {
                         .then((response) => {
                             try {
                                 assertResponseIsOk(response);
-                            } catch(e: any) {
+                            } catch (e: any) {
                                 this.reset();
-                                throw new Error(`Error during EXT_AUTH: ${e.message}`);
+                                throw new Error(
+                                    `Error during EXT_AUTH: ${e.message}`,
+                                );
                             }
                             this._sessionKeys = sessionKeys;
                             this._keyDivData = keyDivData;
                             this._keyVersion = keyVersion;
                             this._protocolVersion = protocolVersion;
                             this._sequenceCounter = sequenceCounter;
-                            this._lastCmac = [...extAuthCmd
-                                .getData()
-                                .subarray(extAuthCmd.getLc() - 8)];
-                            this._cmdAuthenticateFunction = (cmd: CommandApdu) => {
+                            this._lastCmac = [
+                                ...extAuthCmd
+                                    .getData()
+                                    .subarray(extAuthCmd.getLc() - 8),
+                            ];
+                            this._cmdAuthenticateFunction = (
+                                cmd: CommandApdu,
+                            ) => {
                                 //this._lastCmac
                                 const result = authenticateCmd(
                                     this.securityLevel,
@@ -495,12 +506,16 @@ export default class SCP02 {
                                     this._sessionKeys!,
                                     this._lastCmac,
                                 );
-                                this._lastCmac = [...result
-                                    .getData()
-                                    .subarray(result.getLc() - 8)];
+                                this._lastCmac = [
+                                    ...result
+                                        .getData()
+                                        .subarray(result.getLc() - 8),
+                                ];
                                 return result;
                             };
-                            this._card.setCommandTransformer(this._cmdAuthenticateFunction);
+                            this._card.setCommandTransformer(
+                                this._cmdAuthenticateFunction,
+                            );
                             this._isActive = true;
                             resolve(response);
                         })

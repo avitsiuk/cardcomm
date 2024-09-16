@@ -8,16 +8,8 @@ export {
     ITagInfo,
 } from './berUtils';
 
-export {
-    Tag,
-} from './tag';
+export { Tag } from './tag';
 
-export {
-    IBerObjInfo,
-} from './parser';
+export { IBerObjInfo } from './parser';
 
-export {
-    BerObject,
-    IBerObjConstructed,
-    IBerObjPrimitive,
-} from './berObject';
+export { BerObject, IBerObjConstructed, IBerObjPrimitive } from './berObject';

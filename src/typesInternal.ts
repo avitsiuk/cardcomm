@@ -85,37 +85,64 @@ export interface IDevice {
     ): IDevice;
 }
 
-export type TDevicesManagerEventName = 'device-activated' | 'device-deactivated' | 'error';
+export type TDevicesManagerEventName =
+    | 'device-activated'
+    | 'device-deactivated'
+    | 'error';
 
 export interface IDevicesManager {
     devices: { [key: string]: IDevice };
 
-    onActivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
-    onDeactivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
+    onActivated: () => Promise<{
+        device: IDevice;
+        devManager: IDevicesManager;
+    }>;
+    onDeactivated: () => Promise<{
+        device: IDevice;
+        devManager: IDevicesManager;
+    }>;
     lookup: (name: string) => IDevice | null;
 
     on(
         eventName: 'device-activated',
-        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            device: IDevice;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
     on(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            device: IDevice;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
     on(
         eventName: 'error',
-        eventHandler: (event: { error: any; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            error: any;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
     once(
         eventName: 'device-activated',
-        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            device: IDevice;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
     once(
         eventName: 'device-deactivated',
-        eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            device: IDevice;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
     once(
         eventName: 'error',
-        eventHandler: (event: { error: any; devManager: IDevicesManager }) => void,
+        eventHandler: (event: {
+            error: any;
+            devManager: IDevicesManager;
+        }) => void,
     ): IDevicesManager;
 }

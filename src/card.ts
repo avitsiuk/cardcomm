@@ -128,13 +128,16 @@ class Card implements ICard {
     ): void {
         this._isBusy = true;
         let doCommandTransform: boolean = true;
-        const respAcc = new ResponseApdu();; // response accumulator
+        const respAcc = new ResponseApdu(); // response accumulator
         let middleCallback: (err: any, response: Uint8Array) => void;
         if (!this.autoGetResponse) {
             middleCallback = (err: any, respBuffer: Uint8Array) => {
                 if (respBuffer.byteLength < 2) {
                     this._isBusy = false;
-                    callback(new Error(`Error response: [${hexEncode(respBuffer)}]`), new ResponseApdu());
+                    callback(
+                        new Error(`Error response: [${hexEncode(respBuffer)}]`),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
                 let response: ResponseApdu;
@@ -142,7 +145,10 @@ class Card implements ICard {
                     response = new ResponseApdu(respBuffer);
                 } catch (error) {
                     this._isBusy = false;
-                    callback(new Error(`Error response: [${hexEncode(respBuffer)}]`), new ResponseApdu());
+                    callback(
+                        new Error(`Error response: [${hexEncode(respBuffer)}]`),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
                 this._eventEmitter.emit('response-received', {
@@ -154,7 +160,12 @@ class Card implements ICard {
                     response = this._doResponseTransform(response);
                 } catch (error: any) {
                     this._isBusy = false;
-                    callback(new Error(`Error transformng response: ${error.message}`), new ResponseApdu());
+                    callback(
+                        new Error(
+                            `Error transformng response: ${error.message}`,
+                        ),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
                 this._isBusy = false;
@@ -164,7 +175,10 @@ class Card implements ICard {
             middleCallback = (err: any, respBuffer: Uint8Array) => {
                 if (respBuffer.byteLength < 2) {
                     this._isBusy = false;
-                    callback(new Error(`Error response: [${hexEncode(respBuffer)}]`), new ResponseApdu());
+                    callback(
+                        new Error(`Error response: [${hexEncode(respBuffer)}]`),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
                 let response: ResponseApdu;
@@ -172,7 +186,10 @@ class Card implements ICard {
                     response = new ResponseApdu(respBuffer);
                 } catch (error) {
                     this._isBusy = false;
-                    callback(new Error(`Error response: [${hexEncode(respBuffer)}]`), new ResponseApdu());
+                    callback(
+                        new Error(`Error response: [${hexEncode(respBuffer)}]`),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
                 this._eventEmitter.emit('response-received', {
@@ -184,7 +201,12 @@ class Card implements ICard {
                     response = this._doResponseTransform(response);
                 } catch (error: any) {
                     this._isBusy = false;
-                    callback(new Error(`Error transformng response: ${error.message}`), new ResponseApdu());
+                    callback(
+                        new Error(
+                            `Error transformng response: ${error.message}`,
+                        ),
+                        new ResponseApdu(),
+                    );
                     return;
                 }
 
@@ -212,15 +234,23 @@ class Card implements ICard {
                         this._isBusy = false;
                         callback(
                             err,
-                            respAcc.addData(response.data).setStatus(response.status),
+                            respAcc
+                                .addData(response.data)
+                                .setStatus(response.status),
                         );
                     } else {
                         if (doCommandTransform) {
                             try {
-                                cmdToResend = this._doCommandTransform(cmdToResend);
+                                cmdToResend =
+                                    this._doCommandTransform(cmdToResend);
                             } catch (error: any) {
                                 this._isBusy = false;
-                                callback(new Error(`Error transformng command: ${error.message}`), new ResponseApdu());
+                                callback(
+                                    new Error(
+                                        `Error transformng command: ${error.message}`,
+                                    ),
+                                    new ResponseApdu(),
+                                );
                                 return;
                             }
                         } else {
@@ -239,7 +269,12 @@ class Card implements ICard {
                             );
                         } catch (error: any) {
                             this._isBusy = false;
-                            callback(new Error(`Command transmission error: ${error.message}`), new ResponseApdu());
+                            callback(
+                                new Error(
+                                    `Command transmission error: ${error.message}`,
+                                ),
+                                new ResponseApdu(),
+                            );
                             return;
                         }
                     }
@@ -247,7 +282,9 @@ class Card implements ICard {
                     this._isBusy = false;
                     callback(
                         err,
-                        respAcc.addData(response.data).setStatus(response.status),
+                        respAcc
+                            .addData(response.data)
+                            .setStatus(response.status),
                     );
                 }
             };
@@ -259,7 +296,10 @@ class Card implements ICard {
                 tCmd = this._doCommandTransform(cmd);
             } catch (error: any) {
                 this._isBusy = false;
-                callback(new Error(`Error transformng command: ${error.message}`), new ResponseApdu());
+                callback(
+                    new Error(`Error transformng command: ${error.message}`),
+                    new ResponseApdu(),
+                );
                 return;
             }
             doCommandTransform = true;
@@ -279,7 +319,10 @@ class Card implements ICard {
             );
         } catch (error: any) {
             this._isBusy = false;
-            callback(new Error(`Command transmission error: ${error.message}`), new ResponseApdu());
+            callback(
+                new Error(`Command transmission error: ${error.message}`),
+                new ResponseApdu(),
+            );
             return;
         }
     }
@@ -290,9 +333,7 @@ class Card implements ICard {
         callback: (err: any, response: ResponseApdu) => void,
     ): void;
     /** Submits CommandAPDU and resolves upon completion */
-    issueCommand(
-        command: TBinData | CommandApdu,
-    ): Promise<ResponseApdu>;
+    issueCommand(command: TBinData | CommandApdu): Promise<ResponseApdu>;
     issueCommand(
         command: TBinData | CommandApdu,
         callback?: (err: any, response: ResponseApdu) => void,
@@ -304,7 +345,7 @@ class Card implements ICard {
             try {
                 cmd = new CommandApdu(command);
             } catch (error: any) {
-                throw new Error(`Command APDU error: ${error.message}`)
+                throw new Error(`Command APDU error: ${error.message}`);
             }
         }
 
@@ -320,7 +361,9 @@ class Card implements ICard {
                     `If Lc = 0, it should be omitted; cmd: [${cmd.toString()}]`,
                 );
             }
-            checkingErr = new Error(`Lc or Data missing; cmd: [${cmd.toString()}]`);
+            checkingErr = new Error(
+                `Lc or Data missing; cmd: [${cmd.toString()}]`,
+            );
         } else if (cmd.data.byteLength > CommandApdu.MAX_DATA_BYTE_LENGTH) {
             checkingErr = new Error(
                 `Command data too long; Max: ${CommandApdu.MAX_DATA_BYTE_LENGTH} bytes; Received: ${cmd.data.byteLength} bytes; cmd: [${cmd.toString()}]`,
@@ -339,7 +382,12 @@ class Card implements ICard {
             try {
                 this._issueCmdInternal(cmd, callback);
             } catch (error: any) {
-                callback(new Error(`Error sending command to card: ${error.message}`), ResponseApdu.from([]));
+                callback(
+                    new Error(
+                        `Error sending command to card: ${error.message}`,
+                    ),
+                    ResponseApdu.from([]),
+                );
                 return;
             }
             return;
@@ -358,7 +406,11 @@ class Card implements ICard {
                 try {
                     this._issueCmdInternal(cmd, callback);
                 } catch (error: any) {
-                    return reject(new Error(`Error sending command to card: ${error.message}`));
+                    return reject(
+                        new Error(
+                            `Error sending command to card: ${error.message}`,
+                        ),
+                    );
                 }
             });
         }

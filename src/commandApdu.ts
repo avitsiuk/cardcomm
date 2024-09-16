@@ -1,8 +1,4 @@
-import {
-    TBinData,
-    importBinData,
-    hexEncode,
-} from './utils';
+import { TBinData, importBinData, hexEncode } from './utils';
 /*
 
 CASE   CMD-DATA(LC)   RSP-DATA(LE)
@@ -30,16 +26,18 @@ if (bytes.len == 4) {
 */
 
 export class CommandApdu {
-    static readonly CLA_OFFSET  = 0;
-    static readonly INS_OFFSET  = 1;
-    static readonly P1_OFFSET   = 2;
-    static readonly P2_OFFSET   = 3;
-    static readonly LC_OFFSET   = 4;
+    static readonly CLA_OFFSET = 0;
+    static readonly INS_OFFSET = 1;
+    static readonly P1_OFFSET = 2;
+    static readonly P2_OFFSET = 3;
+    static readonly LC_OFFSET = 4;
     static readonly DATA_OFFSET = 5;
     static readonly MAX_DATA_BYTE_LENGTH = 255;
 
     // header(4) + lc(1) + data + le(1)
-    private byteArray: Uint8Array = new Uint8Array(CommandApdu.MAX_DATA_BYTE_LENGTH + 6); // header(4) + Lc(1) + data + Le(1)
+    private byteArray: Uint8Array = new Uint8Array(
+        CommandApdu.MAX_DATA_BYTE_LENGTH + 6,
+    ); // header(4) + Lc(1) + data + Le(1)
     private bLength = 5;
 
     /** Creates a new CommandAPDU from input
@@ -54,8 +52,7 @@ export class CommandApdu {
      */
     constructor(data?: TBinData | CommandApdu) {
         this.clear();
-        if (typeof data === 'undefined')
-            return this;
+        if (typeof data === 'undefined') return this;
         return this.from(data);
     }
 
@@ -68,28 +65,38 @@ export class CommandApdu {
             inBuffer = inData.toByteArray();
         } else {
             try {
-                inBuffer = importBinData(inData)
+                inBuffer = importBinData(inData);
             } catch (error: any) {
-                throw new Error(`Could not create CommandAPDU from provided data: ${error.message}`);
+                throw new Error(
+                    `Could not create CommandAPDU from provided data: ${error.message}`,
+                );
             }
         }
         if (inBuffer.byteLength < 4)
-            throw new Error(`Expected at least 4 bytes of input data, received: ${inBuffer.byteLength} bytes`);
-        if (inBuffer.byteLength > (CommandApdu.MAX_DATA_BYTE_LENGTH + 6))
-            throw new Error(`Expected at most ${CommandApdu.MAX_DATA_BYTE_LENGTH + 6} bytes of input data, received: ${inBuffer.byteLength} bytes`);
+            throw new Error(
+                `Expected at least 4 bytes of input data, received: ${inBuffer.byteLength} bytes`,
+            );
+        if (inBuffer.byteLength > CommandApdu.MAX_DATA_BYTE_LENGTH + 6)
+            throw new Error(
+                `Expected at most ${CommandApdu.MAX_DATA_BYTE_LENGTH + 6} bytes of input data, received: ${inBuffer.byteLength} bytes`,
+            );
         if (inBuffer.byteLength <= 5) {
             this.bLength = 5;
         } else {
             const lc = inBuffer[CommandApdu.LC_OFFSET];
             const noLeLength = 5 + lc; // 4(head) + 1(lc) + lc(data)
             if (noLeLength === 5)
-                throw new Error(`Lc value cannot be 0; received data: [${hexEncode(inBuffer)}]`);
+                throw new Error(
+                    `Lc value cannot be 0; received data: [${hexEncode(inBuffer)}]`,
+                );
             if (inBuffer.byteLength === noLeLength) {
                 this.bLength = inBuffer.byteLength + 1;
             } else if (inBuffer.byteLength === noLeLength + 1) {
                 this.bLength = inBuffer.byteLength;
             } else {
-                throw new Error(`Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${hexEncode(inBuffer)}]`);
+                throw new Error(
+                    `Based on input Lc value(${lc}), input data was expected to be ${noLeLength}(no Le value) or ${noLeLength + 1}(with Le value) bytes long. Received ${inBuffer.byteLength} bytes: [${hexEncode(inBuffer)}]`,
+                );
             }
         }
         this.byteArray.set(inBuffer, 0);
@@ -108,7 +115,7 @@ export class CommandApdu {
 
     /** Clears this CommandAPDU by setting it's content to "0x0000000000" */
     clear(): this {
-        this.byteArray.set([0,0,0,0,0]);
+        this.byteArray.set([0, 0, 0, 0, 0]);
         this.bLength = 5;
         return this;
     }
@@ -207,8 +214,7 @@ export class CommandApdu {
     /** Returns current Lc value (data field length). Cannot be set directly. */
     getLc(): number {
         let lc = 0;
-        if (this.bLength > 5)
-            lc = this.byteArray[CommandApdu.LC_OFFSET];
+        if (this.bLength > 5) lc = this.byteArray[CommandApdu.LC_OFFSET];
         return lc;
     }
 
@@ -222,9 +228,17 @@ export class CommandApdu {
         const le = this.le;
         let importedBytes: Uint8Array;
         try {
-            importedBytes = importBinData(data, this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET + CommandApdu.MAX_DATA_BYTE_LENGTH));
+            importedBytes = importBinData(
+                data,
+                this.byteArray.subarray(
+                    CommandApdu.DATA_OFFSET,
+                    CommandApdu.DATA_OFFSET + CommandApdu.MAX_DATA_BYTE_LENGTH,
+                ),
+            );
         } catch (error: any) {
-            throw new Error(`Could not set CommandAPDU data field: ${error.message}`);
+            throw new Error(
+                `Could not set CommandAPDU data field: ${error.message}`,
+            );
         }
 
         if (importedBytes.byteLength < 1) {
@@ -232,8 +246,10 @@ export class CommandApdu {
             this.bLength = CommandApdu.LC_OFFSET + 1;
         } else {
             this.byteArray[CommandApdu.LC_OFFSET] = importedBytes.byteLength;
-            this.byteArray[CommandApdu.DATA_OFFSET + importedBytes.byteLength] = le;
-            this.bLength = CommandApdu.DATA_OFFSET + importedBytes.byteLength + 1; //(header + lc)(5) + data + le
+            this.byteArray[CommandApdu.DATA_OFFSET + importedBytes.byteLength] =
+                le;
+            this.bLength =
+                CommandApdu.DATA_OFFSET + importedBytes.byteLength + 1; //(header + lc)(5) + data + le
         }
 
         return this;
@@ -247,9 +263,15 @@ export class CommandApdu {
     /**Returns command data field. Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
     getData(): Uint8Array {
         if (this.bLength <= 5)
-            return this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET);
+            return this.byteArray.subarray(
+                CommandApdu.DATA_OFFSET,
+                CommandApdu.DATA_OFFSET,
+            );
 
-        return this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET + this.byteArray[CommandApdu.LC_OFFSET]);
+        return this.byteArray.subarray(
+            CommandApdu.DATA_OFFSET,
+            CommandApdu.DATA_OFFSET + this.byteArray[CommandApdu.LC_OFFSET],
+        );
     }
 
     /** Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
@@ -321,10 +343,12 @@ export class CommandApdu {
 
     /** Type4 can use 4 logical channels (0-3) while type16 can use 16 logical channels (4-19)*/
     get type(): 4 | 16 {
-        if ((this.byteArray[CommandApdu.CLA_OFFSET] & 0x60) === 0) { // & 0110 0000
+        if ((this.byteArray[CommandApdu.CLA_OFFSET] & 0x60) === 0) {
+            // & 0110 0000
             // 0XX0 0000
             return 4;
-        } else if ((this.byteArray[CommandApdu.CLA_OFFSET] & 0x40) > 0) { // & 0100 0000
+        } else if ((this.byteArray[CommandApdu.CLA_OFFSET] & 0x40) > 0) {
+            // & 0100 0000
             // 0X00 0000
             return 16;
         } else {
@@ -413,7 +437,9 @@ export class CommandApdu {
                     this.setCla(this.getCla() | 0x20);
                     break;
                 default:
-                    throw new Error('Type16 APDUs support only 0 or 1 for secure message type');
+                    throw new Error(
+                        'Type16 APDUs support only 0 or 1 for secure message type',
+                    );
             }
         }
         return this;
@@ -421,13 +447,13 @@ export class CommandApdu {
 
     /**
      * Gets secure messaging type from CLA byte
-     * 
+     *
      * `0` - no secure messaging; `Type4` and `Type16` APDUs;
-     * 
+     *
      * `1` - proprietary secure messaging (e.g. GP); `Type4` and `Type16` APDUs;
-     * 
+     *
      * `2` - Iso7816 secure messages; no header auth; only `Type4` APDUs;
-     * 
+     *
      * `3` - Iso7816 secure messages; with header auth; only `Type4` APDUs;
      */
     get secMgsType(): number {

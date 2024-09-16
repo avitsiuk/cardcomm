@@ -10,15 +10,15 @@ import Tag from './tag';
 import { IBerObjInfo, IBerObj, parseBer } from './parser';
 
 export interface IBerObjPrimitive extends IBerObj {
-    tag: Tag,
+    tag: Tag;
     length: number;
-    value: Uint8Array
+    value: Uint8Array;
 }
 
 export interface IBerObjConstructed extends IBerObj {
-    tag: Tag,
+    tag: Tag;
     length: number;
-    value: BerObject[]
+    value: BerObject[];
 }
 
 /** Path to a tag inside a ber object */
@@ -38,7 +38,6 @@ export function isValidBerSearchQuery(str: string): boolean {
 }
 
 export class BerObject implements IBerObj {
-
     private _tag: Tag = new Tag();
     private _len: number = 0;
     private _val: Uint8Array | BerObject[] = [];
@@ -47,7 +46,7 @@ export class BerObject implements IBerObj {
      * Parses input data and creates corresponding BER object
      * @param input - input binary data
      * @param startOffset - Used to indicate an offset from which to start parsing
-     * @returns 
+     * @returns
      */
     static parse(input: TBinData, startOffset: number = 0): BerObject {
         return new BerObject().parse(input, startOffset);
@@ -61,12 +60,16 @@ export class BerObject implements IBerObj {
         return new BerObject(input);
     }
 
-    /** 
+    /**
      * Serializes a BER info object and returns resulting byte array
      * @param outBuffer - if defined, the result of the serialization will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
      * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the serialization will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
      */
-    static serialize(input: IBerObjInfo, outBuffer: ArrayBuffer | ArrayBufferView, outOffset: number = 0): Uint8Array {
+    static serialize(
+        input: IBerObjInfo,
+        outBuffer: ArrayBuffer | ArrayBufferView,
+        outOffset: number = 0,
+    ): Uint8Array {
         return BerObject.create(input).serialize(outBuffer, outOffset);
     }
 
@@ -113,14 +116,14 @@ export class BerObject implements IBerObj {
      * Parses input data and creates corresponding BER object
      * @param input - input binary data
      * @param startOffset - Used to indicate an offset from which to start parsing
-     * @returns 
+     * @returns
      */
     parse(input: TBinData, startOffset: number = 0): this {
         let parseResult: IBerObj[];
         try {
             parseResult = parseBer(input, startOffset);
         } catch (error: any) {
-            throw new Error(`Error parsing ber data: ${error.message}`)
+            throw new Error(`Error parsing ber data: ${error.message}`);
         }
         return this.setConstructedValue(parseResult);
     }
@@ -130,29 +133,41 @@ export class BerObject implements IBerObj {
      * @param input - Info object describing BER to be created
      */
     create(input: IBerObjInfo): this {
-        if (typeof input === 'object' && typeof this['tag'] !== 'undefined' && typeof this['value'] !== 'undefined') {
+        if (
+            typeof input === 'object' &&
+            typeof this['tag'] !== 'undefined' &&
+            typeof this['value'] !== 'undefined'
+        ) {
             let tag: Tag;
             try {
                 tag = new Tag(input.tag);
             } catch (error: any) {
-                throw new Error(`Ber object creation error: Could not import tag: ${error.message}`);
+                throw new Error(
+                    `Ber object creation error: Could not import tag: ${error.message}`,
+                );
             }
             if (isBinData(input.value)) {
-                if (tag.isPrimitive) { // primitive tag, do not decode value
+                if (tag.isPrimitive) {
+                    // primitive tag, do not decode value
                     try {
                         this._val = importBinData(input.value);
                     } catch (error: any) {
-                        throw new Error(`Ber object creation error: Could not import binary value for primitive tag "${tag.hex}": ${error.message}`);
+                        throw new Error(
+                            `Ber object creation error: Could not import binary value for primitive tag "${tag.hex}": ${error.message}`,
+                        );
                     }
                     this._len = this._val.byteLength;
                     this._tag = new Tag(input.tag);
                     return this;
-                } else { // constructed tag, parse binary value
+                } else {
+                    // constructed tag, parse binary value
                     let parseResult: IBerObj[];
                     try {
                         parseResult = parseBer(input.value);
                     } catch (error: any) {
-                        throw new Error(`Ber object creation error: Could not parse binary value for constructed tag "${tag.hex}": ${error.message}`);
+                        throw new Error(
+                            `Ber object creation error: Could not parse binary value for constructed tag "${tag.hex}": ${error.message}`,
+                        );
                     }
 
                     this._tag = tag;
@@ -160,7 +175,9 @@ export class BerObject implements IBerObj {
                 }
             } else {
                 if (tag.isPrimitive && tag.byteLength > 0) {
-                    throw new Error(`Tag "${tag.hex}" is primitive, while the value is not.`);
+                    throw new Error(
+                        `Tag "${tag.hex}" is primitive, while the value is not.`,
+                    );
                 }
 
                 this._tag = tag;
@@ -169,21 +186,25 @@ export class BerObject implements IBerObj {
                 // create other objects from object array in value
             }
         } else {
-            throw new Error('Unknown format of BerObject creation info')
+            throw new Error('Unknown format of BerObject creation info');
         }
     }
 
-    /** 
+    /**
      * Serializes current BER Object and returns resulting byte array
      * @param outBuffer - if defined, the result of the serialization will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
      * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the serialization will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
      */
-    serialize(outBuffer?: ArrayBuffer | ArrayBufferView, outOffset: number = 0): Uint8Array {
+    serialize(
+        outBuffer?: ArrayBuffer | ArrayBufferView,
+        outOffset: number = 0,
+    ): Uint8Array {
         let requiredByteLength = this._len;
 
-        if(!this.isRoot()) {
+        if (!this.isRoot()) {
             requiredByteLength += this._tag.byteLength;
-            requiredByteLength += (1 + (this._len < 128 ? 0 : getMinWordNum(this._len, 8)));
+            requiredByteLength +=
+                1 + (this._len < 128 ? 0 : getMinWordNum(this._len, 8));
         }
 
         let outByteArray: Uint8Array;
@@ -193,12 +214,20 @@ export class BerObject implements IBerObj {
             if (outBuffer instanceof ArrayBuffer) {
                 outByteArray = new Uint8Array(outBuffer);
             } else if (ArrayBuffer.isView(outBuffer)) {
-                outByteArray = new Uint8Array(outBuffer.buffer).subarray(outBuffer.byteOffset, outBuffer.byteOffset + outBuffer.byteLength);
+                outByteArray = new Uint8Array(outBuffer.buffer).subarray(
+                    outBuffer.byteOffset,
+                    outBuffer.byteOffset + outBuffer.byteLength,
+                );
             } else {
-                throw new TypeError('outBuffer must be an ArrayBuffer or ArrayBufferView');
+                throw new TypeError(
+                    'outBuffer must be an ArrayBuffer or ArrayBufferView',
+                );
             }
 
-            if ((outOffset < 0) || (outOffset >= outBuffer.byteLength)) throw new Error(`outOffset value out of bounds; value: ${outOffset}`);
+            if (outOffset < 0 || outOffset >= outBuffer.byteLength)
+                throw new Error(
+                    `outOffset value out of bounds; value: ${outOffset}`,
+                );
 
             outByteArray = outByteArray.subarray(outOffset);
 
@@ -212,7 +241,11 @@ export class BerObject implements IBerObj {
             outByteArray.set(this._tag.toByteArray(), serOffset);
             // console.log(hexEncode(outByteArray));
             serOffset += this._tag.byteLength;
-            serOffset += serializeLength(this._len, outByteArray, serOffset).byteLength;
+            serOffset += serializeLength(
+                this._len,
+                outByteArray,
+                serOffset,
+            ).byteLength;
         }
 
         if (this.isPrimitive()) {
@@ -220,7 +253,10 @@ export class BerObject implements IBerObj {
             serOffset += this.value.byteLength;
         } else if (this.isConstructed()) {
             for (let i = 0; i < this.value.length; i++) {
-                serOffset += this.value[i].serialize(outByteArray, serOffset).byteLength;
+                serOffset += this.value[i].serialize(
+                    outByteArray,
+                    serOffset,
+                ).byteLength;
             }
         }
         return outByteArray.subarray(0, serOffset);
@@ -231,8 +267,10 @@ export class BerObject implements IBerObj {
         let length: number = 0;
         for (let i = 0; i < input.length; i++) {
             const berObj = new BerObject(input[i]);
-            const lenFieldByteLength: number = 1 + (berObj._len < 128 ? 0 : getMinWordNum(berObj._len, 8));
-            length += (berObj._tag.byteLength + lenFieldByteLength + berObj.length);
+            const lenFieldByteLength: number =
+                1 + (berObj._len < 128 ? 0 : getMinWordNum(berObj._len, 8));
+            length +=
+                berObj._tag.byteLength + lenFieldByteLength + berObj.length;
             berObjArray.push(berObj);
         }
 
@@ -241,7 +279,11 @@ export class BerObject implements IBerObj {
         return this;
     }
 
-    private printInternal(printFn: (berObj: BerObject, lvl: number, line: string) => void, spaces: number = 4, level: number = 0): void {
+    private printInternal(
+        printFn: (berObj: BerObject, lvl: number, line: string) => void,
+        spaces: number = 4,
+        level: number = 0,
+    ): void {
         let line: string = `${''.padEnd(level * spaces, ' ')}${this.isRoot() ? 'ROOT' : this._tag.hex} (${this._len} bytes):`;
         if (this.isPrimitive()) {
             line += ` ${hexEncode(this.value)}`;
@@ -249,7 +291,11 @@ export class BerObject implements IBerObj {
         } else if (this.isConstructed()) {
             printFn(this, level, line);
             for (let i = 0; i < this.value.length; i++) {
-                (this.value[i] as BerObject).printInternal(printFn, spaces, level + 1);
+                (this.value[i] as BerObject).printInternal(
+                    printFn,
+                    spaces,
+                    level + 1,
+                );
             }
         }
     }
@@ -259,13 +305,21 @@ export class BerObject implements IBerObj {
      * @param printFn - custom print function. gets the object being currently printed, current depth level and proposed line.
      * @param spaces - number of spaces used for indenting one level (default: `4`)
      */
-    print(printFn?: (berObj: BerObject, lvl: number, line: string) => void, spaces: number = 4): void {
-        const f: (berObj: BerObject, lvl: number, line: string) => void = printFn ? printFn : (_obj, _lvl, line) => {console.log(line);};
-        this.printInternal(f, spaces, 0)
+    print(
+        printFn?: (berObj: BerObject, lvl: number, line: string) => void,
+        spaces: number = 4,
+    ): void {
+        const f: (berObj: BerObject, lvl: number, line: string) => void =
+            printFn
+                ? printFn
+                : (_obj, _lvl, line) => {
+                      console.log(line);
+                  };
+        this.printInternal(f, spaces, 0);
     }
 
     /** This method will return an array of all possible paths in two formats: named and indexed.
-     * @example BerObject.parse('6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F12840E315041592E5359532E4444463031A500').genPathList()  
+     * @example BerObject.parse('6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F1A840E315041592E5359532E4444463031A5088801025F2D02656E6F12840E315041592E5359532E4444463031A500').genPathList()
      * ```
      *[
      *  { named: '/6f', indexed: [ 0 ] },
@@ -282,19 +336,22 @@ export class BerObject implements IBerObj {
      *  { named: '/6f/84', indexed: [ 2, 0 ] },
      *  { named: '/6f/a5', indexed: [ 2, 1 ] }
      *]
-    */
+     */
     genPathList(): TBerObjectPath[] {
         const result: TBerObjectPath[] = [];
         if (this.isConstructed()) {
             for (let childIdx = 0; childIdx < this.value.length; childIdx++) {
-                result.push({hex: `/${this.value[childIdx].tag.hex}`, indexes: [childIdx]});
+                result.push({
+                    hex: `/${this.value[childIdx].tag.hex}`,
+                    indexes: [childIdx],
+                });
                 this.value[childIdx].genPathList().reduce((_, childPath) => {
                     result.push({
                         hex: `/${this.value[childIdx].tag.hex}${childPath.hex}`,
                         indexes: [childIdx, ...childPath.indexes],
                     });
                     return null;
-                }, null)
+                }, null);
             }
         }
         return result;
@@ -305,19 +362,19 @@ export class BerObject implements IBerObj {
      * @param query - search query in format `/<hex>/.../<hex>`. `*` and `**` can be used instead of hex values. `*` - indicates a single tag, while `**` indicates any number of tags (even 0). Any number of `*` and `**` can be used in one search query. Search query MUST start with `/` and end with a value. A value can be either `*`, `**` or a hex string. Values cannot be mixed.
      * @returns - array of all found tags matching the criteria
      * @example BerObject.parse('hexString').search('/**\/06') // this will return every single OID primitive object in this BER on any level
-     * @example BerObject.parse('hexString').search('/*\/06') // this will return every single OID primitive object in this BER, but ONLY 2 levels deep 
+     * @example BerObject.parse('hexString').search('/*\/06') // this will return every single OID primitive object in this BER, but ONLY 2 levels deep
      */
     search(query: string): BerObject[] {
         if (!isValidBerSearchQuery(query))
             throw new Error('Invalid search query');
-    
+
         let regexString = query
             .replace(/\/\*\*/g, '(\\/[0-9a-fA-F]*)*')
             .replace(/\/\*/g, '(\\/[0-9a-fA-F]*)')
             .replace(/(\/)([0-9a-fA-F])/g, '\\/$2');
-    
+
         regexString = `^${regexString}$`;
-    
+
         const matchingPaths = this.genPathList().filter((path) => {
             if (path.hex.match(regexString)) {
                 return true;
@@ -328,14 +385,22 @@ export class BerObject implements IBerObj {
 
         const result: BerObject[] = new Array<BerObject>(matchingPaths.length);
 
-        matchingPaths.reduce((_, currentPath, currentPathIdx)=>{
+        matchingPaths.reduce((_, currentPath, currentPathIdx) => {
             let currBerObj: BerObject = this;
-            currentPath.indexes.reduce((_, currPathNodeValue, currPathNodeIdx) => {
-                if (!currBerObj.isConstructed() || (currBerObj.value.length <= currPathNodeValue))
-                    throw new Error(`Error examining path "${currentPath.hex}"("/${currentPath.indexes.join('/')}"); BER object "${this._tag.hex}" does not have internal object with index "${currPathNodeValue}".`)
-                currBerObj = currBerObj.value[currPathNodeValue];
-                return null;
-            }, null);
+            currentPath.indexes.reduce(
+                (_, currPathNodeValue, currPathNodeIdx) => {
+                    if (
+                        !currBerObj.isConstructed() ||
+                        currBerObj.value.length <= currPathNodeValue
+                    )
+                        throw new Error(
+                            `Error examining path "${currentPath.hex}"("/${currentPath.indexes.join('/')}"); BER object "${this._tag.hex}" does not have internal object with index "${currPathNodeValue}".`,
+                        );
+                    currBerObj = currBerObj.value[currPathNodeValue];
+                    return null;
+                },
+                null,
+            );
             result[currentPathIdx] = currBerObj;
             return null;
         }, null);
