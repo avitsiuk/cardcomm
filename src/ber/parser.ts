@@ -75,7 +75,7 @@ export function parseBer(input: TBinData, startOffset: number = 0): IBerObj[] {
             }
         } else {
             if (parsedLen.value === 0) {
-                parsedValue = [];
+                parsedValue = new Uint8Array(0);
             } else {
                 try {
                     parsedValue = parseBer(inBuffer.subarray(currInOffset, currInOffset + parsedLen.value));
