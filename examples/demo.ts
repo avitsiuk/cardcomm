@@ -8,6 +8,7 @@ import {
     SCP11,
     SCP02,
     gpDefaultStaticKeys,
+    CommandApdu,
 } from '../src/index';
 
 const devices: {[key: number]: {device: Device, card: Card | null, name: string}} = {};
@@ -36,11 +37,13 @@ function printDeviceList() {
     console.log('============================================');
 };
 
-
-
 const pcscDM = new PcscDevicesManager();
 
 console.log('============================================================');
+
+pcscDM.on('error', (event) => {
+    console.error(`Device manager error: ${event.error.message}`);
+})
 
 pcscDM.on('device-deactivated', (event) => {
     const {simpleName, idx} = splitDeviceName(event.device.name);
@@ -80,29 +83,66 @@ pcscDM.on('device-activated', (event => {
             console.log(`[${devIdx}][RSP]>> [${Utils.hexEncode([...event.response.data])}][${Utils.hexEncode([...event.response.status])}](${event.response.meaning})`)
         })
 
+        // Uncomment this to disable autoGetResponse feature
+        // In that case GET_RESPONSE commands must be sent manually
+        // event.card.autoGetResponse = false;
+
         // event.card.issueCommand(Iso7816Commands.select('429999990000'))
         event.card.issueCommand(Iso7816Commands.select())
             .then((selectResponse) => {
                 console.log();
-                console.log('Card response:');
-                // console.log(selectResponse.toString());
-                BER.BerObject.parse(selectResponse.data).print((line: string) => {
-                    console.log(`>>${line}`);
-                });
 
-                console.log();
-                console.log(`Initiating SCP02 session`);
+                let berObj: BER.BerObject | undefined;
+                try {
+                    berObj = BER.BerObject.parse(selectResponse.data)
+                } catch (error) {
+                    // decode error, probably not BER
+                }
 
-                const scp = new SCP02(event.card).setSecurityLevel(3).setStaticKeys(gpDefaultStaticKeys).initAndAuth()
-                    .then(()=>{
-                        console.log('Secure session established');
-                        console.log();
-                    })
-                    .catch((error) => {
-                        console.error('SCP02 error:');
-                        console.error(error);
-                        console.log();
-                    })
+                if (berObj && selectResponse.data.byteLength > 0) {
+                    console.log('Decoded card response BER:');
+                    berObj.print();
+                    // custom print function
+                    // BER.BerObject.parse(selectResponse.data).print((obj, lvl, line) => {
+                    //     console.log(`[${obj.isPrimitive() ? 'P': obj.isRoot() ? 'R' : 'C'}][${lvl}]${line}`);
+                    // });
+                } else {
+                    console.log('Card response:');
+                    console.log(`${selectResponse.toString()} (${selectResponse.meaning})`);
+                }
+
+
+                /*
+                    Uncomment following lines to try establish a new SCP02 session
+                    Note that default GP test keys are used (gpDefaultStaticKeys).
+                    If card keys have been personlized, you must provide them
+                    in order to successfully initiate a new secure session.
+                */
+
+                // console.log();
+                // console.log(`Initiating SCP02 session`);
+
+                // const scp = new SCP02(event.card).setStaticKeys(gpDefaultStaticKeys).setSecurityLevel(3);
+
+                // scp.initAndAuth()
+                //     .then(()=>{
+                //         console.log('Secure session established');
+                //         console.log();
+                //         const getCardDataCmd = new CommandApdu('80CA0066'); // getting card info. This command wil be transformed before submission
+                //         event.card.issueCommand(getCardDataCmd)
+                //             .then((cardDataResponse) => {
+                //                 console.log(cardDataResponse);
+                //             })
+                //             .catch((error) => {
+                //                 console.log('Error getting card info');
+                //                 console.log(error);
+                //             })
+                //     })
+                //     .catch((error) => {
+                //         console.error('SCP02 error:');
+                //         console.error(error);
+                //         console.log();
+                //     })
             })
             .catch((e) => {
                 console.log();
