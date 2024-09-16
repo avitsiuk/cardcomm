@@ -30,7 +30,7 @@ class PcscDevicesManager implements IDevicesManager {
         });
 
         this.pcsc.on('error', (error) => {
-            this._eventEmitter.emit('error', { error });
+            this._eventEmitter.emit('error', { error, devManager: this });
         });
     }
 
@@ -78,6 +78,10 @@ class PcscDevicesManager implements IDevicesManager {
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
     on(
+        eventName: 'error',
+        eventHandler: (event: { error: any; devManager: PcscDevicesManager }) => void,
+    ): PcscDevicesManager;
+    on(
         eventName: TDevicesManagerEventName,
         eventHandler: (event: any) => void,
     ): PcscDevicesManager {
@@ -94,6 +98,10 @@ class PcscDevicesManager implements IDevicesManager {
     once(
         eventName: 'device-deactivated',
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
+    ): PcscDevicesManager;
+    once(
+        eventName: 'error',
+        eventHandler: (event: { error: any; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
     once(
         eventName: TDevicesManagerEventName,

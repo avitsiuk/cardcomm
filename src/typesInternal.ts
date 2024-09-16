@@ -85,7 +85,7 @@ export interface IDevice {
     ): IDevice;
 }
 
-export type TDevicesManagerEventName = 'device-activated' | 'device-deactivated';
+export type TDevicesManagerEventName = 'device-activated' | 'device-deactivated' | 'error';
 
 export interface IDevicesManager {
     devices: { [key: string]: IDevice };
@@ -102,6 +102,10 @@ export interface IDevicesManager {
         eventName: 'device-deactivated',
         eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
     ): IDevicesManager;
+    on(
+        eventName: 'error',
+        eventHandler: (event: { error: any; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
     once(
         eventName: 'device-activated',
         eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
@@ -109,5 +113,9 @@ export interface IDevicesManager {
     once(
         eventName: 'device-deactivated',
         eventHandler: (event: { device: IDevice; devManager: IDevicesManager }) => void,
+    ): IDevicesManager;
+    once(
+        eventName: 'error',
+        eventHandler: (event: { error: any; devManager: IDevicesManager }) => void,
     ): IDevicesManager;
 }
