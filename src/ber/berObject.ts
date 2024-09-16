@@ -203,22 +203,22 @@ export class BerObject implements IBerObj {
         return this;
     }
 
-    private printInternal(printFn?: (line: string) => void, spaces: number = 4, level: number = 0): void {
-        const f: (line: string) => void = printFn ? printFn : console.log;
-        let line: string = `${''.padEnd(level * spaces, ' ')}${this._tag.hex} (${this._len} bytes):`;
+    private printInternal(printFn: (berObj: BerObject, lvl: number, line: string) => void, spaces: number = 4, level: number = 0): void {
+        let line: string = `${''.padEnd(level * spaces, ' ')}${this.isRoot() ? 'ROOT' : this._tag.hex} (${this._len} bytes):`;
         if (this.isPrimitive()) {
             line += ` ${hexEncode(this.value)}`;
-            f(line);
+            printFn(this, level, line);
         } else if (this.isConstructed()) {
-            f(line);
+            printFn(this, level, line);
             for (let i = 0; i < this.value.length; i++) {
                 (this.value[i] as BerObject).printInternal(printFn, spaces, level + 1);
             }
         }
     }
 
-    print(printFn?: (line: string) => void, spaces: number = 4): void {
-        this.printInternal(printFn, spaces, 0)
+    print(printFn?: (berObj: BerObject, lvl: number, line: string) => void, spaces: number = 4): void {
+        const f: (berObj: BerObject, lvl: number, line: string) => void = printFn ? printFn : (_obj, _lvl, line) => {console.log(line);};
+        this.printInternal(f, spaces, 0)
     }
 
     /** This method will return an array of all possible paths in two formats: named and indexed.
