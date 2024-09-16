@@ -135,7 +135,7 @@ export function isBinData(input: any): input is TBinData {
 /** Converts various binary data representations to an Uint8Array. Where possible, the returned Uint8Array will reference the same memory region as input data. In case of hex strings and number arrays a new memory region will be allocated. If a copy of data is needed in any case, see the `outBuffer` parameter below. Throws if `outBuffer` is defined, but does not have enough space (considering `outOffset`, if any).
  * @param inData - input binary data. Strings must contain a valid hex value. If type is a numeric array, all values should be in the range 0-255, otherwise they will be wrapped around. For example -1 = 255 and 256/512 = 0
  * @param outBuffer - if defined, the result of the import will be copied to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
- * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the ijmport will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
+ * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the import will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
  */
 export function importBinData(
     inData: TBinData,

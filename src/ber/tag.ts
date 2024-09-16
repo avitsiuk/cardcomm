@@ -28,10 +28,15 @@ export class Tag implements ITagInfo {
     private _constructed: boolean      = false;
     private _number: number            = 0;
 
+    /** Returns an empty tag, which can be used as the root of a new BER object */
     static get root(): Tag {
         return new Tag()
     }
 
+    /** Creates a new BER Tag from an input
+     * @param input - An object describing tag, binary data or another tag object
+     * @param startOffset - Used to indicate an offset from which to start parsing in case input is of binary type. Has no effect otherwise
+     */
     static from(input?: ITagInfo | TBinData | Tag, startOffset: number = 0): Tag {
         return new Tag(input, startOffset);
     };
@@ -43,6 +48,12 @@ export class Tag implements ITagInfo {
         return this.from(input, startOffset);
     }
 
+    /**
+     * Creates a Tag object from input data
+     * @param input - Binary data or an info object describing a Tag
+     * @param startOffset - Used to indicate an offset from which to start parsing in case input is of binary type. Has no effect otherwise
+     * @returns 
+     */
     from(input: ITagInfo | TBinData | Tag, startOffset: number = 0): this {
         if (input instanceof Tag) {
             this.byteArray.set(input.byteArray);
@@ -91,38 +102,47 @@ export class Tag implements ITagInfo {
         return this;
     }
 
+    /** Returns tag byte array */
     toByteArray(): Uint8Array {
         return this.byteArray.subarray(0, this.bLength);
     }
 
+    /** Returns tag hex value */
     toString(): string {
         return this._hex;
     }
 
+    /** Tag length in bytes */
     get byteLength(): number {
         return this.bLength;
     }
 
+    /** Tag class as number */
     get class(): TTlvTagClassNumber {
         return this._class;
     }
 
+    /** Tag class as name */
     get className(): TTlvTagClassName {
         return tlvClassName[this._class];
     }
 
+    /** Constructed tags indicate a BER object that contains other BER objects */
     get isConstructed(): boolean {
         return this._constructed;
     }
 
+    /** Primitive tags indicate a BER object that contains raw binary data */
     get isPrimitive(): boolean {
         return !this._constructed;
     }
 
+    /** Tag number */
     get number(): number {
         return this._number;
     }
 
+    /** Tag hexadecimal representation */
     get hex(): string {
         return this._hex;
     }

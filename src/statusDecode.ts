@@ -285,6 +285,7 @@ regexStrList.reduce((_, regexStr, idx) => {
     return null;
 }, null);
 
+/** Tries to decode 2-byte status and returns it's meaning. */
 export function statusDecode(status: TBinData): string {
     let statusByteArray: Uint8Array;
     try {

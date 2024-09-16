@@ -60,7 +60,7 @@ export class CommandApdu {
     }
 
     /** Overwrites this CommandAPDU with new data. Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this CommandAPDU
-     * @param inData - optional; binary data or another ComandAPDU. All data is copied.
+     * @param inData - binary data or another CommandAPDU. All data is copied.
      */
     from(inData: TBinData | CommandApdu): CommandApdu {
         let inBuffer: Uint8Array = new Uint8Array(0);

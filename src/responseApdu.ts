@@ -10,11 +10,16 @@ export class ResponseApdu {
     private byteArray: Uint8Array = new Uint8Array(ResponseApdu.DEF_DATA_BYTES_LENGTH + 2); // data + status(2)
     private bLength: number = 2
 
-
+    /** Creates a new ResponseAPDU from input
+     * @param data - optional; binary data or another ResponseAPDU. All data is copied.
+     */
     static from(data?: TBinData | ResponseApdu): ResponseApdu {
         return new ResponseApdu(data);
     }
 
+    /** Creates a new ResponseAPDU from input
+     * @param data - optional; binary data or another ResponseAPDU. All data is copied.
+     */
     constructor(data?: TBinData | ResponseApdu) {
         this.clear();
         if (typeof data === 'undefined')
@@ -23,6 +28,9 @@ export class ResponseApdu {
         return this.from(data);
     }
 
+    /** Overwrites this ResponseAPDU with new data. Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this ResponseAPDU
+     * @param inData - binary data or another ResponseAPDU. All data is copied.
+     */
     from(inData: TBinData | ResponseApdu): ResponseApdu {
         let inBuffer: Uint8Array = new Uint8Array(0);
         if (inData instanceof ResponseApdu) {

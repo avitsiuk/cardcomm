@@ -43,38 +43,61 @@ export class BerObject implements IBerObj {
     private _len: number = 0;
     private _val: Uint8Array | BerObject[] = [];
 
+    /**
+     * Parses input data and creates corresponding BER object
+     * @param input - input binary data
+     * @param startOffset - Used to indicate an offset from which to start parsing
+     * @returns 
+     */
     static parse(input: TBinData, startOffset: number = 0): BerObject {
         return new BerObject().parse(input, startOffset);
     }
 
+    /**
+     * Creates new BER Object from the info object
+     * @param input - Info object describing BER to be created
+     */
     static create(input?: IBerObjInfo): BerObject {
         return new BerObject(input);
     }
 
+    /** 
+     * Serializes a BER info object and returns resulting byte array
+     * @param outBuffer - if defined, the result of the serialization will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
+     * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the serialization will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
+     */
     static serialize(input: IBerObjInfo, outBuffer: ArrayBuffer | ArrayBufferView, outOffset: number = 0): Uint8Array {
         return BerObject.create(input).serialize(outBuffer, outOffset);
     }
 
+    /** Root object is the topmost object containing the whole ber structure */
     isRoot(): boolean {
         return this.tag.byteLength === 0;
     }
 
+    /** Primitive objects contain raw binary data */
     isPrimitive(): this is IBerObjPrimitive {
         return this._tag.isPrimitive && !this.isRoot();
     }
 
+    /** Constructed objects contain other BER objects */
     isConstructed(): this is IBerObjConstructed {
         return this._tag.isConstructed || this.isRoot();
     }
 
+    /** This BER object tag */
     get tag(): Tag {
         return this._tag;
     }
 
+    /**
+     * Length of the tag internal data in bytes
+     */
     get length(): number {
         return this._len;
     }
 
+    /** Value of this BER object */
     get value(): BerObject[] | Uint8Array {
         return this._val;
     }
@@ -86,6 +109,12 @@ export class BerObject implements IBerObj {
         return this.create(input);
     }
 
+    /**
+     * Parses input data and creates corresponding BER object
+     * @param input - input binary data
+     * @param startOffset - Used to indicate an offset from which to start parsing
+     * @returns 
+     */
     parse(input: TBinData, startOffset: number = 0): this {
         let parseResult: IBerObj[];
         try {
@@ -96,6 +125,10 @@ export class BerObject implements IBerObj {
         return this.setConstructedValue(parseResult);
     }
 
+    /**
+     * Creates new BER Object from the info object
+     * @param input - Info object describing BER to be created
+     */
     create(input: IBerObjInfo): this {
         if (typeof input === 'object' && typeof this['tag'] !== 'undefined' && typeof this['value'] !== 'undefined') {
             let tag: Tag;
@@ -140,6 +173,11 @@ export class BerObject implements IBerObj {
         }
     }
 
+    /** 
+     * Serializes current BER Object and returns resulting byte array
+     * @param outBuffer - if defined, the result of the serialization will be written to this/underlying ArrayBuffer. If defined, the returned Uint8Array will refecence the memory region to which data were written.
+     * @param outOffset - This has effect ONLY IF `outBuffer` is defined. If specified, the result of the serialization will be written starting from this offset. In case `outBuffer` is an ArrayBufferView, this value is relative to the byteOffset of the view itself, not to the start of the underlying ArrayBuffer
+     */
     serialize(outBuffer?: ArrayBuffer | ArrayBufferView, outOffset: number = 0): Uint8Array {
         let requiredByteLength = this._len;
 
@@ -216,6 +254,11 @@ export class BerObject implements IBerObj {
         }
     }
 
+    /**
+     * If no custom function is provided, prints object using `console.log`
+     * @param printFn - custom print function. gets the object being currently printed, current depth level and proposed line.
+     * @param spaces - number of spaces used for indenting one level (default: `4`)
+     */
     print(printFn?: (berObj: BerObject, lvl: number, line: string) => void, spaces: number = 4): void {
         const f: (berObj: BerObject, lvl: number, line: string) => void = printFn ? printFn : (_obj, _lvl, line) => {console.log(line);};
         this.printInternal(f, spaces, 0)
@@ -257,6 +300,13 @@ export class BerObject implements IBerObj {
         return result;
     }
 
+    /**
+     * Searches for tags inside this ber object and returns an array of all corresponding tags
+     * @param query - search query in format `/<hex>/.../<hex>`. `*` and `**` can be used instead of hex values. `*` - indicates a single tag, while `**` indicates any number of tags (even 0). Any number of `*` and `**` can be used in one search query. Search query MUST start with `/` and end with a value. A value can be either `*`, `**` or a hex string. Values cannot be mixed.
+     * @returns - array of all found tags matching the criteria
+     * @example BerObject.parse('hexString').search('/**\/06') // this will return every single OID primitive object in this BER on any level
+     * @example BerObject.parse('hexString').search('/*\/06') // this will return every single OID primitive object in this BER, but ONLY 2 levels deep 
+     */
     search(query: string): BerObject[] {
         if (!isValidBerSearchQuery(query))
             throw new Error('Invalid search query');

@@ -109,10 +109,15 @@ class Card implements ICard {
         return this;
     }
 
+    /**
+     * If set to true(default), `GET_RESPONSE` APDU gets sent automatically upon receiving `0x61XX` response.
+     * Also the command `Le` value gets corrected and commands is sent again upon receiving `0x6CXX` response.
+     */
     set autoGetResponse(val: boolean) {
         this._autoGetResponse = val;
     }
 
+    /** Current state of the autoGetResponse feature */
     get autoGetResponse(): boolean {
         return this._autoGetResponse;
     }
@@ -279,10 +284,12 @@ class Card implements ICard {
         }
     }
 
+    /** Submits CommandAPDU and calls provided callback upon completion */
     issueCommand(
         command: TBinData | CommandApdu,
         callback: (err: any, response: ResponseApdu) => void,
     ): void;
+    /** Submits CommandAPDU and resolves upon completion */
     issueCommand(
         command: TBinData | CommandApdu,
     ): Promise<ResponseApdu>;
@@ -357,10 +364,12 @@ class Card implements ICard {
         }
     }
 
+    /** Emitted upon submitting command to card. Event's command apdu is the actual command submitted to the card, after transformer has been applied (if any) */
     on(
         eventName: 'command-issued',
         eventHandler: (event: { card: Card; command: CommandApdu }) => void,
     ): Card;
+    /** Emitted upon receiving response from card. Event's response apdu is the actual response received from the card, before transformation (if any) */
     on(
         eventName: 'response-received',
         eventHandler: (event: {
@@ -374,10 +383,12 @@ class Card implements ICard {
         return this;
     }
 
+    /** Emitted upon submitting command to card. Event's command apdu is the actual command submitted to the card, after transformer has been applied (if any) */
     once(
         eventName: 'command-issued',
         eventHandler: (event: { card: Card; command: CommandApdu }) => void,
     ): Card;
+    /** Emitted upon receiving response from card. Event's response apdu is the actual response received from the card, before transformation (if any) */
     once(
         eventName: 'response-received',
         eventHandler: (event: {
