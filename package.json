@@ -1,6 +1,6 @@
 {
-    "name": "smartcard",
-    "version": "0.5.0",
+    "name": "smartcardx",
+    "version": "0.7.0",
     "description": "Backend library for communication with smartcards using system native PCSC interface. Plain Iso7816 + EMV + GlobalPlatform functionality.",
     "keywords": [
         "pcsc",
@@ -9,7 +9,11 @@
         "smartcard",
         "apdu",
         "iso7816",
-        "globalplatform"
+        "iso-7816",
+        "emv",
+        "globalplatform",
+        "ber",
+        "es6"
     ],
     "license": "MIT",
     "author": {
