@@ -5,9 +5,12 @@ import { importBinData } from './utils';
 import Card from './card';
 
 export class Device implements IDevice {
-    _eventEmitter = new EventEmitter();
+    private _eventEmitter = new EventEmitter();
+    /** Basic PSCS reader corresponding to this device */
     reader: CardReader;
+    /** Name of this device */
     name: string;
+    /** Currently inserted card (if any) */
     card: Card | null;
 
     constructor(reader: CardReader) {

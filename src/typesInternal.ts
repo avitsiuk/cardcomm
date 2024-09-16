@@ -53,7 +53,6 @@ export interface ICard {
 export type TDeviceEventName = 'error' | 'card-inserted' | 'card-removed';
 
 export interface IDevice {
-    _eventEmitter: EventEmitter;
     reader: CardReader;
     name: string;
     card: ICard | null;
@@ -89,15 +88,11 @@ export interface IDevice {
 export type TDevicesManagerEventName = 'device-activated' | 'device-deactivated';
 
 export interface IDevicesManager {
-    _eventEmitter: EventEmitter;
-    pcsc: PCSCLite;
     devices: { [key: string]: IDevice };
 
     onActivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
     onDeactivated: () => Promise<{ device: IDevice; devManager: IDevicesManager }>;
-    listDevices: () => IDevice[];
     lookup: (name: string) => IDevice | null;
-    toString: () => string;
 
     on(
         eventName: 'device-activated',

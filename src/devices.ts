@@ -5,23 +5,23 @@ import { IDevicesManager, TDevicesManagerEventName } from './typesInternal';
 import Device from './device';
 
 class PcscDevicesManager implements IDevicesManager {
-    _eventEmitter = new EventEmitter();
-    pcsc: PCSCLite = pcsclite();
-    devices: { [key: string]: Device } = {};
+    private _eventEmitter = new EventEmitter();
+    private pcsc: PCSCLite = pcsclite();
+    private _devices: { [key: string]: Device } = {};
 
     constructor() {
         this.pcsc.on('reader', (reader: CardReader) => {
             const device = new Device(reader);
-            this.devices[reader.name] = device;
+            this._devices[reader.name] = device;
             this._eventEmitter.emit('device-activated', {
                 device,
-                devices: this.listDevices(),
+                devices: this.devices,
             });
             reader.on('end', () => {
-                delete this.devices[reader.name];
+                delete this._devices[reader.name];
                 this._eventEmitter.emit('device-deactivated', {
                     device,
-                    devices: this.listDevices(),
+                    devices: this.devices,
                 });
             });
             reader.on('error', (error) => {
@@ -34,37 +34,45 @@ class PcscDevicesManager implements IDevicesManager {
         });
     }
 
+    close(): void {
+        this.pcsc.close();
+    }
+
+    /** List of all currently connected devices */
+    get devices(): { [key: string]: Device } {
+        return this._devices;
+    };
+
+    /** Resolved upon `device-activated` event */
     onActivated(): Promise<{ device: Device; devManager: IDevicesManager }> {
         return new Promise((resolve, reject) => {
             this.once('device-activated', (event) => resolve(event));
         });
     }
 
+    /** Resolved upon `device-deactivated` event */
     onDeactivated(): Promise<{ device: Device; devManager: IDevicesManager }> {
         return new Promise((resolve, reject) => {
             this.once('device-deactivated', (event) => resolve(event));
         });
     }
 
-    listDevices(): Device[] {
-        return Object.values(this.devices);
-    }
-
+    /** Returns device under a given name (if any)
+     * @param name - device name to lookup
+     */
     lookup(name: string): Device | null {
-        if (this.devices[name]) {
-            return this.devices[name];
+        if (this._devices[name]) {
+            return this._devices[name];
         }
         return null;
     }
 
-    toString() {
-        return `Devices('${this.listDevices()}')`;
-    }
-
+    /** Emitted when a new device is detected */
     on(
         eventName: 'device-activated',
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
+    /** Emitted when a device gets disconnected */
     on(
         eventName: 'device-deactivated',
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
@@ -77,10 +85,12 @@ class PcscDevicesManager implements IDevicesManager {
         return this;
     }
 
+    /** Emitted when a new device is detected */
     once(
         eventName: 'device-activated',
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
     ): PcscDevicesManager;
+    /** Emitted when a device gets disconnected */
     once(
         eventName: 'device-deactivated',
         eventHandler: (event: { device: Device; devManager: PcscDevicesManager }) => void,
