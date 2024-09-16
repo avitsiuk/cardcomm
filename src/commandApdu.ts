@@ -42,10 +42,16 @@ export class CommandApdu {
     private byteArray: Uint8Array = new Uint8Array(CommandApdu.MAX_DATA_BYTE_LENGTH + 6); // header(4) + Lc(1) + data + Le(1)
     private bLength = 5;
 
+    /** Creates a new CommandAPDU from input
+     * @param data - optional; binary data or another ComandAPDU. All data is copied.
+     */
     static from(data?: TBinData | CommandApdu): CommandApdu {
         return new CommandApdu(data);
     }
 
+    /** Creates a new CommandAPDU from input
+     * @param data - optional; binary data or another ComandAPDU. All data is copied.
+     */
     constructor(data?: TBinData | CommandApdu) {
         this.clear();
         if (typeof data === 'undefined')
@@ -53,7 +59,9 @@ export class CommandApdu {
         return this.from(data);
     }
 
-    /** Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this CommandAPDU */
+    /** Overwrites this CommandAPDU with new data. Any input data is copied into internal ArrayBuffer meaning the original data can be modified without changing this CommandAPDU
+     * @param inData - optional; binary data or another ComandAPDU. All data is copied.
+     */
     from(inData: TBinData | CommandApdu): CommandApdu {
         let inBuffer: Uint8Array = new Uint8Array(0);
         if (inData instanceof CommandApdu) {
@@ -98,87 +106,105 @@ export class CommandApdu {
         return hexEncode(this.toByteArray());
     }
 
-    // Clears this CommandAPDU by setting it's content to "0x0000000000"
+    /** Clears this CommandAPDU by setting it's content to "0x0000000000" */
     clear(): this {
         this.byteArray.set([0,0,0,0,0]);
         this.bLength = 5;
         return this;
     }
 
+    /** Returns this CommandAPDU length in bytes */
     get byteLength(): number {
         return this.bLength;
     }
 
+    /** Directly sets class byte to desired value */
     setCla(cla: number): this {
         this.byteArray.set([cla], CommandApdu.CLA_OFFSET);
         return this;
     }
 
+    /** Directly sets class byte to desired value */
     set cla(cla: number) {
         this.setCla(cla);
     }
 
+    /** Returns class byte value */
     getCla(): number {
         return this.byteArray[CommandApdu.CLA_OFFSET];
     }
 
+    /** Returns class byte value */
     get cla(): number {
         return this.getCla();
     }
 
+    /** Directly sets instruction byte to desired value */
     setIns(ins: number): this {
         this.byteArray.set([ins], CommandApdu.INS_OFFSET);
         return this;
     }
 
+    /** Directly sets instruction byte to desired value */
     set ins(ins: number) {
         this.setIns(ins);
     }
 
+    /** Returns instruction byte value */
     getIns(): number {
         return this.byteArray[CommandApdu.INS_OFFSET];
     }
 
+    /** Returns instruction byte value */
     get ins(): number {
         return this.getIns();
     }
 
+    /** Directly sets P1 byte to desired value */
     setP1(p1: number): this {
         this.byteArray.set([p1], CommandApdu.P1_OFFSET);
         return this;
     }
 
+    /** Directly sets P1 byte to desired value */
     set p1(p1: number) {
         this.setP1(p1);
     }
 
+    /** Returns P1 byte value */
     getP1(): number {
         return this.byteArray[CommandApdu.P1_OFFSET];
     }
 
+    /** Returns P1 byte value */
     get p1(): number {
         return this.getP1();
     }
 
+    /** Directly sets P2 byte to desired value */
     setP2(p2: number): this {
         this.byteArray.set([p2], CommandApdu.P2_OFFSET);
         return this;
     }
 
+    /** Directly sets P2 byte to desired value */
     set p2(p2: number) {
         this.setP2(p2);
     }
 
+    /** Returns P2 byte value */
     getP2(): number {
         return this.byteArray[CommandApdu.P2_OFFSET];
     }
 
+    /** Returns P2 byte value */
     get p2(): number {
         return this.getP2();
     }
 
     // no Lc setters as it gets set automatically when command data is set
 
+    /** Returns current Lc value (data field length). Cannot be set directly. */
     getLc(): number {
         let lc = 0;
         if (this.bLength > 5)
@@ -186,10 +212,12 @@ export class CommandApdu {
         return lc;
     }
 
+    /** Returns current Lc value (data field length). Cannot be set directly. */
     get lc(): number {
         return this.getLc();
     }
 
+    /** Sets command data field. Updates Lc value. Data is copied. */
     setData(data: TBinData): this {
         const le = this.le;
         let importedBytes: Uint8Array;
@@ -211,11 +239,12 @@ export class CommandApdu {
         return this;
     }
 
+    /** Copies input data into command data field. Automatically updates Lc value. */
     set data(data: TBinData) {
         this.setData(data);
     }
 
-    /** Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
+    /**Returns command data field. Returned byte array will reference same memory as this CommandAPDU, meaning that any change made to it will reflect on this CommandAPDU */
     getData(): Uint8Array {
         if (this.bLength <= 5)
             return this.byteArray.subarray(CommandApdu.DATA_OFFSET, CommandApdu.DATA_OFFSET);
@@ -228,27 +257,30 @@ export class CommandApdu {
         return this.getData();
     }
 
-    /** If no value is provided, Le is set to 0 */
+    /** Directly sets Le byte value. If no value is provided, Le is set to 0 */
     setLe(le: number = 0): this {
         this.byteArray[this.bLength - 1] = le;
         return this;
     }
 
+    /** Directly sets Le byte value */
     set le(le: number) {
         this.setLe(le);
     }
 
+    /** Returns Le byte value */
     getLe(): number {
         return this.byteArray[this.bLength - 1];
     }
 
+    /** Returns Le byte value */
     get le(): number {
         return this.getLe();
     }
 
     // =========================================================================
 
-    // class byte
+    // class byte helpers
 
     /** Sets m.s.b. of CLA byte to 1, marking command as having proprietary format */
     setProprietary(): this {
