@@ -52,17 +52,16 @@
     "scripts": {
         "test": "jest",
         "test-cov": "jest --coverage",
-        "format:check": "prettier --check \"{src,example}/**/*.{js,ts}\"",
-        "format:fix": "prettier --write \"{src,example}/**/*.{js,ts}\"",
         "build:clean": "rimraf ./lib",
         "build:cjs": "tsc -p tsconfig.cjs.json",
         "build:esm": "tsc -p tsconfig.esm.json",
         "fix:esm": "./scripts/fix-esm.sh",
         "build": "npm run build:clean && concurrently \"npm:build:cjs\" \"npm:build:esm\" && npm run fix:esm",
+        "format:check": "prettier --check \"{src,example}/**/*.{js,ts}\"",
+        "format:fix": "prettier --write \"{src,example}/**/*.{js,ts}\"",
         "docs": "typedoc --options typedoc.json",
-        "prepack": "npm run build",
-        "wiptlv": "npx ts-node ./examples/wiptlv.ts",
-        "demo": "npx ts-node ./examples/demo.ts"
+        "prepack": "npm run test-cov && npm run build && npm run format:check",
+        "demo": "npx ts-node --project tsconfig.cjs.json ./examples/demo.ts"
     },
     "dependencies": {
         "pcsclite": "1.0.1"
