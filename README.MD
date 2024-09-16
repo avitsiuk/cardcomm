@@ -1,14 +1,40 @@
 ## About
 
-This library expands upon original [`smartcard` library](https://github.com/tomkp/smartcard) by [tomkp](https://github.com/tomkp) and is built around [`pcsclite` library](https://github.com/santigimeno/node-pcsclite) by [Santiago Gimeno](https://github.com/santigimeno)  
+This package expands upon original [`smartcard` library](https://github.com/tomkp/smartcard) by [tomkp](https://github.com/tomkp) and is built around [`pcsclite` library](https://github.com/santigimeno/node-pcsclite) by [Santiago Gimeno](https://github.com/santigimeno)  
 [Original `smartcard` package](https://www.npmjs.com/package/smartcard) on NPM  
 [`pcsclite` package](https://www.npmjs.com/package/pcsclite) on NPM
 
 > Tested with `ACR39U` and `ACR122U` readers
 
-## Dependencies and problems (Debian/Ubuntu)
+## Main features overview
 
-### PCSC
+- CommonJS + ES6 modules support
+- Event-based devices and cards management (like in the original `smartcard` package)
+- CommandAPDU class with helper methods for simpler command construction. (no more bitwise)
+- ResponseAPDU with helpers for status decoding according to Iso7816 specifications.
+- Auto GetResponse in case of `0x61XX` response. (can be disabled)
+- Auto command adjustment in case of `0x6CXX` response. (can be disabled).
+- Built-in Iso7816 commands(still expanding)
+- Built-in GlobalPlatform commands (still expanding)
+- Built-in GlobalPlatform secure sessions
+    - SCP02 (i=55)
+    - SCP11b
+- Built-in BER encoder/decoder with wildcard search (e.g. `/6f/*/88`)
+
+## TODO list
+- API Documentation
+- Card ATR decode
+- Add missing Iso7816 commands
+- Add missing GlobalPlatform commands
+- Add EMV BER tags dictionary for EMV/Iso7816/GlobalPlatform tags
+- SCP03 support
+- SCP11a with mutual authentication support
+- BER object in-place editing. Currently a new object must be created.
+
+
+## Dependencies (Debian/Ubuntu)
+
+### PCSC system drivers
 
 Install basic dependencies by running  
 `sudo apt install libpcsclite1 libpcsclite-dev pcscd`  
@@ -21,8 +47,9 @@ and check if your reader(s) and card(s) are working by executing
 `pcsc_scan`  
 This should show all (contact and NFC) readers recognized by your system and print info about inserted cards (if any).
 
+## Issues (Debian/Ubuntu)
 
-### NFC issues
+### Busy NFC issues
 
 Sometimes NFC readers won't work because of other drivers blocking the usb bus.
 Plug in your reader and check pcscd service logs:
@@ -105,7 +132,7 @@ Fri Aug 23 16:47:33 2024
   Card state: Card removed,
 ```
 
-### SCP02 crypto issues
+### Deprecated OpenSSL crypto functions
 
 Secure Channel Protocol 02 uses cryptographic functions which are no longer supported on NodeJS v17+  
 Example:  
