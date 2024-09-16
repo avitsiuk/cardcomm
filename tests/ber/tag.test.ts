@@ -28,6 +28,17 @@ describe('BER TAG', () => {
         expect(tag.isPrimitive).toEqual(true);
         expect(tag.number).toEqual(0);
 
+        tag = Tag.root;
+        expect(tag.toByteArray()).toEqual(new Uint8Array(0));
+        expect(tag.byteLength).toEqual(0);
+        expect(tag.toString()).toEqual('');
+        expect(tag.hex).toEqual('');
+        expect(tag.class).toEqual(0);
+        expect(tag.className).toEqual('universal');
+        expect(tag.isConstructed).toEqual(false);
+        expect(tag.isPrimitive).toEqual(true);
+        expect(tag.number).toEqual(0);
+
         tag = new Tag().from('00');
         expect(tag.toByteArray()).toEqual(new Uint8Array([0]));
         expect(tag.byteLength).toEqual(1);

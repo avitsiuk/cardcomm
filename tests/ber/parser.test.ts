@@ -25,7 +25,9 @@ describe('parser', () => {
         expect(()=>{parseBer('1Fffffffff00')}).toThrow(new Error('Error parsing tag: Exceeded max allowed tag length of 4 bytes'));
         expect(()=>{parseBer('2f071f8080800101ff')}).toThrow(new Error('Error parsing tag: Exceeded max allowed tag length of 4 bytes'));
 
+        expect(parseBer('')).toEqual([]);
         expect(parseBer('0000')).toEqual([{tag: Tag.from('00'), length: 0, value: new Uint8Array(0)}]);
+        expect(parseBer('2000')).toEqual([{tag: Tag.from('20'), length: 0, value: new Uint8Array(0)}]);
         expect(parseBer('0f01ff')).toEqual([{tag: Tag.from('0f'), length: 1, value: new Uint8Array([255])}]);
         expect(parseBer('0f8101ff')).toEqual([{tag: Tag.from('0f'), length: 1, value: new Uint8Array([255])}]);
         expect(parseBer('0f8400000001ff')).toEqual([{tag: Tag.from('0f'), length: 1, value: new Uint8Array([255])}]);
