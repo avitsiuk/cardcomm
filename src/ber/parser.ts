@@ -1,5 +1,5 @@
-import { hexEncode, importBinData, TBinData, isBinData } from '../utils';
-import { ITagInfo, parseLength, serializeLength, isTagInfo } from './berUtils';
+import { importBinData, TBinData } from '../utils';
+import { ITagInfo, parseLength } from './berUtils';
 import { Tag } from './tag';
 
 export interface IBerObjInfo {

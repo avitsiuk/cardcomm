@@ -1,5 +1,4 @@
-import { EventEmitter } from 'events';
-import { CardReader, PCSCLite } from './typesPcsclite';
+import { CardReader } from './typesPcsclite';
 import { TBinData } from './utils';
 import CommandApdu from './commandApdu';
 import ResponseApdu from './responseApdu';
