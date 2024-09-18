@@ -156,13 +156,11 @@ import {
     PcscDevicesManager,
     Device,
     Card,
-    Iso7816Commands,
+    CommandApdu,
     Utils,
     BER,
-    SCP11,
-    SCP02,
-    gpDefaultStaticKeys,
-    CommandApdu,
+    Iso7816,
+    GP
 } from '../src/index';
 
 const devices: {[key: number]: {device: Device, card: Card | null, name: string}} = {};
@@ -242,7 +240,7 @@ pcscDM.on('device-activated', (event => {
         // event.card.autoGetResponse = false;
 
         // event.card.issueCommand(Iso7816Commands.select('429999990000'))
-        event.card.issueCommand(Iso7816Commands.select())
+        event.card.issueCommand(Iso7816.commands.select())
             .then((selectResponse) => {
                 console.log();
 
@@ -276,7 +274,7 @@ pcscDM.on('device-activated', (event => {
                 // console.log();
                 // console.log(`Initiating SCP02 session`);
 
-                // const scp = new SCP02(event.card).setStaticKeys(gpDefaultStaticKeys).setSecurityLevel(3);
+                // const scp = new GP.SCP02(event.card).setStaticKeys(GP.values.defaultStaticKeys).setSecurityLevel(3);
 
                 // scp.initAndAuth()
                 //     .then(()=>{
@@ -305,5 +303,6 @@ pcscDM.on('device-activated', (event => {
             })
     })
 }));
+
 
 ```
