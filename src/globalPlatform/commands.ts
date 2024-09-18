@@ -1,16 +1,7 @@
 import { BerObject, Tag, IBerObjInfo } from '../ber/index';
 import CommandApdu from '../commandApdu';
 import { importBinData, TBinData } from '../utils';
-
-const insByteList = {
-    INIT_UPDATE: 0x50,
-    EXT_AUTH: 0x82,
-    INT_AUTH: 0x88,
-
-    DELETE: 0xe4,
-    GET_DATA: 0xca,
-    GET_STATUS: 0xf2,
-};
+import { ins } from './values';
 
 export function initUpdate(
     hostChallenge: TBinData,
@@ -19,7 +10,7 @@ export function initUpdate(
 ) {
     let cmd = new CommandApdu()
         .setProprietary()
-        .setIns(insByteList.INIT_UPDATE)
+        .setIns(ins.INIT_UPDATE)
         .setP1(keyVer)
         .setP2(keyId)
         .setData(hostChallenge)
@@ -40,7 +31,7 @@ export function extAuth(hostCryptogram: TBinData, secLvl: 0 | 1 | 3 = 0) {
         .setProprietary()
         .setType(4)
         .setSecMgsType(1)
-        .setIns(insByteList.EXT_AUTH)
+        .setIns(ins.EXT_AUTH)
         .setP1(secLvl)
         .setP2(0x00)
         .setData(hostCryptogram);
@@ -97,7 +88,7 @@ export function intAuth(
         .setProprietary()
         .setType(4)
         .setSecMgsType(0)
-        .setIns(insByteList.INT_AUTH)
+        .setIns(ins.INT_AUTH)
         .setP1(0x00) // key version
         .setP2(0x00) // key identifier
         .setData(BerObject.create(berObjInfo).serialize());

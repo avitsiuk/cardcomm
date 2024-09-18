@@ -1,9 +1,8 @@
 import crypto from 'crypto';
-import { hexEncode, hexDecode } from '../../utils';
+import { hexEncode} from '../../utils';
 import { BerObject } from '../../ber/index';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';
-import * as Iso7816Commands from '../../iso7816/commands';
 import * as GPCommands from '../commands';
 import Card from '../../card';
 

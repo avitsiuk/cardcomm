@@ -1,29 +1,6 @@
-import { hexDecode, TBinData } from '../utils';
+import { TBinData } from '../utils';
 import CommandApdu from '../commandApdu';
-
-const insByteList = {
-    SELECT: 0xa4,
-    GET_RESPONSE: 0xc0,
-    // APPEND_RECORD: 0xe2,
-    // ENVELOPE: 0xc2,
-    // ERASE_BINARY: 0x0e,
-    // EXTERNAL_AUTHENTICATE: 0x82,
-    // GET_CHALLENGE: 0x84,
-    // GET_DATA: 0xca,
-    // INTERNAL_AUTHENTICATE: 0x88,
-    // MANAGE_CHANNEL: 0x70,
-    // PUT_DATA: 0xda,
-    // READ_BINARY: 0xb0,
-    // READ_RECORD: 0xb2,
-    // UPDATE_BINARY: 0xd6,
-    // UPDATE_RECORD: 0xdc,
-    VERIFY_REF_DATA: 0x20,
-    VERIFY_REF_DO: 0x21,
-    CHANGE_REF_DATA: 0x24,
-    CHANGE_REF_DO: 0x25,
-    // WRITE_BINARY: 0xd0,
-    // WRITE_RECORD: 0xd2,
-};
+import { ins } from './values';
 
 // SELECT
 
@@ -68,7 +45,7 @@ export function select(
     data?: TBinData,
     opts: ISelectOptions = {},
 ): CommandApdu {
-    const cmd = new CommandApdu().setIns(insByteList.SELECT);
+    const cmd = new CommandApdu().setIns(ins.SELECT);
 
     if (typeof data !== 'undefined') cmd.setData(data);
 
@@ -158,7 +135,7 @@ export function getResponse(le: number): CommandApdu {
     if (le < 0 || le > 255) {
         throw new Error('Wrong le value');
     }
-    const cmd = new CommandApdu().setIns(insByteList.GET_RESPONSE).setLe(le);
+    const cmd = new CommandApdu().setIns(ins.GET_RESPONSE).setLe(le);
     return cmd;
 }
 
@@ -185,7 +162,7 @@ export function verifyRefData(
         throw new Error(`With reset set to "true", data must be null`);
     }
 
-    const cmd = new CommandApdu().setIns(insByteList.VERIFY_REF_DATA);
+    const cmd = new CommandApdu().setIns(ins.VERIFY_REF_DATA);
 
     if (reset) cmd.setP1(0xff);
 
@@ -217,7 +194,7 @@ export function changeRefData(
 
     // 00 - [verification data][new data]; 01 - [new data]
     const cmd = new CommandApdu()
-        .setIns(insByteList.CHANGE_REF_DATA)
+        .setIns(ins.CHANGE_REF_DATA)
         .setP1(0x01);
 
     let p2 = refNum;

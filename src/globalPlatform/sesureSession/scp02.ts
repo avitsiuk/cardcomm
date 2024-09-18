@@ -28,17 +28,6 @@ interface ISessionInfo {
     seqCount: number[];
 }
 
-const defaultKey = [
-    0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b,
-    0x4c, 0x4d, 0x4e, 0x4f,
-];
-
-export const defaultStaticKeys: ISessionKeys = {
-    enc: defaultKey,
-    mac: defaultKey,
-    dek: defaultKey,
-};
-
 function tDesCbcEnc(data: Buffer, key: Buffer, iv: Buffer): Buffer {
     const cipher = crypto
         .createCipheriv('des-ede3-cbc', key, iv)
