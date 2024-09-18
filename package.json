@@ -49,6 +49,7 @@
         "import": "./lib/mjs/index.mjs",
         "types": "./lib/types/index.d.ts"
     },
+    "sideEffects": false,
     "scripts": {
         "test": "jest",
         "test-cov": "jest --coverage",
