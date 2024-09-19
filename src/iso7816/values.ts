@@ -97,11 +97,11 @@ export enum ins {
     /** see 11.7.2 of Iso7816-4 */
     ENVELOPE_ODD = 0xC3,
     /** see 11.4.3 of Iso7816-4 */
-    GET_DATA = 0xCA,
-    /** see 11.4.3 of Iso7816-4 */
-    GET_NEXT_DATA = 0xCC,
+    GET_DATA_EVEN = 0xCA,
     /** see 11.4.4 of Iso7816-4 */
     GET_DATA_ODD = 0xCB,
+    /** see 11.4.3 of Iso7816-4 */
+    GET_NEXT_DATA_EVEN = 0xCC,
     /** see 11.4.4 of Iso7816-4 */
     GET_NEXT_DATA_ODD = 0xCD,
     /** see Iso7816-9 */

@@ -12,10 +12,19 @@ export const defaultStaticKeys = {
 
 /** List of Ins bytes as defined in GlobalPlatformCard-2.2.1 specifications */
 export enum ins {
+
     INIT_UPDATE = 0x50,
-    EXT_AUTH = 0x82, // as in iso7816
-    INT_AUTH = 0x88, // as in iso7816
-    GET_DATA = 0xCA, // as in iso7816
-    DELETE = 0xE4,
+    // MANAGE_CHANNEL = 0x70, //iso
+    // EXT_AUTH = 0x82, //iso
+    // INT_AUTH = 0x88, //iso
+    // SELECT = 0xA4, //iso
+    // GET_DATA_EVEN = 0xCA, //iso
+    // GET_DATA_ODD = 0xCB, //iso
+    PUT_KEY = 0xD8, // put_next_data in iso
+    STORE_DATA = 0xE2, // append_record in iso
+    // DELETE = 0xE4, //iso
+    INSTALL = 0xE6, // terminate_df in iso
+    LOAD = 0xE8, // terminate_ef in iso
+    SET_STATUS = 0xF0,
     GET_STATUS = 0xF2,
 };
