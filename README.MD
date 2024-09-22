@@ -224,6 +224,8 @@ pcscDM.on('device-activated', (event => {
         devices[devIdx].card = event.card;
         printDeviceList();
 
+        console.log(Utils.decodeAtr(event.card.atr));
+
         console.log('Selecting default applet...');
         console.log();
 
@@ -303,6 +305,5 @@ pcscDM.on('device-activated', (event => {
             })
     })
 }));
-
 
 ```

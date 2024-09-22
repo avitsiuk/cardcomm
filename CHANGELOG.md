@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ### Added
 
+- ATR decoding `Utils.decodeAtr()`
 - "values" exports for GlobalPlatform and "Iso7816" containing respective commonly used values as, for example, command apdu INS byte values
 - INS values for Iso7816-defined commands (according to Iso7816-4(2014) specifications)
 
