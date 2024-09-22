@@ -1,6 +1,6 @@
 {
     "name": "smartcardx",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "description": "Backend library for communication with smartcards using system native PCSC interface. Plain Iso7816 + EMV + GlobalPlatform functionality.",
     "keywords": [
         "pcsc",
