@@ -7,11 +7,11 @@ export enum ins {
     /** see 11.3.9 of Iso7816-4 */
     ACTIVATE_RECORD = 0x08,
     /** see 11.3.8 of Iso7816-4 */
-    ERASE_RECORD = 0x0C,
+    ERASE_RECORD = 0x0c,
     /** see 11.2.7 of Iso7816-4 */
-    ERASE_BINARY_EVEN = 0x0E,
+    ERASE_BINARY_EVEN = 0x0e,
     /** see 11.2.7 of Iso7816-4 */
-    ERASE_BINARY_ODD = 0x0F,
+    ERASE_BINARY_ODD = 0x0f,
     /** see Iso7816-7 */
     PERFORM_SCQL_OP = 0x10,
     /** see Iso7816-7 */
@@ -33,17 +33,17 @@ export enum ins {
     /** see 11.5.8 of Iso7816-4 */
     ENABLE_VERIFY_REQMT = 0x28,
     /** see Iso7816-8 */
-    PERFORM_SECURITY_OP_EVEN = 0x2A,
+    PERFORM_SECURITY_OP_EVEN = 0x2a,
     /** see Iso7816-8 */
-    PERFORM_SECURITY_OP_ODD = 0x2B,
+    PERFORM_SECURITY_OP_ODD = 0x2b,
     /** see 11.5.10 of Iso7816-4 */
-    RESET_RETRY_COUNT_EVEN = 0x2C,
+    RESET_RETRY_COUNT_EVEN = 0x2c,
     /** see 11.5.10 of Iso7816-4 */
-    RESET_RETRY_COUNT_ODD = 0x2D,
+    RESET_RETRY_COUNT_ODD = 0x2d,
     /** see Iso7816-8 */
-    PERFORM_BIOMETRIC_OP_EVEN = 0x2E,
+    PERFORM_BIOMETRIC_OP_EVEN = 0x2e,
     /** see Iso7816-8 */
-    PERFORM_BIOMETRIC_OP_ODD = 0x2F,
+    PERFORM_BIOMETRIC_OP_ODD = 0x2f,
     /** see 11.6.1 of Iso7816-4 */
     COMPARE = 0x33,
     /** see 11.6.2 of Iso7816-4 */
@@ -73,85 +73,85 @@ export enum ins {
     /** see 11.5.2 of Iso7816-4 */
     INT_AUTH = 0x88,
     /** see 11.2.6 of Iso7816-4 */
-    SEARCH_BIN_EVEN = 0xA0,
+    SEARCH_BIN_EVEN = 0xa0,
     /** see 11.2.6 of Iso7816-4 */
-    SEARCH_BIN_ODD = 0xA1,
+    SEARCH_BIN_ODD = 0xa1,
     /** see 11.3.7 of Iso7816-4 */
-    SEARCH_RECORD = 0xA2,
+    SEARCH_RECORD = 0xa2,
     /** see 11.1.1 of Iso7816-4 */
-    SELECT = 0xA4,
+    SELECT = 0xa4,
     /** see 11.4.2 of Iso7816-4 */
-    SELECT_DATA = 0xA5,
+    SELECT_DATA = 0xa5,
     /** see 11.2.3 of Iso7816-4 */
-    READ_BINARY_EVEN = 0xB0,
+    READ_BINARY_EVEN = 0xb0,
     /** see 11.2.3 of Iso7816-4 */
-    READ_BINARY_ODD = 0xB1,
+    READ_BINARY_ODD = 0xb1,
     /** see 11.3.3 of Iso7816-4 */
-    READ_RECORD_EVEN = 0xB2,
+    READ_RECORD_EVEN = 0xb2,
     /** see 11.3.3 of Iso7816-4 */
-    READ_RECORD_ODD = 0xB3,
+    READ_RECORD_ODD = 0xb3,
     /** see 11.7.1 of Iso7816-4 */
-    GET_RESPONSE = 0xC0,
+    GET_RESPONSE = 0xc0,
     /** see 11.7.2 of Iso7816-4 */
-    ENVELOPE_EVEN = 0xC2,
+    ENVELOPE_EVEN = 0xc2,
     /** see 11.7.2 of Iso7816-4 */
-    ENVELOPE_ODD = 0xC3,
+    ENVELOPE_ODD = 0xc3,
     /** see 11.4.3 of Iso7816-4 */
-    GET_DATA_EVEN = 0xCA,
+    GET_DATA_EVEN = 0xca,
     /** see 11.4.4 of Iso7816-4 */
-    GET_DATA_ODD = 0xCB,
+    GET_DATA_ODD = 0xcb,
     /** see 11.4.3 of Iso7816-4 */
-    GET_NEXT_DATA_EVEN = 0xCC,
+    GET_NEXT_DATA_EVEN = 0xcc,
     /** see 11.4.4 of Iso7816-4 */
-    GET_NEXT_DATA_ODD = 0xCD,
+    GET_NEXT_DATA_ODD = 0xcd,
     /** see Iso7816-9 */
-    NAMAGE_DATA = 0xCF,
+    NAMAGE_DATA = 0xcf,
     /** see 11.2.4 of Iso7816-4 */
-    WRITE_BINARY_EVEN = 0xD0,
+    WRITE_BINARY_EVEN = 0xd0,
     /** see 11.2.4 of Iso7816-4 */
-    WRITE_BINARY_ODD = 0xD1,
+    WRITE_BINARY_ODD = 0xd1,
     /** see 11.3.4 of Iso7816-4 */
-    WRITE_RECORD = 0xD2,
+    WRITE_RECORD = 0xd2,
     /** see 11.2.5 of Iso7816-4 */
-    UPDATE_BINARY_EVEN = 0xD6,
+    UPDATE_BINARY_EVEN = 0xd6,
     /** see 11.2.5 of Iso7816-4 */
-    UPDATE_BINARY_ODD = 0xD7,
+    UPDATE_BINARY_ODD = 0xd7,
     /** see 11.4.7 of Iso7816-4 */
-    PUT_NEXT_DATA_EVEN = 0xD8,
+    PUT_NEXT_DATA_EVEN = 0xd8,
     /** see 11.4.7 of Iso7816-4 */
-    PUT_NEXT_DATA_ODD = 0xD9,
+    PUT_NEXT_DATA_ODD = 0xd9,
     /** see 11.4.6 of Iso7816-4 */
-    PUT_DATA_EVEN = 0xDA,
+    PUT_DATA_EVEN = 0xda,
     /** see 11.4.6 of Iso7816-4 */
-    PUT_DATA_ODD = 0xDB,
+    PUT_DATA_ODD = 0xdb,
     /** see 11.3.5 of Iso7816-4 */
-    UPDATE_RECORD_EVEN = 0xDC,
+    UPDATE_RECORD_EVEN = 0xdc,
     /** see 11.3.5 of Iso7816-4 */
-    UPDATE_RECORD_ODD = 0xDD,
+    UPDATE_RECORD_ODD = 0xdd,
     /** see 11.4.8 of Iso7816-4 */
-    UPDATE_DATA_EVEN = 0xDE,
+    UPDATE_DATA_EVEN = 0xde,
     /** see 11.4.8 of Iso7816-4 */
-    UPDATE_DATA_ODD = 0xDF,
+    UPDATE_DATA_ODD = 0xdf,
     /** see Iso7816-9 */
-    CREATE_FILE = 0xE0,
+    CREATE_FILE = 0xe0,
     /** see 11.3.6 of Iso7816-4 */
-    APPEND_RECORD = 0xE2,
+    APPEND_RECORD = 0xe2,
     /** see Iso7816-9 */
-    DELETE_FILE = 0xE4,
+    DELETE_FILE = 0xe4,
     /** see Iso7816-9 */
-    TERMINATE_DF = 0xE6,
+    TERMINATE_DF = 0xe6,
     /** see Iso7816-9 */
-    TERMINATE_EF = 0xE8,
+    TERMINATE_EF = 0xe8,
     /** see Iso7816-13 */
-    LOAD_APP_EVEN = 0xEA,
+    LOAD_APP_EVEN = 0xea,
     /** see Iso7816-13 */
-    LOAD_APP_ODD = 0xEB,
+    LOAD_APP_ODD = 0xeb,
     /** see Iso7816-9 */
-    DELETE_DATA = 0xEE,
+    DELETE_DATA = 0xee,
     /** see Iso7816-13 */
-    REMOVE_APP_EVEN = 0xEC,
+    REMOVE_APP_EVEN = 0xec,
     /** see Iso7816-13 */
-    REMOVE_APP_ODD = 0xED,
+    REMOVE_APP_ODD = 0xed,
     /** see Iso7816-9 */
-    TERMINATE_CARD_USAGE = 0xFE,
-};
+    TERMINATE_CARD_USAGE = 0xfe,
+}

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { hexEncode} from '../../utils';
+import { hexEncode } from '../../utils';
 import { BerObject } from '../../ber/index';
 import ResponseApdu, { assertResponseIsOk } from '../../responseApdu';
 import CommandApdu from '../../commandApdu';

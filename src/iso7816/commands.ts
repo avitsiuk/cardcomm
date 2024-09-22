@@ -193,9 +193,7 @@ export function changeRefData(
     }
 
     // 00 - [verification data][new data]; 01 - [new data]
-    const cmd = new CommandApdu()
-        .setIns(ins.CHANGE_REF_DATA)
-        .setP1(0x01);
+    const cmd = new CommandApdu().setIns(ins.CHANGE_REF_DATA).setP1(0x01);
 
     let p2 = refNum;
     if (refIsSpecific) p2 |= 0x80;

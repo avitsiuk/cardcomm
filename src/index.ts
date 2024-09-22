@@ -15,7 +15,7 @@ const Iso7816 = {
     values: Iso7816Values,
     /** Iso7816-defined Commands */
     commands: Iso7816Commands,
-}
+};
 
 // GlobalPlatform
 import * as GPValues from './globalPlatform/values';
@@ -28,8 +28,8 @@ const GP = {
     /** GlobalPlatform-defined Commands */
     commands: GPCommands,
     SCP02,
-    SCP11
-}
+    SCP11,
+};
 
 import Device from './device';
 import PcscDevicesManager from './devices';
