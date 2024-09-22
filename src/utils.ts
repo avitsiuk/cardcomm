@@ -105,30 +105,6 @@ export function hexEncode(
     return result;
 }
 
-// /**
-//  * @param wrapOverflow - if `false`(default), 256 gets encoded as `0100`; otherwise '00'
-//  */
-// export function arrayToHex(
-//     array: number[],
-//     wrapOverflow: boolean = false,
-// ): string {
-//     if (array && array.length > 0) {
-//         let str = '';
-//         for (let i = 0; i < array.length; i = i + 1) {
-//             let iHex = array[i].toString(16);
-//             iHex = `${iHex.length % 2 ? '0' : ''}${iHex}`;
-//             str += wrapOverflow ? iHex.substring(iHex.length - 2) : iHex;
-//         }
-//         return str;
-//     }
-//     return '';
-// }
-
-// /** Resulting ArrayBuffer is safe to work with, as it contains a copy of data so it does not reference the same memory region as original data */
-// export function bufferToArrayBuffer(buf: Buffer): ArrayBuffer {
-//     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-// }
-
 export function isBinData(input: any): input is TBinData {
     if (typeof input === 'string' && isHexString(input)) {
         return true;
