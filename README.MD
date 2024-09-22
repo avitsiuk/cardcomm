@@ -20,10 +20,10 @@ This package expands upon original [`smartcard` library](https://github.com/tomk
     - SCP02 (i=55)
     - SCP11b
 - Built-in BER encoder/decoder with wildcard search (e.g. `/6f/*/88`)
+- Card ATR decode
 
 ## TODO list
 - API Documentation
-- Card ATR decode
 - Add missing Iso7816 commands
 - Add missing GlobalPlatform commands
 - Add EMV BER tags dictionary for EMV/Iso7816/GlobalPlatform tags
