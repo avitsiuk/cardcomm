@@ -7,6 +7,7 @@ import {
     importBinData,
     getMinWordNum,
     isBinData,
+    decodeAtr,
 } from '../src/utils';
 
 describe('utils', () => {
@@ -235,5 +236,81 @@ describe('utils', () => {
         expect(isBinData(new Uint8Array(0))).toBeTruthy();
         expect(isBinData(new Uint32Array(0))).toBeTruthy();
         expect(isBinData(Buffer.from([]))).toBeTruthy();
+    })
+    test('decodeAtr()', () => {
+        //@ts-ignore
+        expect(()=>{decodeAtr(true)}).toThrow(new Error('Error decoding ATR: Error importing ATR binary: Accepted binary data types: hex string, number[], ArrayBuffer, ArrayBufferView'));
+        expect(()=>{decodeAtr('')}).toThrow(new Error('Error decoding ATR: ATR length expected to be at least 2 bytes. Received: 0'));
+        expect(()=>{decodeAtr('0001')}).toThrow(new Error('Error decoding ATR: invalid TS byte value'));
+        expect(()=>{decodeAtr('3b01')}).toThrow(new Error('Error decoding ATR: error reading historical bytes: unexpected end of data'));
+        expect(()=>{decodeAtr('3b10')}).toThrow(new Error('Error decoding ATR: Error decodinng TA(1): unexpected end of data'));
+        expect(()=>{decodeAtr('3b20')}).toThrow(new Error('Error decoding ATR: Error decodinng TB(1): unexpected end of data'));
+        expect(()=>{decodeAtr('3b40')}).toThrow(new Error('Error decoding ATR: Error decodinng TC(1): unexpected end of data'));
+        expect(()=>{decodeAtr('3b80')}).toThrow(new Error('Error decoding ATR: Error decodinng TD(1): unexpected end of data'));
+        expect(()=>{decodeAtr('3b8010')}).toThrow(new Error('Error decoding ATR: Error decodinng TA(2): unexpected end of data'));
+        expect(()=>{decodeAtr('3b8020')}).toThrow(new Error('Error decoding ATR: Error decodinng TB(2): unexpected end of data'));
+        expect(()=>{decodeAtr('3b8040')}).toThrow(new Error('Error decoding ATR: Error decodinng TC(2): unexpected end of data'));
+        expect(()=>{decodeAtr('3b8080')}).toThrow(new Error('Error decoding ATR: Error decodinng TD(2): unexpected end of data'));
+        expect(()=>{decodeAtr('3b809000')}).toThrow(new Error('Error decoding ATR: Error decodinng TD(2): unexpected end of data'));
+
+        expect(decodeAtr('3f00')).toEqual({TS: 'inverse', T0: {K: 0, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3f00ff')).toEqual({TS: 'inverse', T0: {K: 0, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0), TCK: 255});
+        expect(decodeAtr('3b0100')).toEqual({TS: 'direct', T0: {K: 1, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array([0])});
+        expect(decodeAtr('3b0100ff')).toEqual({TS: 'direct', T0: {K: 1, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array([0]), TCK: 255});
+        expect(decodeAtr('3b03010203')).toEqual({TS: 'direct', T0: {K: 3, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array([1,2,3])});
+        expect(decodeAtr('3b03010203ff')).toEqual({TS: 'direct', T0: {K: 3, Y: '0b0000'}, TA:{}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array([1,2,3]), TCK: 255});
+
+        // TA(1)
+        expect(decodeAtr('3b10f0')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: -1, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f2')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 2, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f3')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 4, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f4')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 8, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f5')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 16, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f6')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 32, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f7')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 64, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f8')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 12, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10f9')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 20, Fi: -1, fMax: -1, cyclesPerETU: -1}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+
+        expect(decodeAtr('3b1001')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 372, fMax: 4, cyclesPerETU: 372}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1011')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 372, fMax: 5, cyclesPerETU: 372}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1021')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 558, fMax: 6, cyclesPerETU: 558}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1031')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 744, fMax: 8, cyclesPerETU: 744}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1041')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 1116, fMax: 12, cyclesPerETU: 1116}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1051')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 1488, fMax: 16, cyclesPerETU: 1488}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1061')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 1860, fMax: 20, cyclesPerETU: 1860}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b1091')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 512, fMax: 5, cyclesPerETU: 512}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10a1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 768, fMax: 7.5, cyclesPerETU: 768}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10b1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 1024, fMax: 10, cyclesPerETU: 1024}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10c1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 1536, fMax: 15, cyclesPerETU: 1536}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b10d1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0001'}, TA:{1:{Di: 1, Fi: 2048, fMax: 20, cyclesPerETU: 2048}}, TB:{}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+
+        // TB(1)
+        expect(decodeAtr('3b2000')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: false, PI1: -1, I: -1}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b2061')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: true, PI1: 1, I: -1}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b201f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: true, PI1: 31, I: 25}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b203f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: true, PI1: 31, I: 50}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b205f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: true, PI1: 31, I: -1}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b207f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0010'}, TA:{}, TB:{1:{connected: true, PI1: 31, I: -1}}, TC:{}, TD:{}, historicalBytes: new Uint8Array(0)});
+
+        // TC(1)
+        expect(decodeAtr('3b4000')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0100'}, TA:{}, TB:{}, TC:{1: 0}, TD:{}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b40ff')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b0100'}, TA:{}, TB:{}, TC:{1: 255}, TD:{}, historicalBytes: new Uint8Array(0)});
+
+        // TD(1)
+        expect(decodeAtr('3b8000')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{}, TB:{}, TC:{}, TD:{1: {T: 0, Y: '0b0000'}}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b800f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{}, TB:{}, TC:{}, TD:{1: {T: 15, Y: '0b0000'}}, historicalBytes: new Uint8Array(0)});
+
+        // TA(2)
+        expect(decodeAtr('3b801000')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{ 2: { T: 0, canChange: true, implicitETUDuration: false } }, TB:{}, TC:{}, TD:{1: {T: 0, Y: '0b0001'}}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b80100f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{ 2: { T: 15, canChange: true, implicitETUDuration: false } }, TB:{}, TC:{}, TD:{1: {T: 0, Y: '0b0001'}}, historicalBytes: new Uint8Array(0)});
+        
+        expect(decodeAtr('3b801090')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{ 2: { T: 0, canChange: false, implicitETUDuration: true } }, TB:{}, TC:{}, TD:{1: {T: 0, Y: '0b0001'}}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b801080')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{ 2: { T: 0, canChange: false, implicitETUDuration: false } }, TB:{}, TC:{}, TD:{1: {T: 0, Y: '0b0001'}}, historicalBytes: new Uint8Array(0)});
+
+        // TB(3)
+        expect(decodeAtr('3b80802000')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{}, TB:{3: { BWI: 0, CWI: 0 }}, TC:{}, TD:{1: {T: 0, Y: '0b1000'}, 2: {T: 0, Y: '0b0010'}}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b808020f1')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{}, TB:{3: { BWI: 15, CWI: 1 }}, TC:{}, TD:{1: {T: 0, Y: '0b1000'}, 2: {T: 0, Y: '0b0010'}}, historicalBytes: new Uint8Array(0)});
+        expect(decodeAtr('3b8080201f')).toEqual({TS: 'direct', T0: {K: 0, Y: '0b1000'}, TA:{}, TB:{3: { BWI: 1, CWI: 15 }}, TC:{}, TD:{1: {T: 0, Y: '0b1000'}, 2: {T: 0, Y: '0b0010'}}, historicalBytes: new Uint8Array(0)});
     })
 })
