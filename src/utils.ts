@@ -424,17 +424,23 @@ function decodeTC(byte: number, _i: number): any {
     return byte;
 }
 
+function isValidOffset(offset: number, length: number): boolean {
+    if (offset < length)
+        return true;
+    return false;
+}
+
 export function decodeAtr(atr: TBinData): IAtrInfo {
     let inBuffer: Uint8Array;
     try {
         inBuffer = importBinData(atr);
     } catch (error: any) {
-        throw new Error(`Error importing ATR binary: ${error.message}`);
+        throw new Error(`Error decoding ATR: Error importing ATR binary: ${error.message}`);
     }
 
     if (inBuffer.byteLength < 2) {
         throw new Error(
-            `ATR length expected to be at least 2 bytes. Received: ${inBuffer.byteLength}`,
+            `Error decoding ATR: ATR length expected to be at least 2 bytes. Received: ${inBuffer.byteLength}`,
         );
     }
 
@@ -469,18 +475,26 @@ export function decodeAtr(atr: TBinData): IAtrInfo {
         currI++;
         currOffset++;
         if ((lastStructuralByte & 0x10) > 0) {
+            if (!isValidOffset(currOffset, inBuffer.byteLength))
+                throw new Error(`Error decoding ATR: Error decodinng TA(${currI}): unexpected end of data`);
             result.TA[currI] = decodeTA(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x20) > 0) {
+            if (!isValidOffset(currOffset, inBuffer.byteLength))
+                throw new Error(`Error decoding ATR: Error decodinng TB(${currI}): unexpected end of data`);
             result.TB[currI] = decodeTB(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x40) > 0) {
+            if (!isValidOffset(currOffset, inBuffer.byteLength))
+                throw new Error(`Error decoding ATR: Error decodinng TC(${currI}): unexpected end of data`);
             result.TC[currI] = decodeTC(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x80) > 0) {
+            if (!isValidOffset(currOffset, inBuffer.byteLength))
+                throw new Error(`Error decoding ATR: Error decodinng TD(${currI}): unexpected end of data`);
             result.TD[currI] = {
                 Y: `0b${((inBuffer[currOffset] >> 4) & 0x0f).toString(2).padStart(4, '0')}`,
                 T: inBuffer[currOffset] & 0x0f,
@@ -498,20 +512,16 @@ export function decodeAtr(atr: TBinData): IAtrInfo {
         );
     }
 
-    result.historicalBytes = new Uint8Array(result.T0.K);
+    if (result.T0.K > 0) {
+        result.historicalBytes = new Uint8Array(result.T0.K);
 
-    try {
         importBinData(
             inBuffer.subarray(currOffset, currOffset + result.T0.K),
             result.historicalBytes,
         );
-    } catch (error: any) {
-        throw new Error(
-            `Error decoding ATR: error reading historical bytes: ${error.message}`,
-        );
-    }
 
-    currOffset += result.T0.K;
+        currOffset += result.T0.K;
+    }
 
     if (currOffset < inBuffer.byteLength) result.TCK = inBuffer[currOffset];
 
