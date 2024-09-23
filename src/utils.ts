@@ -425,8 +425,7 @@ function decodeTC(byte: number, _i: number): any {
 }
 
 function isValidOffset(offset: number, length: number): boolean {
-    if (offset < length)
-        return true;
+    if (offset < length) return true;
     return false;
 }
 
@@ -435,7 +434,9 @@ export function decodeAtr(atr: TBinData): IAtrInfo {
     try {
         inBuffer = importBinData(atr);
     } catch (error: any) {
-        throw new Error(`Error decoding ATR: Error importing ATR binary: ${error.message}`);
+        throw new Error(
+            `Error decoding ATR: Error importing ATR binary: ${error.message}`,
+        );
     }
 
     if (inBuffer.byteLength < 2) {
@@ -476,25 +477,33 @@ export function decodeAtr(atr: TBinData): IAtrInfo {
         currOffset++;
         if ((lastStructuralByte & 0x10) > 0) {
             if (!isValidOffset(currOffset, inBuffer.byteLength))
-                throw new Error(`Error decoding ATR: Error decodinng TA(${currI}): unexpected end of data`);
+                throw new Error(
+                    `Error decoding ATR: Error decodinng TA(${currI}): unexpected end of data`,
+                );
             result.TA[currI] = decodeTA(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x20) > 0) {
             if (!isValidOffset(currOffset, inBuffer.byteLength))
-                throw new Error(`Error decoding ATR: Error decodinng TB(${currI}): unexpected end of data`);
+                throw new Error(
+                    `Error decoding ATR: Error decodinng TB(${currI}): unexpected end of data`,
+                );
             result.TB[currI] = decodeTB(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x40) > 0) {
             if (!isValidOffset(currOffset, inBuffer.byteLength))
-                throw new Error(`Error decoding ATR: Error decodinng TC(${currI}): unexpected end of data`);
+                throw new Error(
+                    `Error decoding ATR: Error decodinng TC(${currI}): unexpected end of data`,
+                );
             result.TC[currI] = decodeTC(inBuffer[currOffset], currI);
             currOffset += 1;
         }
         if ((lastStructuralByte & 0x80) > 0) {
             if (!isValidOffset(currOffset, inBuffer.byteLength))
-                throw new Error(`Error decoding ATR: Error decodinng TD(${currI}): unexpected end of data`);
+                throw new Error(
+                    `Error decoding ATR: Error decodinng TD(${currI}): unexpected end of data`,
+                );
             result.TD[currI] = {
                 Y: `0b${((inBuffer[currOffset] >> 4) & 0x0f).toString(2).padStart(4, '0')}`,
                 T: inBuffer[currOffset] & 0x0f,
