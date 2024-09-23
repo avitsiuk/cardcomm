@@ -33,7 +33,8 @@
         "node": ">=10.24.1"
     },
     "files": [
-        "lib/"
+        "lib/",
+        "CHANGELOG.md"
     ],
     "directories": {
         "doc": "docs/",
