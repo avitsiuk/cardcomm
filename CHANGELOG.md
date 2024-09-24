@@ -29,14 +29,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ### Changed
 
 - Gathered GlobalPlatform and Iso7816 stuff under respective exported namespaces:
-    - `Iso7816.values`
-    - `Iso7816.commands`
-    - `GP.values`
-    - `GP.commands`
-    - `GP.SCP02`
-    - `GP.SCP11`
+  - `Iso7816.values`
+  - `Iso7816.commands`
+  - `GP.values`
+  - `GP.commands`
+  - `GP.SCP02`
+  - `GP.SCP11`
 
 ## [0.7.0] - 2024-09-17
 
 ### Added
+
 - Initial package release
