@@ -1,3 +1,5 @@
+# SmartCardX
+
 ## About
 
 This package expands upon original [`smartcard` library](https://github.com/tomkp/smartcard) by [tomkp](https://github.com/tomkp) and is built around [`pcsclite` library](https://github.com/santigimeno/node-pcsclite) by [Santiago Gimeno](https://github.com/santigimeno)  
@@ -17,12 +19,13 @@ This package expands upon original [`smartcard` library](https://github.com/tomk
 - Built-in Iso7816 commands(still expanding)
 - Built-in GlobalPlatform commands (still expanding)
 - Built-in GlobalPlatform secure sessions
-    - SCP02 (i=55)
-    - SCP11b
+  - SCP02 (i=55)
+  - SCP11b
 - Built-in BER encoder/decoder with wildcard search (e.g. `/6f/*/88`)
 - Card ATR decode
 
 ## TODO list
+
 - API Documentation
 - Add missing Iso7816 commands
 - Add missing GlobalPlatform commands
@@ -30,7 +33,6 @@ This package expands upon original [`smartcard` library](https://github.com/tomk
 - SCP03 support
 - SCP11a with mutual authentication support
 - BER object in-place editing. Currently a new object must be created.
-
 
 ## Dependencies (Debian/Ubuntu)
 
@@ -54,31 +56,36 @@ This should show all (contact and NFC) readers recognized by your system and pri
 Sometimes NFC readers won't work because of other drivers blocking the usb bus.
 Plug in your reader and check pcscd service logs:
 
-```
+```text
 $ journalctl -u pcscd.service
 ...
 xxx XX XX:XX:XX xxxxxx pcscd[5465]: 29870365 ccid_usb.c:672:OpenUSBByName() Can't claim interface 1/10: LIBUSB_ERROR_BUSY
 ...
 ```
+
 `LIBUSB_ERROR_BUSY` tells that the interface is used by something else.
 
 Check what driver is using the device:
-```
+
+```text
 $ lsusb -t
 /:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=xhci_hcd/16p, 480M
     |__ Port 1: Dev 23, If 0, Class=Chip/SmartCard, Driver=pn533, 12M
 ```
 
 Then view the dependency tree of that driver (`pn533` in this case)
-```
+
+```text
 $ lsmod | grep pn533
 Module                  Size  Used by
 pn533_usb              20480  0
 pn533                  49152  1 pn533_usb
 nfc                   147456  1 pn533
 ```
+
 in this case we have following dependency tree
-```
+
+```text
 pn533_usb
   └pn533
     └nfc
@@ -94,11 +101,13 @@ In case you need to reenable them again just run:
 
 2. Add drivers to blacklist  
 Open(create) file `/etc/modprobe.d/nfc-blacklist.conf` and add following lines:
-    ```
+
+    ```text
     blacklist pn533_usb
     blacklist pn533
     blacklist nfc
     ```
+
     >System reboot required
 
 Now install `libnfc`:  
@@ -108,24 +117,28 @@ And finally restart `pcscd`:
 `sudo service pcscd restart`
 
 Use one of the following tools to check if the reader is working:
-```
+
+```text
 $ nfc-scan-device
 nfc-scan-device uses libnfc 1.8.0
 1 NFC device(s) found:
+
 - ACS / ACR122U PICC Interface:
     acr122_usb:001:023
 ```
-```
+
+```text
 $ nfc-list
 nfc-list uses libnfc 1.8.0
 NFC device: ACS / ACR122U PICC Interface opened
 ```
-```
+
+```text
 $ pcsc_scan
 Using reader plug'n play mechanism
 Scanning present readers...
 0: ACS ACR122U PICC Interface 00 00
- 
+
 Fri Aug 23 16:47:33 2024
  Reader 0: ACS ACR122U PICC Interface 00 00
   Event number: 0
@@ -147,10 +160,12 @@ Multiple options must be separated by a space
 
 ## API
 
-    // Under construction
+> // Under construction
 
 ## Example demo.ts
+
 This code cam be found in package repository
+
 ```ts
 import {
     PcscDevicesManager,
